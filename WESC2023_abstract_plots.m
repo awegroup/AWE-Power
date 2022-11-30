@@ -4,7 +4,7 @@
 ws        = 0:1:30;
 windProb  = wblpdf(ws,11,2.2);
 windOccur = 8760*windProb;
-meanWS    = mean(windOccur)/31;
+meanWS    = mean(windOccur)/31
 
 %% AEP, CF calculation
 P_Rated = system.ratedPower

@@ -2,20 +2,25 @@ function [inputs] = compute(i,inputs)
  global outputs
  
     %% Wing CL
-    outputs.CL             = inputs.CL_maxAirfoil*inputs.F_CLeff;
+    outputs.CL(i)             = outputs.CL_airfoil(i)*inputs.F_CLeff;
     
-    %% Kite mass estimate: Vincent's simple mass model
-    a = 1.747e-2;
-    b = 3.84518;
-    k1 = 5;
-    c = 0.46608;
-    d = 0.65962;
-    k2 =1.1935;
-    outputs.m_kite   = 10*(a*inputs.WA^2 +b*inputs.WA-k1)*(c*(inputs.AR/12)^2-d*(inputs.AR/12)+k2);
+    %% Kite mass 
+    if inputs.massOverride == 1
+      outputs.m_kite = inputs.kiteMass;
+    else
+      %Vincent's simple mass model
+      a = 1.747e-2;
+      b = 3.84518;
+      k1 = 5;
+      c = 0.46608;
+      d = 0.65962;
+      k2 =1.1935;
+      outputs.m_kite   = 10*(a*inputs.WA^2 +b*inputs.WA-k1)*(c*(inputs.AR/12)^2-d*(inputs.AR/12)+k2); 
+    end
     
     %% Minimum Tether length and minimum patt. radius - Centrifugal force balance - no gravity
     outputs.L_teMin_req(i)    = outputs.m_kite*cos(inputs.pattAngRadius)/...
-        (0.5*inputs.airDensity*inputs.WA*outputs.CL*sin(inputs.maxRollAngle)*sin(inputs.pattAngRadius));
+        (0.5*inputs.airDensity*inputs.WA*outputs.CL(i)*sin(inputs.maxRollAngle)*sin(inputs.pattAngRadius));
     outputs.minPattRad(i)  = outputs.L_teMin_req(i)*sin(inputs.pattAngRadius);
     outputs.L_teMin(i)     = outputs.L_teMin_req(i)*inputs.F_teLength; %[m] could add 100 additional safety margin
     outputs.L_teMax(i)     = outputs.L_teMin(i)+outputs.deltaL(i); 
@@ -30,8 +35,8 @@ function [inputs] = compute(i,inputs)
 
     %% Wing CD
     
-    outputs.CD_kite(i)   = inputs.CD0 + (outputs.CL-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
-    outputs.CD_tether(i) = (1/3)*inputs.CD_te*outputs.D_te*outputs.L_teAvg(i)/inputs.WA;
+    outputs.CD_kite(i)   = inputs.CD0 + (outputs.CL(i)-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
+    outputs.CD_tether(i) = (1/4)*inputs.CD_te*outputs.D_te*outputs.L_teAvg(i)/inputs.WA;
     outputs.CD(i) = outputs.CD_kite(i) + outputs.CD_tether(i);
 
     %% Air density as a function of average pattern altitude
@@ -44,7 +49,7 @@ function [inputs] = compute(i,inputs)
     
     %% Roll angle calculation base on new mass, airdensity and pattern radius
     outputs.rollAngle(i) = asin(outputs.m_kite*cos(inputs.pattAngRadius)/...
-        (0.5*inputs.airDensity*inputs.WA*outputs.CL*outputs.pattRadius(i)));
+        (0.5*inputs.airDensity*inputs.WA*outputs.CL(i)*outputs.pattRadius(i)));
     
     %% Tether tension, sinkrate, reel-out speed
 
@@ -52,12 +57,12 @@ function [inputs] = compute(i,inputs)
     outputs.W(i)        = outputs.m_eff(i)*inputs.gravity;
 
     % Tether tension
-    outputs.T(i)   = min(outputs.Tmax_act, (4/9)*(outputs.CL*cos(outputs.rollAngle(i)))^3/outputs.CD(i)^2*(1/2)*outputs.rho_air(i)*...
+    outputs.T(i)   = min(outputs.Tmax_act, (4/9)*(outputs.CL(i)*cos(outputs.rollAngle(i)))^3/outputs.CD(i)^2*(1/2)*outputs.rho_air(i)*...
     inputs.WA*(inputs.Vw(i)*cos(inputs.pattAngRadius))^2);
 
     % Sink rate
     outputs.J(i)   = sqrt(outputs.T(i)^2+ outputs.W(i)^2+2*outputs.T(i)*outputs.W(i)*sin(inputs.avgPattEle));
-    outputs.VSR(i) = outputs.CD(i)/(outputs.CL*cos(outputs.rollAngle(i)))^(3/2)*outputs.T(i)/sqrt(0.5*outputs.rho_air(i)*inputs.WA*outputs.J(i));
+    outputs.VSR(i) = outputs.CD(i)/(outputs.CL(i)*cos(outputs.rollAngle(i)))^(3/2)*outputs.T(i)/sqrt(0.5*outputs.rho_air(i)*inputs.WA*outputs.J(i));
      
     % VRO
     outputs.VRO(i) = inputs.Vw(i)*cos(inputs.avgPattEle)-outputs.VSR(i);
@@ -66,7 +71,7 @@ function [inputs] = compute(i,inputs)
     outputs.reelOutF(i) = outputs.VRO(i)/inputs.Vw(i);
     
     %% Airspeed and tangential speed
-     lambda    = 0.5*outputs.rho_air(i)*inputs.WA*outputs.CL;
+     lambda    = 0.5*outputs.rho_air(i)*inputs.WA*outputs.CL(i);
      delta     = 0.5*outputs.rho_air(i)*inputs.WA*outputs.CD(i);
      a         = sqrt((lambda^2+delta^2)/(outputs.T(i)^2+outputs.W(i)^2+2*outputs.T(i)*outputs.W(i)*sin(inputs.avgPattEle)));
      outputs.VA(i) = 1/sqrt(a); % Apparent wind speed [m/s];
@@ -91,7 +96,7 @@ function [inputs] = compute(i,inputs)
       RPM_max = max(inputs.maxVRI,25); % 25 =  Possible maximum reel-out speed
       outputs.genEff_RO(i,j) = (a*(outputs.VRO_osci(i,j)/RPM_max)^3+b*(outputs.VRO_osci(i,j)/RPM_max)^2+c*(outputs.VRO_osci(i,j)/RPM_max)+d)^sign(1);
       % Power capping due to limit on generator size
-      outputs.PROeff_elec_osci(i,j) = min(inputs.F_peakMechP*inputs.P_ratedElec,outputs.PROeff_mech_osci(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE);
+      outputs.PROeff_elec_osci(i,j) = min(inputs.F_peakElecP*inputs.P_ratedElec,outputs.PROeff_mech_osci(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE);
     end
     outputs.PROeff_mech(i) = mean(outputs.PROeff_mech_osci(i,:));
     outputs.PROeff_elec(i) = mean(outputs.PROeff_elec_osci(i,:));

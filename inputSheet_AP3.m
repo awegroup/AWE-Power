@@ -8,6 +8,8 @@ inputs.Vw             = 1:1:25; %[m/s]
 inputs.WA             = 12;
 inputs.AR             = 12;
 inputs.P_ratedElec    = 150*1000; %[W]
+inputs.massOverride   = 0;
+inputs.kiteMass       = 20; %[kg]
 
 inputs.Tmax              = 42; %[kN]
 inputs.F_Tmax            = 0.80;
@@ -33,6 +35,6 @@ inputs.etaGearbox     = 0.95;
 inputs.etaSto         = 0.95;
 inputs.etaPE          = 0.98; % Power electronics
 
-inputs.F_peakMechP    = 2;
+inputs.F_peakElecP    = 2;
 inputs.gravity        = 9.81;
 inputs.airDensity     = 1.225; %[kg/m^3]  
