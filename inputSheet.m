@@ -27,7 +27,7 @@ inputs.CD_te          = 1.2;
 
 inputs.avgPattEle     = 22*pi()/180; % [rad] 
 inputs.pattAngRadius  = 12*pi()/180; % [rad] 
-inputs.maxRollAngle   = 20*pi()/180; % [rad] 
+inputs.maxRollAngle   = 20*pi()/180; % [rad] % 20
 inputs.maxVRI         = 30;
 inputs.maxAcc         = 20;
 

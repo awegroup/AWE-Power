@@ -6,43 +6,42 @@ clear global
 global outputs
  
 % inputSheet_AP3;
-% inputSheet_softKite;
 inputSheet;
+% inputSheet_softKite;
 
 % Compute for every wind speed
+x_output = [150, 20, 1.5]; % Initial guess
 for i=1:length(inputs.Vw)
-  
   % Optimisation problem setup
-  x_init = [150, 20, inputs.Tmax, 1.5]; %[deltaL, VRI, Tmax, CL]
+  x_init = x_output;      %[deltaL, VRI, CL]
   x0     = x_init./x_init;
-  lb     = [50, 5, inputs.Tmax, inputs.CL0_airfoil]./x_init;
-  ub     = [300, inputs.maxVRI, inputs.Tmax, inputs.CL_maxAirfoil]./x_init;
+  lb     = [50, 5, inputs.CL0_airfoil]./x_init;
+  ub     = [300, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff]./x_init;
   
   options                           = optimoptions('fmincon');
   options.Display                   = 'iter-detailed';
   options.Algorithm                 = 'sqp';
-   options.FiniteDifferenceType     = 'central';
+  options.FiniteDifferenceType     = 'central';
 %   options.OutputFcn                = @O_outfun;
-%  options.FiniteDifferenceStepSize = 1e-10;
-%   options.MaxFunctionEvaluations   = 1000*numel(X_init);
-%   options.ConstraintTolerance      = 0;
+%   options.FiniteDifferenceStepSize = 1e-6;
+   options.MaxFunctionEvaluations   = 1000*numel(x_init);
+  options.ConstraintTolerance      = 1e-9;
   options.OptimalityTolerance      = 1e-15;
 %   options.FunctionTolerance        = 1e-4;
-%  options.StepTolerance            = 1e-14;
+ options.StepTolerance            = 1e-14;
 %   options.DiffMaxChange            = 1e-1;
 %   options.DiffMinChange            = 1e-2;
-%   options.MaxIterations            = 3;
+%    options.MaxIterations            = 1000*numel(x_init);
 %   options.PlotFcns                 = {@optimplotfval, @optimplotx, @optimplotfirstorderopt,...
 %                                @optimplotconstrviolation, @optimplotfunccount, @optimplotstepsize};
 
   con = @(x) constraints(i,inputs);
   
-  [x,fval,~] = fmincon(@(x) objective(x,x_init,i,inputs),x0,[],[],[],[],lb,ub,con,options);
+  [x,fval,exitflag(i),optHist(i)] = fmincon(@(x) objective(x,x_init,i,inputs),x0,[],[],[],[],lb,ub,con,options);
   
   % Storing final results
    [~,inputs,outputs] = objective(x,x_init,i,inputs);
    x_output = x.*x_init;
- 
 end
 
 %% Post processing
@@ -93,6 +92,7 @@ for i=1:length(Vw)
         system.TT(i)          = 0;
         system.VRO(i)         = 0;
         system.VRI(i)         = 0;
+        system.VRI_app(i)     = 0;
         system.Pcycle_elec(i) = 0;
         system.Pcycle_mech(i) = 0;
         system.VRO_osci(i,:)       = 0;
@@ -100,6 +100,7 @@ for i=1:length(Vw)
         system.PROeff_elec_osci(i,:)  = 0;
         system.pattRadius(i)       = 0;
         system.H_avg(i)            = 0;
+        system.L_teAvg(i)          = 0;
         system.rollAngle(i)        = 0;
         system.CL(i)               = 0;
         system.CD(i)               = 0;
@@ -126,6 +127,7 @@ for i=1:length(Vw)
         system.TT(i)          = outputs.T(i);
         system.VRO(i)         = outputs.VRO(i);
         system.VRI(i)         = outputs.VRI(i);
+        system.VRI_app(i)     = outputs.VAS_RI(i);
         system.Pcycle_elec(i) = outputs.P_cycleElec(i);
         system.Pcycle_mech(i) = outputs.P_cycleMech(i);
         system.VRO_osci(i,:)  = outputs.VRO_osci(i,:);
@@ -133,6 +135,7 @@ for i=1:length(Vw)
         system.PROeff_elec_osci(i,:)  = outputs.PROeff_elec_osci(i,:);
         system.pattRadius(i)    = outputs.pattRadius(i);
         system.H_avg(i)      = outputs.H_avg(i);
+        system.L_teAvg(i)     = outputs.L_teAvg(i);
         system.rollAngle(i)  = rad2deg(outputs.rollAngle(i));
         system.CL(i)         = outputs.CL(i);
         system.CD(i)         = outputs.CD(i);
@@ -179,7 +182,7 @@ xlabel('Positions in a single pattern');
 hold off
 
 %% Cycle timeseries plots, Check reel-in representation: Time and power in each regime should add to total reel-in energy
-windSpeeds = [21];
+windSpeeds = [];
 
 for i = windSpeeds
   tmax = round(max(system.tCycle(windSpeeds)));
@@ -202,24 +205,26 @@ for i = windSpeeds
   hold off
 end
 
-%% TT,VRO,VRI plot
+%% Parameter plots
 
+% TT,VRO,VRI, VRI_app plot
 figure('units','inch','Position', [5 5 3.5 2.2])
 hold on
 grid on
 box on
-yyaxis left
-plot(Vw, system.TT./10^3,'x','markersize',4);
-ylabel('Tether tension (kN)');
-ylim([0 1.1*max(system.TT)/10^3]);
-yyaxis right
-plot(Vw, system.VRO,'+','markersize',3);
-plot(Vw, system.VRI,'o','markersize',3);
-legend('T','V_{RO}','V_{RI}','location','southeast');
+% yyaxis left
+% plot(Vw, system.TT./10^3,'x:','markersize',4);
+% ylabel('Tether tension (kN)');
+% ylim([0 1.1*max(system.TT)/10^3]);
+% yyaxis right
+plot(Vw, system.VRO,'+:','markersize',3);
+plot(Vw, system.VRI,'o:','markersize',3);
+plot(Vw, system.VRI_app,'^:','markersize',3);
+legend('V_{RO}','V_{RI}','V_{RI,app}','location','southeast');
 xlabel('Wind speed at avg. pattern altitude (m/s)');
 ylabel('Speed (m/s)');
 xlim([0 25]);
-ylim([0 1.05*inputs.maxVRI]);
+ylim([0 1.05*max(system.VRI_app)]);
 hold off
 
 
@@ -229,11 +234,11 @@ hold on
 grid on
 box on
 yyaxis left
-plot(Vw, system.deltaL,'x','markersize',4);
+plot(Vw, system.deltaL,'x:','markersize',4);
 ylabel('Length (m)');
 yyaxis right
-plot(Vw, system.tRO,'+','markersize',3);
-plot(Vw, system.tRI,'o','markersize',3);
+plot(Vw, system.tRO,'^:','markersize',3);
+plot(Vw, system.tRI,'o:','markersize',3);
 ylabel('Time(s)');
 legend('ΔL','t_{RO}','t_{RI}','location','northwest');
 xlabel('Wind speed at avg. pattern altitude (m/s)');
@@ -241,16 +246,20 @@ xlim([0 25]);
 %ylim([0 160]);
 hold off
 
-% H_avg, patt radius, Avg tether length
+% H_avg, patt radius, Avg tether length, roll angle
 figure('units','inch','Position', [5 5 3.5 2.2])
 hold on
 grid on
 box on
-plot(Vw, system.H_avg,'^','markersize',3);
-plot(Vw, system.pattRadius,'x','markersize',4);
-plot(Vw, outputs.L_teAvg,'o','markersize',3);
+yyaxis left
+plot(Vw, system.H_avg,'^:','markersize',3);
+plot(Vw, system.pattRadius,'x:','markersize',4);
+plot(Vw, system.L_teAvg,'o:','markersize',3);
 ylabel('Length (m)');
-legend('H_{avg}','R_{patt}','L_{tether,avg}','location','northwest');
+yyaxis right
+plot(Vw, system.rollAngle,'+:','markersize',3);
+ylabel('Angle (deg)');
+legend('H_{avg}','R_{patt}','L_{te,avg}','Φ','location','northwest','Orientation','vertical');
 xlabel('Wind speed at avg. pattern altitude (m/s)');
 xlim([0 25]);
 %ylim([0 160]);
@@ -261,17 +270,20 @@ figure('units','inch','Position', [5 5 3.5 2.2])
 hold on
 grid on
 box on
-plot(Vw, system.CL,'^','markersize',3);
-plot(Vw, system.CD,'x','markersize',4);
-plot(Vw, system.reelOutF,'o','markersize',3);
-ylabel('Length (m)');
-legend('C_{L}','C_{D}','Reel-out factor','location','northwest');
+yyaxis left
+plot(Vw, system.CL,'^:','markersize',3);
+plot(Vw, system.CD,'+:','markersize',4);
+plot(Vw, system.reelOutF,'o:','markersize',3);
+ylabel('(-)');
+yyaxis right
+plot(Vw, system.TT./10^3,'x:','markersize',4);
+ylabel('Tether tension (kN)');
+ylim([0 1.1*max(system.TT)/10^3]);
+legend('C_{L}','C_{D}','f','TT','location','northwest');
 xlabel('Wind speed at avg. pattern altitude (m/s)');
 xlim([0 25]);
 %ylim([0 160]);
 hold off
-
-
 
 % Cycle efficiencies
 ERO_elec = system.PROeff_elec.*system.tROeff + system.PRO1_elec.*system.t1;
@@ -288,8 +300,8 @@ plot(Vw, system.Pcycle_elec./10^3,'-','linewidth',1.2);
 ylabel('Power (kW)');
 ylim([0 1.1*system.ratedPower/10^3]);
 yyaxis right
-plot(Vw, (ERO_mech-ERI_mech)./ERO_mech*100,'+','markersize',3);
-plot(Vw, (ERO_elec-ERI_elec)./ERO_mech*100,'o','markersize',3);
+plot(Vw, (ERO_mech-ERI_mech)./ERO_mech*100,'o','markersize',3);
+plot(Vw, (ERO_elec-ERI_elec)./ERO_mech*100,'+','markersize',3);
 % plot(Vw, system.Pcycle_mech./system.PRO_mech*100,'x','markersize',4);
 % plot(Vw, (ERO_elec-ERI_elec)./(ERO_mech-ERI_mech)*100,'o','markersize',3);
 % plot(Vw, system.dutyCycle*100,'x','markersize',3);
@@ -300,27 +312,29 @@ xlabel('Wind speed at avg. pattern altitude (m/s)');
 xlim([0 25]);
 hold off
 
-% Power plots
-figure('units','inch','Position', [5 5 3.5 2.2])
-hold on
-grid on
-box on
-plot(Vw, system.PRO_mech./10^3,'-','linewidth',1.2);
-plot(Vw, system.PRO_elec./10^3,'-','linewidth',1.2);
-plot(Vw, system.Pcycle_elec./10^3,'-','linewidth',1.2);
-ylabel('Power (kW)');
-legend('PRO mech','PRO elec','Pcycle elec','location','northwest');
-% legend('Cycle electrical power at grid','location','northwest');
-xlabel('Wind speed at avg. pattern altitude (m/s)');
-xlim([0 25]);
-%ylim([0 160]);
-hold off
+% % Power plots
+% figure('units','inch','Position', [5 5 3.5 2.2])
+% hold on
+% grid on
+% box on
+% plot(Vw, system.PRO_mech./10^3,'-','linewidth',1.2);
+% plot(Vw, system.PRO_elec./10^3,'-','linewidth',1.2);
+% plot(Vw, system.Pcycle_elec./10^3,'-','linewidth',1.2);
+% ylabel('Power (kW)');
+% legend('PRO mech','PRO elec','Pcycle elec','location','northwest');
+% % legend('Cycle electrical power at grid','location','northwest');
+% xlabel('Wind speed at avg. pattern altitude (m/s)');
+% xlim([0 25]);
+% %ylim([0 160]);
+% hold off
 
 
 %% Power curve comparison plot
-% Loyd
+%Loyd
+% CL_loyd = inputs.CL_maxAirfoil*inputs.F_CLeff;
+% CD_loyd = inputs.CD0 + (CL_loyd-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
 % for i = 1:length(Vw)
-%     P_Loyd(i) = (4/27)*(outputs.CL^3/outputs.CD_kite(i)^2)*(1/2)*1.225*inputs.WA*(Vw(i)^3);
+%     P_Loyd(i) = (4/27)*(CL_loyd^3/CD_loyd^2)*(1/2)*inputs.airDensity*inputs.WA*(Vw(i)^3);
 %     if P_Loyd(i)>system.ratedPower
 %         P_Loyd(i) = system.ratedPower;
 %     end 
