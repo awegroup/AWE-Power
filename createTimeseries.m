@@ -10,11 +10,11 @@ function [d] = createTimeseries(ws, system)
     d.tCycle = d.tRO+d.tRI; %[s]
     
     d.t1a_inst     = 0:0.01:d.t1;
-    d.tROeff_inst  = d.t1+0.01:0.01:d.tROeff;
-    d.t1b_inst     = d.tROeff+0.01:0.01:d.tROeff+d.t1;
-    d.t2a_inst     = d.t1b_inst(end)+0.01:0.01:d.t1b_inst(end)+d.t2;
-    d.tRIeff_inst  = d.t2a_inst(end)+0.01:0.01:d.t2a_inst(end)+d.tRIeff-d.t2;
-    d.t2b_inst     = d.tRIeff_inst(end)+0.01:0.01:d.tRIeff_inst(end)+d.t2;
+    d.tROeff_inst  = d.t1:0.01:d.tROeff;
+    d.t1b_inst     = d.tROeff:0.01:d.tROeff+d.t1;
+    d.t2a_inst     = d.t1b_inst(end):0.01:d.t1b_inst(end)+d.t2;
+    d.tRIeff_inst  = d.t2a_inst(end):0.01:d.t2a_inst(end)+d.tRIeff-d.t2;
+    d.t2b_inst     = d.tRIeff_inst(end):0.01:d.tRIeff_inst(end)+d.t2;
 
     d.t_inst       = [d.t1a_inst d.tROeff_inst d.t1b_inst d.t2a_inst d.tRIeff_inst d.t2b_inst];
     
