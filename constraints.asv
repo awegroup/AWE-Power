@@ -3,7 +3,7 @@ function [c, ceq] = constraints(i,inputs)
   global outputs
    
   %% Min clearance between ground and bottom point of pattern
-  c(1)   = inputs.minGroundClear - outputs.H_minPatt(i) + outputs.pattRadius(i); 
+  c(1)   = inputs.minGroundClear - outputs.H_min(i) + outputs.pattRadius(i); 
   
   %% Capping for max. reel-out electrical power
   c(2)   = max(outputs.PROeff_elec_osci(i,:)) - inputs.F_peakElecP*inputs.P_ratedElec; 

@@ -1,5 +1,5 @@
-function [inputs] = compute(i,inputs)
- global outputs
+function [inputs, outputs] = compute_GA(i,inputs, outputs)
+%  global outputs
     
     %% Kite mass 
     if inputs.massOverride == 1
@@ -16,20 +16,21 @@ function [inputs] = compute(i,inputs)
     end
     
     %% Minimum Tether length and minimum patt. radius - Centrifugal force balance - no gravity
-    
-    outputs.pattRadius(i)  = outputs.m_kite*cos(outputs.pattAngRadius(i))/...
-                             (0.5*inputs.airDensity*inputs.WA*outputs.CL(i)*sin(outputs.maxRollAngle(i)));
-    outputs.L_teMin(i)     = 2*outputs.pattRadius(i)/sin(outputs.pattAngRadius(i))*inputs.F_teLength;
-    outputs.H_minPatt(i)   = outputs.L_teMin(i)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.pattRadius(i);
+    outputs.L_teMin_req(i) = outputs.m_kite*cos(outputs.pattAngRadius(i))/...
+        (0.5*inputs.airDensity*inputs.WA*outputs.CL(i)*sin(outputs.maxRollAngle(i))*sin(outputs.pattAngRadius(i)));
+    outputs.minPattRad(i)  = outputs.L_teMin_req(i)*sin(outputs.pattAngRadius(i));
+    outputs.L_teMin(i)     = outputs.L_teMin_req(i)*inputs.F_teLength; %[m] could add 100 additional safety margin
     outputs.L_teMax(i)     = outputs.L_teMin(i)+outputs.deltaL(i); 
     outputs.L_teAvg(i)     = (outputs.L_teMax(i)+outputs.L_teMin(i))/2; %[m]
-    outputs.H_avgPatt(i)   = outputs.L_teAvg(i)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.pattRadius(i);
-    outputs.D_te           = sqrt(inputs.Tmax*1000/inputs.Te_matStrength*4/pi()); %[m] *1.1 as safety factor
-    outputs.wingSpan       = sqrt(inputs.AR*inputs.WA);
-    outputs.sweptArea(i)   = pi()*((outputs.pattRadius(i)+outputs.wingSpan/2)^2 - (outputs.pattRadius(i)-outputs.wingSpan/2)^2);
+    outputs.pattRadius(i)  = outputs.L_teAvg(i)*sin(outputs.pattAngRadius(i)); %[m]
+    outputs.H_avg(i)       = outputs.L_teAvg(i)*sin(outputs.avgPattEle(i));
+    outputs.D_te           = sqrt(inputs.Tmax*1000/inputs.Te_matStrength*4/pi())*1.1; %[m] 1.1 is safety factor
+    % Swept area 
+    outputs.wingSpan      = sqrt(inputs.AR*inputs.WA);
+    outputs.sweptArea(i)  = pi()*((outputs.pattRadius(i)+outputs.wingSpan/2)^2 - (outputs.pattRadius(i)-outputs.wingSpan/2)^2);
     
     %% Effective mass (Kite + tether)
-    outputs.m_te(i)  = inputs.Te_matDensity*pi()/4*outputs.D_te^2*outputs.L_teAvg(i); % Could add (say 0.85) as safety factor on material density
+    outputs.m_te(i)  = inputs.Te_matDensity*0.85*pi()/4*outputs.D_te^2*outputs.L_teAvg(i); % 0.85 is safety factor on material density
     outputs.m_eff(i) = outputs.m_kite+sin(outputs.avgPattEle(i))*outputs.m_te(i);
 
     %% Effective CD
@@ -43,7 +44,7 @@ function [inputs] = compute(i,inputs)
     R = 8.3144598; % [N·m/(mol·K)]
     T = 288.15; %[Kelvin]
     L = 0.0065; %[Kelvin/m] 
-    outputs.rho_air(i) = inputs.airDensity*(1-L*(5+outputs.H_avgPatt(i))/T)^(inputs.gravity*M/R/L-1); % +5 is for approx. platform height
+    outputs.rho_air(i) = inputs.airDensity*(1-L*(5+outputs.H_avg(i))/T)^(inputs.gravity*M/R/L-1); % +5 is for approx. platform height
     
     %% Roll angle calculation base on new mass, airdensity and pattern radius
     outputs.rollAngleC(i) = asin(outputs.m_eff(i)*cos(outputs.pattAngRadius(i))/...
@@ -54,21 +55,22 @@ function [inputs] = compute(i,inputs)
     outputs.Tmax_act = inputs.Tmax*inputs.F_Tmax*1000; %[N]
     outputs.W(i)     = outputs.m_eff(i)*inputs.gravity;
 
-    % Tether tension: Reduction in lift due to roll
+    % Tether tension - Effect of centrifugal force - reduction in lift due to roll
     outputs.T(i)   = min(outputs.Tmax_act, (4/9)*(outputs.CL(i)*cos(outputs.rollAngleC(i)))^3/outputs.CD(i)^2*(1/2)*outputs.rho_air(i)*...
                       inputs.WA*(inputs.Vw(i)*cos(outputs.avgPattEle(i)))^2);   
     
-    % Sink rate: Effect of gravity
+    % Sink rate - Effect of gravity: increased
     % Equilibrium force for Aerodynamic resultant
     outputs.J(i)   = sqrt(outputs.T(i)^2 + outputs.W(i)^2 + 2*outputs.T(i)*outputs.W(i)*sin(outputs.avgPattEle(i)));    
     
-    % Roll angle: Gravity
+    % Roll angle - Gravity
     outputs.rollAngleG(i)   = asin(outputs.W(i)*cos(outputs.avgPattEle(i))/outputs.J(i));
-    outputs.VSR(i)          = outputs.CD(i)/(outputs.CL(i)*cos(outputs.rollAngleG(i)))^(3/2)*...
+    outputs.VSR_G(i)        = outputs.CD(i)/(outputs.CL(i)*cos(outputs.rollAngleG(i)))^(3/2)*...
                                 (outputs.T(i)+outputs.W(i)*sin(outputs.avgPattEle(i)))/sqrt(0.5*outputs.rho_air(i)*inputs.WA*outputs.J(i));
-              
-    % Avg roll angle: from centrifugal force balance == effect of gravity
-    outputs.avgRollAngle(i) = outputs.rollAngleC(i);
+    outputs.VSR(i)          = outputs.VSR_G(i);
+    
+    % Choosing avg roll angle
+    outputs.avgRollAngle(i) = outputs.rollAngleG(i);
          
     % VRO
     outputs.VRO(i) = inputs.Vw(i)*cos(outputs.avgPattEle(i))-outputs.VSR(i);
@@ -79,9 +81,9 @@ function [inputs] = compute(i,inputs)
     %% Airspeed and tangential speed
      lambda        = 0.5*outputs.rho_air(i)*inputs.WA*outputs.CL(i);
      delta         = 0.5*outputs.rho_air(i)*inputs.WA*outputs.CD(i);
-     a             = sqrt((lambda^2+delta^2))/outputs.J(i);
-     outputs.VA(i) = 1/sqrt(a); % Apparent speed [m/s];
-     outputs.VC(i) = sqrt(outputs.VA(i)^2 - outputs.VRO(i)^2);
+     a             = sqrt((lambda^2+delta^2)/(outputs.T(i)^2+outputs.W(i)^2+2*outputs.T(i)*outputs.W(i)*sin(outputs.avgPattEle(i))));
+     outputs.VA(i) = 1/sqrt(a); % Apparent wind speed [m/s];
+     outputs.VC(i) = sqrt(outputs.VA(i)^2-outputs.VRO(i)^2);
     
     %% Reel-out speed osci due to gravity. Since Tether has a tension limit the osci cannot be translated to TT 
      % Theory of centripetal force with gravity. V_C osci -> V_A osci -> VRO osci 
@@ -127,12 +129,12 @@ function [inputs] = compute(i,inputs)
     outputs.PRO_elec(i) = (outputs.PROeff_elec(i)* outputs.tROeff(i) + outputs.PRO1_elec(i)*outputs.t1(i))/outputs.tRO(i);
     
     % PRI effective mech
-    outputs.VA_RI(i)      = inputs.Vw(i)*cos(outputs.avgPattEle(i))+outputs.VRI(i);
-    outputs.CL_RI(i)       = 2*outputs.W(i)/(outputs.rho_air(i)*outputs.VA_RI(i)^2*inputs.WA);
+    outputs.VAS_RI(i)      = inputs.Vw(i)*cos(outputs.avgPattEle(i))+outputs.VRI(i);
+    outputs.CL_RI(i)       = 2*outputs.W(i)/(outputs.rho_air(i)*outputs.VAS_RI(i)^2*inputs.WA);
     outputs.CD_RI(i)       = inputs.CD0+(outputs.CL_RI(i)- inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
-    outputs.PRIeff_mech(i) = 0.5*outputs.rho_air(i)*outputs.CD_RI(i)*inputs.WA*outputs.VA_RI(i)^3;
+    outputs.PRIeff_mech(i) = 0.5*outputs.rho_air(i)*outputs.CD_RI(i)*inputs.WA*outputs.VAS_RI(i)^3;
     
-    % Generator efficiency during RI: As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
+    % Generator efficiency. As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
     outputs.genEff_RI(i)   = a*(outputs.VRI(i)/inputs.maxVRI)^3+b*(outputs.VRI(i)/inputs.maxVRI)^2+c*(outputs.VRI(i)/inputs.maxVRI)+d;
       
     % PRI effective elec
