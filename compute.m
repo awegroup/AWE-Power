@@ -81,7 +81,7 @@ function [inputs] = compute(i,inputs)
      delta         = 0.5*outputs.rho_air(i)*inputs.WA*outputs.CD(i);
      a             = sqrt((lambda^2+delta^2))/outputs.J(i);
      outputs.VA(i) = 1/sqrt(a); % Apparent speed [m/s];
-     outputs.VC(i) = sqrt(outputs.VA(i)^2 - outputs.VRO(i)^2);
+     outputs.VC(i) = sqrt(outputs.VA(i)^2 - outputs.VSR(i)^2);
     
     %% Reel-out speed osci due to gravity. Since Tether has a tension limit the osci cannot be translated to TT 
      % Theory of centripetal force with gravity. V_C osci -> V_A osci -> VRO osci 
@@ -90,7 +90,7 @@ function [inputs] = compute(i,inputs)
      outputs.numPattParts           = 31;
     for j=1:outputs.numPattParts
       outputs.VC_osci(i,j)          = outputs.VC(i) + outputs.VC_osciAmp(i)*sin((j-1)*2*pi()/(outputs.numPattParts-1));
-      outputs.VA_osci(i,j)          = sqrt(outputs.VC_osci(i,j)^2 + outputs.VRO(i)^2); 
+      outputs.VA_osci(i,j)          = sqrt(outputs.VC_osci(i,j)^2 + outputs.VSR(i)^2); 
       outputs.osciFactor(i,j)       = (outputs.VA_osci(i,j)/outputs.VA(i))^2*cos(outputs.avgRollAngle(i));
       outputs.VRO_osci(i,j)         = outputs.osciFactor(i,j)*outputs.VRO(i);
       outputs.PROeff_mech_osci(i,j) = outputs.T(i)*outputs.VRO_osci(i,j); %[W]

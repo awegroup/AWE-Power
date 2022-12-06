@@ -5,8 +5,8 @@ clear global
 
 % global outputs
  
-inputSheet_AP3;
-% inputSheet;
+% inputSheet_AP3;
+inputSheet;
 % inputSheet_softKite;
 
 % Compute for every wind speed
@@ -15,10 +15,11 @@ x_output       = [100, 15, 1.5, deg2rad(20),deg2rad(12),deg2rad(15)];
 for i=1:length(inputs.Vw)
   
   %% Gradient based optimisation
-  x_init = x_output;      
+  x_init = x_output;  
+%   x_init = [100, 15, 1.5, deg2rad(20),deg2rad(12),deg2rad(15)];
   x0     = x_init./x_init;
   lb     = [50, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),deg2rad(5)]./x_init;
-  ub     = [250, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),deg2rad(80)]./x_init;
+  ub     = [250, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(15),deg2rad(80)]./x_init;
   options                           = optimoptions('fmincon');
   options.Display                   = 'iter-detailed';
   options.Algorithm                 = 'sqp';
@@ -210,7 +211,7 @@ xlabel('Positions in a single pattern');
 hold off
 
 %% Cycle timeseries plots, Check reel-in representation: Time and power in each regime should add to total reel-in energy
-windSpeeds = [];
+windSpeeds = [17];
 
 for i = windSpeeds
   tmax = round(max(system.tCycle(windSpeeds)));
