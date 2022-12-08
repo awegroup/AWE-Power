@@ -35,6 +35,7 @@ inputs.etaGearbox     = 0.9;
 inputs.etaSto         = 0.9;
 inputs.etaPE          = 0.95; % Power electronics
 
-inputs.F_peakElecP    = 3;
+inputs.targetPRO_elec = 0;
+inputs.F_peakElecP    = 2.5;
 inputs.gravity        = 9.81;
 inputs.airDensity     = 1.225; %[kg/m^3]  

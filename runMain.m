@@ -3,23 +3,19 @@ clc
 clearvars
 clear global
 
-% global outputs
- 
-% inputSheet_AP3;
-inputSheet;
+inputSheet_AP3;
+% inputSheet;
 % inputSheet_softKite;
 
-% Compute for every wind speed
-% Initial guess [deltaL, VRI, CL, avgPattEle, pattAngRadius, maxRollAngle]
-x_output       = [100, 15, 1.5, deg2rad(20),deg2rad(12),deg2rad(15)];
+%% Optimise operation for every wind speed: Uncapped electrical power
+%      [deltaL, VRI, CL, avgPattEle, pattAngRadius, maxRollAngle]
+x0      = [100, 15, 1.5, deg2rad(20),deg2rad(12),deg2rad(15)]; % 
 for i=1:length(inputs.Vw)
-  
-  %% Gradient based optimisation
-  x_init = x_output;  
-%   x_init = [100, 15, 1.5, deg2rad(20),deg2rad(12),deg2rad(15)];
+  % Output of previous wind speed as input to next wind speed
+  x_init = x0;  
   x0     = x_init./x_init;
-  lb     = [50, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),deg2rad(5)]./x_init;
-  ub     = [250, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(15),deg2rad(80)]./x_init;
+  lb     = [50, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),deg2rad(5)]./x_init; % 
+  ub     = [250, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),deg2rad(80)]./x_init; % 
   options                           = optimoptions('fmincon');
   options.Display                   = 'iter-detailed';
   options.Algorithm                 = 'sqp';
@@ -29,8 +25,8 @@ for i=1:length(inputs.Vw)
   options.StepTolerance             = 1e-14;
   options.MaxFunctionEvaluations    = 5000*numel(x_init);
   options.MaxIterations             = 1000*numel(x_init);
-%    options.ConstraintTolerance      = 1e-4;
-%    options.FunctionTolerance        = 1e-9;
+%   options.ConstraintTolerance      = 1e-4;
+%   options.FunctionTolerance        = 1e-9;
 %   options.DiffMaxChange            = 1e-1;
 %   options.DiffMinChange            = 1e-2;
 %   options.OutputFcn                = @O_outfun;
@@ -42,50 +38,61 @@ for i=1:length(inputs.Vw)
   
   % Storing final results
    [~,inputs,outputs] = objective(x,x_init,i,inputs);
-   x_output = x.*x_init;
+   x0 = x.*x_init;
+   
+   % Changing initial guess if previous wind speed evaluation is infeasible
    if outputs.P_cycleElec(i) < 0
-       x_output = [100, 15, 1.5, deg2rad(20),deg2rad(10),deg2rad(15)];
-   end
-   
-   %% GA
-%    
-%    outputs = struct();
-%    
-%     lb     = [50, 5, inputs.CL0_airfoil, deg2rad(2), deg2rad(2),deg2rad(2)];
-%     ub     = [250, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(90),deg2rad(60),deg2rad(90)];
-%   
-%     options                           = optimoptions('ga');
-%   
-%     con = @(x) constraints_GA(i,inputs,outputs);
-%   
-%   obj = @(x) objective_GA(i,inputs,outputs);
-%   
-%   [x, fval,exitflag(i),optHist(i)] = ga(obj ,numel(lb),[],[],[],[],lb,ub,con,options);
-%      %Storing final results
-%    [~,inputs,outputs] = objective_GA(x,i,inputs,outputs);
-   
+       x0 = [100, 15, 1.5, deg2rad(20),deg2rad(12),deg2rad(15)]; % 
+   end  
 end
+
+%% Second optimisation iteration for following capped electrical power
+outputs1 = outputs;
+clear outputs
+inputs.targetPRO_elec = outputs1.PROeff_elec_cap;
+x0       = [100, 15, 1.5, deg2rad(20),deg2rad(12),deg2rad(15)]; % 
+for i=1:length(inputs.Vw)
+  % Output of previous wind speed as input to next wind speed
+  x_init = x0;
+  x0     = x_init./x_init;
+  lb     = [50, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),deg2rad(5)]./x_init; % 
+  ub     = [250, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),deg2rad(80)]./x_init; % 
+  con    = @(x) constraints(i,inputs);
+  
+  [x,fval,exitflag(i),optHist(i)] = fmincon(@(x) objective(x,x_init,i,inputs),x0,[],[],[],[],lb,ub,con,options);
+  
+  % Storing final results
+   [~,inputs,outputs] = objective(x,x_init,i,inputs);
+   x0 = x.*x_init;
+   
+   % Changing initial guess if previous wind speed evaluation is infeasible
+   if outputs.P_cycleElec(i) < 0
+       x0 = [100, 15, 1.5, deg2rad(20),deg2rad(12),deg2rad(15)]; % 
+   end  
+end
+% Storing back the capped powerresults from first optimisation
+outputs.PROeff_elec_osci = outputs1.PROeff_elec_osci_cap;
 
 %% Post processing
 Vw = inputs.Vw;
 
-% Cut-in wind speed
-%temp = Vw(outputs.P_cycleElec>0);
+%% Cut-in wind speed
 % The velocity of the kite cannot be negative while flying patterns
 temp1         = Vw((outputs.VC-outputs.VC_osciAmp)>0);
+% Positive cycle power
 temp2         = Vw(outputs.P_cycleElec > 0);
 system.cutIn = max(temp1(1), temp2(1));
 
-% Rated wind speed and power
-temp = find((inputs.P_ratedElec - outputs.P_cycleElec)<0.1);
+%% Rated wind speed and power
+temp = find((inputs.P_ratedElec - outputs.P_cycleElec)<0.01);
 if isempty(temp)
-  system.ratedWind  = Vw(outputs.P_cycleElec==max(outputs.P_cycleElec));
+  system.ratedWind  = Vw(outputs.P_cycleElec == max(outputs.P_cycleElec));
 else
   system.ratedWind  = Vw(temp(1));
 end
 system.ratedPower = max(outputs.P_cycleElec);
 
-% System data
+%% System data
 system.VRO_osci         = zeros(length(Vw),length(outputs.VRO_osci(1,:)));
 system.PROeff_mech_osci = zeros(length(Vw),length(outputs.VRO_osci(1,:)));
 system.PROeff_elec_osci = zeros(length(Vw),length(outputs.VRO_osci(1,:)));
@@ -180,7 +187,7 @@ for i=1:length(Vw)
     system.reelOutF(i)  = system.VRO(i)/Vw(i); 
 end
 
-%Instantaneous cycle data
+%% Representative instantaneous cycle data
 timeseries = struct();
 for i = system.cutIn:length(Vw)
   [timeseries.ws(i)] = createTimeseries(i,system);
@@ -211,7 +218,7 @@ xlabel('Positions in a single pattern');
 hold off
 
 %% Cycle timeseries plots, Check reel-in representation: Time and power in each regime should add to total reel-in energy
-windSpeeds = [17];
+windSpeeds = [7, 15, 24];
 
 for i = windSpeeds
   tmax = round(max(system.tCycle(windSpeeds)));
@@ -350,7 +357,7 @@ hold off
 
 
 %% Power curve comparison plot
-%Loyd
+% % Loyd
 % CL_loyd = inputs.CL_maxAirfoil*inputs.F_CLeff;
 % CD_loyd = inputs.CD0 + (CL_loyd-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
 % for i = 1:length(Vw)
@@ -379,8 +386,16 @@ hold off
 % %ylim([0 160]);
 % hold off
 
-
-
+%% GA
+%    outputs = struct();
+%     lb     = [50, 5, inputs.CL0_airfoil, deg2rad(2), deg2rad(2),deg2rad(2)];
+%     ub     = [250, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(90),deg2rad(60),deg2rad(90)];
+%     options                           = optimoptions('ga');
+%     con = @(x) constraints_GA(i,inputs,outputs);
+%   obj = @(x) objective_GA(i,inputs,outputs);
+%   [x, fval,exitflag(i),optHist(i)] = ga(obj ,numel(lb),[],[],[],[],lb,ub,con,options);
+%      %Storing final results
+%    [~,inputs,outputs] = objective_GA(x,i,inputs,outputs);
 
 
 

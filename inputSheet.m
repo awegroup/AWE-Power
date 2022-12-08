@@ -27,7 +27,7 @@ inputs.CD_te          = 1.2;
 
 % inputs.avgPattEle     = 22*pi()/180; % [rad] 
 % inputs.pattAngRadius  = 12*pi()/180; % [rad] 
-inputs.maxRollAngle   = 45*pi()/180; % [rad] % 20
+% inputs.maxRollAngle   = 45*pi()/180; % [rad] % 20
 inputs.maxVRI         = 30;
 inputs.maxAcc         = 20;
 
@@ -35,6 +35,7 @@ inputs.etaGearbox     = 0.95;
 inputs.etaSto         = 0.95;
 inputs.etaPE          = 0.98; % Power electronics
 
-inputs.F_peakElecP    = 3;
+inputs.targetPRO_elec = 0;
+inputs.F_peakElecP    = 2.5;
 inputs.gravity        = 9.81;
 inputs.airDensity     = 1.225; %[kg/m^3]  

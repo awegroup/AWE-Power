@@ -18,7 +18,7 @@ function [inputs] = compute(i,inputs)
     %% Minimum Tether length and minimum patt. radius - Centrifugal force balance - no gravity
     
     outputs.pattRadius(i)  = outputs.m_kite*cos(outputs.pattAngRadius(i))/...
-                             (0.5*inputs.airDensity*inputs.WA*outputs.CL(i)*sin(outputs.maxRollAngle(i)));
+                            (0.5*inputs.airDensity*inputs.WA*outputs.CL(i)*sin(outputs.maxRollAngle(i)));
     outputs.L_teMin(i)     = 2*outputs.pattRadius(i)/sin(outputs.pattAngRadius(i))*inputs.F_teLength;
     outputs.H_minPatt(i)   = outputs.L_teMin(i)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.pattRadius(i);
     outputs.L_teMax(i)     = outputs.L_teMin(i)+outputs.deltaL(i); 
@@ -47,7 +47,7 @@ function [inputs] = compute(i,inputs)
     
     %% Roll angle calculation base on new mass, airdensity and pattern radius
     outputs.rollAngleC(i) = asin(outputs.m_eff(i)*cos(outputs.pattAngRadius(i))/...
-        (0.5*outputs.rho_air(i)*inputs.WA*outputs.CL(i)*outputs.pattRadius(i)));
+                            (0.5*outputs.rho_air(i)*inputs.WA*outputs.CL(i)*outputs.pattRadius(i)));
     
     %% Tether tension, sinkrate, reel-out speed
 
@@ -68,7 +68,7 @@ function [inputs] = compute(i,inputs)
                                 (outputs.T(i)+outputs.W(i)*sin(outputs.avgPattEle(i)))/sqrt(0.5*outputs.rho_air(i)*inputs.WA*outputs.J(i));
               
     % Avg roll angle: from centrifugal force balance == effect of gravity
-    outputs.avgRollAngle(i) = outputs.rollAngleC(i);
+    outputs.avgRollAngle(i) = outputs.rollAngleG(i);
          
     % VRO
     outputs.VRO(i) = inputs.Vw(i)*cos(outputs.avgPattEle(i))-outputs.VSR(i);
@@ -102,9 +102,12 @@ function [inputs] = compute(i,inputs)
       RPM_max = max(inputs.maxVRI,25); % 25 =  Possible maximum reel-out speed
       outputs.genEff_RO(i,j)        = (a*(outputs.VRO_osci(i,j)/RPM_max)^3+b*(outputs.VRO_osci(i,j)/RPM_max)^2+c*(outputs.VRO_osci(i,j)/RPM_max)+d)^sign(1);
       outputs.PROeff_elec_osci(i,j) = outputs.PROeff_mech_osci(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE;
+      outputs.PROeff_elec_osci_cap(i,j) = min(inputs.F_peakElecP*inputs.P_ratedElec,...
+                                        outputs.PROeff_mech_osci(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE);
     end
-    outputs.PROeff_mech(i) = mean(outputs.PROeff_mech_osci(i,:));
-    outputs.PROeff_elec(i) = mean(outputs.PROeff_elec_osci(i,:));
+    outputs.PROeff_mech(i)     = mean(outputs.PROeff_mech_osci(i,:));
+    outputs.PROeff_elec(i)     = mean(outputs.PROeff_elec_osci(i,:));
+    outputs.PROeff_elec_cap(i) = mean(outputs.PROeff_elec_osci_cap(i,:));
     
     %% Cycle simulation
     
