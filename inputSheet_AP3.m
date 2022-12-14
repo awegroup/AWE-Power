@@ -12,7 +12,8 @@ inputs.massOverride   = 0;
 inputs.kiteMass       = 20; %[kg]
 
 inputs.Tmax              = 42; %[kN]
-inputs.F_Tmax            = 0.80;
+inputs.F_Tmax            = 1; % 0.8
+inputs.maxTeLen          = 1000;
 inputs.F_teLength        = 1; % 1.2
 inputs.minGroundClear    = 50; % [m]
 inputs.Te_matStrength    = 7e8;
@@ -35,7 +36,7 @@ inputs.etaGearbox     = 0.9;
 inputs.etaSto         = 0.9;
 inputs.etaPE          = 0.95; % Power electronics
 
-inputs.targetPRO_elec = 0;
+% inputs.targetPRO_elec = 0;
 inputs.F_peakElecP    = 2.5;
 inputs.gravity        = 9.81;
 inputs.airDensity     = 1.225; %[kg/m^3]  

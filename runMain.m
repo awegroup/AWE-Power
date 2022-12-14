@@ -41,47 +41,21 @@ for i=1:length(inputs.Vw)
    x0 = x.*x_init;
    
    % Changing initial guess if previous wind speed evaluation is infeasible
-   if outputs.P_cycleElec(i) < 0
+   if outputs.P_cycleElec(i) <= 0
        x0 = [100, 15, 1.5, deg2rad(20),deg2rad(12),deg2rad(15)]; % 
    end  
 end
-
-%% Second optimisation iteration for following capped electrical power
-outputs1 = outputs;
-clear outputs
-inputs.targetPRO_elec = outputs1.PROeff_elec_cap;
-x0       = [100, 15, 1.5, deg2rad(20),deg2rad(12),deg2rad(15)]; % 
-for i=1:length(inputs.Vw)
-  % Output of previous wind speed as input to next wind speed
-  x_init = x0;
-  x0     = x_init./x_init;
-  lb     = [50, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),deg2rad(5)]./x_init; % 
-  ub     = [250, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),deg2rad(80)]./x_init; % 
-  con    = @(x) constraints(i,inputs);
-  
-  [x,fval,exitflag(i),optHist(i)] = fmincon(@(x) objective(x,x_init,i,inputs),x0,[],[],[],[],lb,ub,con,options);
-  
-  % Storing final results
-   [~,inputs,outputs] = objective(x,x_init,i,inputs);
-   x0 = x.*x_init;
-   
-   % Changing initial guess if previous wind speed evaluation is infeasible
-   if outputs.P_cycleElec(i) < 0
-       x0 = [100, 15, 1.5, deg2rad(20),deg2rad(12),deg2rad(15)]; % 
-   end  
-end
-% Storing back the capped powerresults from first optimisation
-outputs.PROeff_elec_osci = outputs1.PROeff_elec_osci_cap;
 
 %% Post processing
 Vw = inputs.Vw;
 
 %% Cut-in wind speed
 % The velocity of the kite cannot be negative while flying patterns
-temp1         = Vw((outputs.VC-outputs.VC_osciAmp)>0);
+% temp1         = Vw((outputs.VC-outputs.VC_osciAmp)>0);
 % Positive cycle power
-temp2         = Vw(outputs.P_cycleElec > 0);
-system.cutIn = max(temp1(1), temp2(1));
+temp2         = Vw(outputs.P_cycleElec > 0.1);
+% system.cutIn = max(temp1(1), temp2(1));
+system.cutIn = max(temp2(1));
 
 %% Rated wind speed and power
 temp = find((inputs.P_ratedElec - outputs.P_cycleElec)<0.01);
@@ -93,11 +67,11 @@ end
 system.ratedPower = max(outputs.P_cycleElec);
 
 %% System data
-system.VRO_osci         = zeros(length(Vw),length(outputs.VRO_osci(1,:)));
-system.PROeff_mech_osci = zeros(length(Vw),length(outputs.VRO_osci(1,:)));
-system.PROeff_elec_osci = zeros(length(Vw),length(outputs.VRO_osci(1,:)));
+% system.VRO_osci         = zeros(length(Vw),length(outputs.VRO_osci(1,:)));
+% system.PROeff_mech_osci = zeros(length(Vw),length(outputs.VRO_osci(1,:)));
+% system.PROeff_elec_osci = zeros(length(Vw),length(outputs.VRO_osci(1,:)));
 system.D_te             = outputs.D_te;
-system.numPattParts     = outputs.numPattParts;
+% system.numPattParts     = outputs.numPattParts;
 for i=1:length(Vw)
     if Vw(i)<system.cutIn
         system.PRO1_mech(i)    = 0;
@@ -125,9 +99,9 @@ for i=1:length(Vw)
         system.VRI_app(i)     = 0;
         system.Pcycle_elec(i) = 0;
         system.Pcycle_mech(i) = 0;
-        system.VRO_osci(i,:)       = 0;
-        system.PROeff_mech_osci(i,:)  = 0;
-        system.PROeff_elec_osci(i,:)  = 0;
+%         system.VRO_osci(i,:)       = 0;
+%         system.PROeff_mech_osci(i,:)  = 0;
+%         system.PROeff_elec_osci(i,:)  = 0;
         system.pattRadius(i)       = 0;
         system.H_minPatt(i)            = 0;
         system.H_avgPatt(i)            = 0;
@@ -163,9 +137,9 @@ for i=1:length(Vw)
         system.VRI_app(i)     = outputs.VA_RI(i);
         system.Pcycle_elec(i) = outputs.P_cycleElec(i);
         system.Pcycle_mech(i) = outputs.P_cycleMech(i);
-        system.VRO_osci(i,:)  = outputs.VRO_osci(i,:);
-        system.PROeff_mech_osci(i,:)  = outputs.PROeff_mech_osci(i,:);
-        system.PROeff_elec_osci(i,:)  = outputs.PROeff_elec_osci(i,:);
+%         system.VRO_osci(i,:)  = outputs.VRO_osci(i,:);
+%         system.PROeff_mech_osci(i,:)  = outputs.PROeff_mech_osci(i,:);
+%         system.PROeff_elec_osci(i,:)  = outputs.PROeff_elec_osci(i,:);
         system.pattRadius(i)    = outputs.pattRadius(i);
         system.H_minPatt(i)      = outputs.H_minPatt(i);
         system.H_avgPatt(i)      = outputs.H_avgPatt(i);
@@ -178,11 +152,11 @@ for i=1:length(Vw)
     end
     system.tCycle(i)    = system.tRO(i)+system.tRI(i);  
     system.dutyCycle(i) = system.tRO(i)/system.tCycle(i);
-    system.tPatt(i)     = 0;
-    for j = 1:outputs.numPattParts
-      system.tPatt(i)  = system.tPatt(i) + 2*pi()*system.pattRadius(i)/outputs.numPattParts/outputs.VC_osci(i,j);
-    end 
-    system.osciFactor(i,:) = outputs.osciFactor(i,:);
+    system.tPatt(i)     = 2*pi()*system.pattRadius(i)/outputs.VC(i);
+%     for j = 1:outputs.numPattParts
+%       system.tPatt(i)  = system.tPatt(i) + 2*pi()*system.pattRadius(i)/outputs.numPattParts/outputs.VC_osci(i,j);
+%     end 
+%     system.osciFactor(i,:) = outputs.osciFactor(i,:);
     system.numOfPatt(i) = system.tRO(i)/system.tPatt(i);
     system.reelOutF(i)  = system.VRO(i)/Vw(i); 
 end
@@ -195,31 +169,30 @@ end
 
 %% Plots
 
-%% Plot oscillating VRO and PRO_mech
-i = [7,12,18, 24];
-d.series1 = system.PROeff_elec_osci(i(1),:)/10^3;  
-d.series2 = system.PROeff_elec_osci(i(2),:)/10^3; 
-d.series3 = system.PROeff_elec_osci(i(3),:)/10^3; 
-d.series4 = system.PROeff_elec_osci(i(4),:)/10^3; 
-
-figure('units','inch','Position', [4 4 3.5 2.2])
-hold on
-grid on
-box on
-plot(d.series1,'linewidth',1.2);
-plot(d.series2,'linewidth',1.2);
-plot(d.series3,'linewidth',1.2);
-plot(d.series4,'linewidth',1.2);
-ylabel('Electrical capped power (kW)');
-%ylim([30 100]);
-legend(strcat(num2str(i(1)),'m/s'),strcat(num2str(i(2)),'m/s'),strcat(num2str(i(3)),'m/s'),strcat(num2str(i(4)),'m/s'),'location','southeast');
-xlabel('Positions in a single pattern');
-%xlim([0 25]);
-hold off
+% %% Plot oscillating VRO and PRO_mech
+% i = [7,12,18, 24];
+% d.series1 = system.PROeff_elec_osci(i(1),:)/10^3;  
+% d.series2 = system.PROeff_elec_osci(i(2),:)/10^3; 
+% d.series3 = system.PROeff_elec_osci(i(3),:)/10^3; 
+% d.series4 = system.PROeff_elec_osci(i(4),:)/10^3; 
+% 
+% figure('units','inch','Position', [4 4 3.5 2.2])
+% hold on
+% grid on
+% box on
+% plot(d.series1,'linewidth',1.2);
+% plot(d.series2,'linewidth',1.2);
+% plot(d.series3,'linewidth',1.2);
+% plot(d.series4,'linewidth',1.2);
+% ylabel('Electrical capped power (kW)');
+% %ylim([30 100]);
+% legend(strcat(num2str(i(1)),'m/s'),strcat(num2str(i(2)),'m/s'),strcat(num2str(i(3)),'m/s'),strcat(num2str(i(4)),'m/s'),'location','southeast');
+% xlabel('Positions in a single pattern');
+% %xlim([0 25]);
+% hold off
 
 %% Cycle timeseries plots, Check reel-in representation: Time and power in each regime should add to total reel-in energy
-windSpeeds = [7, 15, 24];
-
+windSpeeds = [20];
 for i = windSpeeds
   tmax = round(max(system.tCycle(windSpeeds)));
   pmax = 1.2*inputs.F_peakElecP*max(system.Pcycle_elec(windSpeeds))/10^3;
@@ -376,15 +349,24 @@ hold off
 % hold on
 % grid on
 % box on
-% plot(Vw, P_Loyd./10^3,'--','linewidth',1.2);
+% plot(Vw, P_Loyd./10^3,'linewidth',1.5);
 % plot(Vw, system.Pcycle_elec./10^3,'linewidth',1.5);
 % plot(AP3.PC.ws, AP3.PC.power,'k^--','MarkerSize',4);
 % legend('Loyd - Ideal','Model results','6DOF simulation','location','southeast');
+% % legend('Loyd - Ideal','Model results','location','southeast');
 % xlabel('Wind speed at avg. pattern altitude (m/s)');
 % ylabel('Power (kW)');
 % xlim([0 25]);
 % %ylim([0 160]);
 % hold off
+
+%% 
+% hold on
+% grid on
+% box on
+% set(gca,'XTick',[],'YTick',[])
+% t=0:0.01:1; f=1; x=sin(2*pi*f*t); figure(1); 
+% plot(t,x,'linewidth',1.5);
 
 %% GA
 %    outputs = struct();
@@ -397,5 +379,30 @@ hold off
 %      %Storing final results
 %    [~,inputs,outputs] = objective_GA(x,i,inputs,outputs);
 
-
+%% Second optimisation iteration for following capped electrical power
+% outputs1 = outputs;
+% clear outputs
+% inputs.targetPRO_elec = outputs1.PROeff_elec_cap;
+% x0       = [100, 15, 1.5, deg2rad(20),deg2rad(12),deg2rad(15)]; % 
+% for i=1:length(inputs.Vw)
+%   % Output of previous wind speed as input to next wind speed
+%   x_init = x0;
+%   x0     = x_init./x_init;
+%   lb     = [50, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),deg2rad(5)]./x_init; % 
+%   ub     = [250, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),deg2rad(80)]./x_init; % 
+%   con    = @(x) constraints(i,inputs);
+%   
+%   [x,fval,exitflag(i),optHist(i)] = fmincon(@(x) objective(x,x_init,i,inputs),x0,[],[],[],[],lb,ub,con,options);
+%   
+%   % Storing final results
+%    [~,inputs,outputs] = objective(x,x_init,i,inputs);
+%    x0 = x.*x_init;
+%    
+%    % Changing initial guess if previous wind speed evaluation is infeasible
+%    if outputs.P_cycleElec(i) < 0
+%        x0 = [100, 15, 1.5, deg2rad(20),deg2rad(12),deg2rad(15)]; % 
+%    end  
+% end
+% % Storing back the capped powerresults from first optimisation
+% outputs.PROeff_elec_osci = outputs1.PROeff_elec_osci_cap;
 
