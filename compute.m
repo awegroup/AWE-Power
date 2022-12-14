@@ -23,7 +23,7 @@ function [inputs] = compute(i,inputs)
     outputs.H_minPatt(i)  = outputs.L_teMin(i)*cos(outputs.pattAngRadius(i))*sin(outputs.avgPattEle(i));
     outputs.L_teMax(i)     = outputs.L_teMin(i)+outputs.deltaL(i); 
     outputs.L_teAvg(i)     = (outputs.L_teMax(i)+outputs.L_teMin(i))/2; %[m]
-    outputs.H_avgPatt(i)   = outputs.L_teAvg(i)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.pattRadius(i);
+    outputs.H_avgPatt(i)   = outputs.L_teAvg(i)*cos(outputs.pattAngRadius(i))*sin(outputs.avgPattEle(i));
     outputs.D_te           = sqrt(inputs.Tmax*1000/inputs.Te_matStrength*4/pi()); %[m] *1.1 as safety factor
     outputs.sweptArea(i)   = pi()*((outputs.pattRadius(i)+outputs.wingSpan/2)^2 - (outputs.pattRadius(i)-outputs.wingSpan/2)^2);
     
