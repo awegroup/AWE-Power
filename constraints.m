@@ -5,7 +5,7 @@ function [c, ceq] = constraints(i,inputs)
   %% Inequality constraints
   
   % Min clearance between ground and bottom point of pattern
-  c(1)   = inputs.minGroundClear - outputs.L_teMin(i)*sin(outputs.avgPattEle(i)-outputs.pattAngRadius(i)); 
+  c(1)   = inputs.minGroundClear - outputs.pattStartGrClr(i);
   
   % Capping for requested electrical rated power
   c(2)   = outputs.P_cycleElec(i) - inputs.P_ratedElec; 
@@ -19,12 +19,16 @@ function [c, ceq] = constraints(i,inputs)
   % Tether length limit
   c(5) = outputs.L_teMax(i) - inputs.maxTeLen; 
   
+  % Min number of patterns
+   c(6) = 0.5 - outputs.numOfPatt(i);
+  
   %% Equality constraints
   
   % Consistency in roll angles due to centrifugal and gravity effects
-  ceq(1)    = outputs.rollAngleC(i) - outputs.rollAngleG(i);
+%   ceq(1)    = outputs.rollAngleC(i) - outputs.rollAngleG(i);
+  ceq(1)    = 0;
   
-%   % Only used in second iter of optimisation when capping max. electrical power
+  % Only used in second iter of optimisation when capping max. electrical power
 %   if inputs.targetPRO_elec ~=0
 %       % Capping for max. reel-out electrical power
 %       ceq(2)    = outputs.PROeff_elec(i) - inputs.targetPRO_elec(i);

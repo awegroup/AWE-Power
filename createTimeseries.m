@@ -18,22 +18,22 @@ function [d] = createTimeseries(ws, system)
 
     d.t_inst       = [d.t1a_inst d.tROeff_inst d.t1b_inst d.t2a_inst d.tRIeff_inst d.t2b_inst];
     
-%     q  = fix(system.numOfPatt(ws));
-%     r  = mod(system.numOfPatt(ws),1);
-%     a1 = repmat(system.PROeff_elec_osci(ws,2:end),1,q-1);
-%     a2 = system.PROeff_elec_osci(ws,2:round(system.numPattParts*r));
-%     p  = cat(2,system.PROeff_elec_osci(ws,:),a1,a2);
-%     d.PRO  = interp1(1:length(p), p, linspace(1, length(p), length(d.tROeff_inst)), 'linear')./10^3;
+    q  = fix(system.numOfPatt(ws));
+    r  = mod(system.numOfPatt(ws),1);
+    a1 = repmat(system.PROeff_elec_osci(ws,2:end),1,q-1);
+    a2 = system.PROeff_elec_osci(ws,2:round(system.numPattParts*r));
+    p  = cat(2,system.PROeff_elec_osci(ws,:),a1,a2);
+    d.PRO  = interp1(1:length(p), p, linspace(1, length(p), length(d.tROeff_inst)), 'linear')./10^3;
    
-    d.PRO  = system.PROeff_elec(d.ws)/10^3;
+%     d.PRO  = system.PROeff_elec(d.ws)/10^3;
     d.PRI = system.PRIeff_elec(d.ws)/10^3; %[kW]
 
     for i=1:length(d.t1a_inst)
         d.P1a_inst(i) = d.PRO(1)/d.t1a_inst(end)*d.t1a_inst(i);
     end
     for i=1:length(d.tROeff_inst)
-%         d.PROeff_inst(i) = d.PRO(i);
-        d.PROeff_inst(i) = d.PRO;
+        d.PROeff_inst(i) = d.PRO(i);
+%         d.PROeff_inst(i) = d.PRO;
     end
     for i=1:length(d.t1b_inst)
         d.P1b_inst(i) = -d.PRO(end)/(d.t1b_inst(end)-d.t1b_inst(1))*(d.t1b_inst(i)-d.t1b_inst(1))+d.PRO(end);

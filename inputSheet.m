@@ -12,9 +12,10 @@ inputs.massOverride   = 0;
 inputs.kiteMass       = 400; %[kg]
 
 inputs.Tmax              = 300; %[kN]
-inputs.F_Tmax            = 0.90;
-inputs.F_teLength        = 1.2;
-inputs.minGroundClear    = 75; % [m]
+inputs.F_Tmax            = 1.0; % 0.8 for gust margin
+inputs.F_teLength        = 1; %1.2
+inputs.maxTeLen          = 1500;
+inputs.minGroundClear    = 50; % [m]
 inputs.Te_matStrength    = 7e8;
 inputs.Te_matDensity     = 980; %[kg/m^3] 
 

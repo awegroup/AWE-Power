@@ -13,7 +13,8 @@ inputs.kiteMass       = 100; %[kg]
 
 inputs.Tmax              = 42; %[kN]
 inputs.F_Tmax            = 0.80;
-inputs.F_teLength        = 1.2;
+inputs.maxTeLen          = 1200;
+inputs.F_teLength        = 1; % 1.2
 inputs.minGroundClear    = 75; % [m]
 inputs.Te_matStrength    = 7e8;
 inputs.Te_matDensity     = 980; %[kg/m^3] 
@@ -27,7 +28,7 @@ inputs.CD_te          = 1.2;
 
 % inputs.avgPattEle     = 22*pi()/180; % [rad] 
 % inputs.pattAngRadius  = 12*pi()/180; % [rad] 
-inputs.maxRollAngle   = 20*pi()/180; % [rad] 
+%inputs.maxRollAngle   = 20*pi()/180; % [rad] 
 inputs.maxVRI         = 5;
 inputs.maxAcc         = 20;
 
@@ -35,6 +36,7 @@ inputs.etaGearbox     = 0.95;
 inputs.etaSto         = 0.95;
 inputs.etaPE          = 0.98; % Power electronics
 
+inputs.targetPRO_elec = 0;
 inputs.F_peakElecP    = 2.5;
 inputs.gravity        = 9.81;
 inputs.airDensity     = 1.225; %[kg/m^3]  
