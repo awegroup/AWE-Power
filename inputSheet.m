@@ -10,10 +10,11 @@ inputs.AR             = 12;
 inputs.P_ratedElec    = 1000*1000; %[W]
 inputs.massOverride   = 0;
 inputs.kiteMass       = 400; %[kg]
+inputs.F_peakM2Ecyc   = 2.5;
 
 inputs.Tmax              = 300; %[kN]
 inputs.F_Tmax            = 1.0; % 0.8 for gust margin
-inputs.F_teLength        = 1; %1.2
+inputs.F_minTeLen        = 1; %1.2
 inputs.maxTeLen          = 1500;
 inputs.minGroundClear    = 50; % [m]
 inputs.Te_matStrength    = 7e8;
@@ -37,6 +38,5 @@ inputs.etaSto         = 0.95;
 inputs.etaPE          = 0.98; % Power electronics
 
 inputs.targetPRO_elec = 0;
-inputs.F_peakElecP    = 2.5;
 inputs.gravity        = 9.81;
 inputs.airDensity     = 1.225; %[kg/m^3]  

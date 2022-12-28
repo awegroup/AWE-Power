@@ -10,22 +10,19 @@ function [c, ceq] = constraints(i,inputs)
   % Capping for requested electrical rated power
   c(2)   = outputs.P_cycleElec(i) - inputs.P_ratedElec; 
   
-  % Unphysical turn radius
-  c(3)   = outputs.wingSpan/2 - outputs.pattRadius(i);
-  
-  % Avg. patt. elevation > patt. angular radius
-  c(4)   = outputs.pattAngRadius(i) - outputs.avgPattEle(i);
+  % Peak mech to cycle elec ratio
+  c(3) = outputs.PRO_mech(i) - inputs.F_peakM2Ecyc*inputs.P_ratedElec;
   
   % Tether length limit
-  c(5) = outputs.L_teMax(i) - inputs.maxTeLen; 
+  c(4) = outputs.L_teMax(i) - inputs.maxTeLen; 
   
-  % Min number of patterns
-   c(6) = 0.5 - outputs.numOfPatt(i);
+  % Min number of patterns to get into transition 
+  c(5) = 0.8 - outputs.numOfPatt(i);
+  
   
   %% Equality constraints
   
-  % Consistency in roll angles due to centrifugal and gravity effects
-%   ceq(1)    = outputs.rollAngleC(i) - outputs.rollAngleG(i);
+  % Algorithm requires an argument        
   ceq(1)    = 0;
   
   % Only used in second iter of optimisation when capping max. electrical power

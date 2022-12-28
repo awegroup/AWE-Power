@@ -9,30 +9,30 @@ inputSheet_AP3;
 
 %% Optimise operation for every wind speed: Uncapped electrical power
 %      [deltaL, VRI, CL, avgPattEle, pattAngRadius, pattRadius]
-x0      = [100, 30, 1.5, deg2rad(20),deg2rad(12),200]; % 
+x0      = [100, 5, 1.5, deg2rad(20),deg2rad(12),200]; % 
 for i=1:length(inputs.Vw)
   % Output of previous wind speed as input to next wind speed
   x_init = x0;  
 %  x_init    = [100, 15, 1.5, deg2rad(20),deg2rad(12),100]; % 
   x0     = x_init./x_init;
-  lb     = [20, 5, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),20]./x_init; % 
+  lb     = [20, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),sqrt(inputs.AR*inputs.WA)/2]./x_init; % 
   ub     = [500, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),500]./x_init; % 
   options                           = optimoptions('fmincon');
   options.Display                   = 'iter-detailed';
   options.Algorithm                 = 'sqp';
   options.FiniteDifferenceType      = 'central';
 %   options.FiniteDifferenceStepSize  = [1e-3 1e-3 1e-6 1e-7 1e-7 1e-3];
-  options.FiniteDifferenceStepSize  = 1e-7;
+  options.FiniteDifferenceStepSize  = 1e-6;
   options.OptimalityTolerance       = 1e-12;
-%   options.StepTolerance             = 1e-12;
-  options.MaxFunctionEvaluations    = 5000*numel(x_init);
-  options.MaxIterations             = 1000*numel(x_init);
+  options.StepTolerance             = 1e-6;
+%   options.MaxFunctionEvaluations    = 5000*numel(x_init);
+%   options.MaxIterations             = 1000*numel(x_init);
 %   options.ConstraintTolerance      = 1e-3;
 %   options.FunctionTolerance        = 1e-9;
 %   options.DiffMaxChange            = 1e-1;
 %   options.DiffMinChange            = 0;
 %   options.OutputFcn                = @O_outfun;
-%   options.PlotFcns                 = {@optimplotfval, @optimplotx, @optimplotfirstorderopt,...
+%    options.PlotFcns                 = {@optimplotfval, @optimplotx, @optimplotfirstorderopt,...
 %                                @optimplotconstrviolation, @optimplotfunccount, @optimplotstepsize};
   con = @(x) constraints(i,inputs);
   
@@ -44,7 +44,7 @@ for i=1:length(inputs.Vw)
    
    % Changing initial guess if previous wind speed evaluation is infeasible
    if outputs.P_cycleElec(i) <= 0
-       x0 = [100, 15, 1.5, deg2rad(20),deg2rad(12),200]; % 
+       x0 = [100, 5, 1.5, deg2rad(20),deg2rad(12),200]; % 
    end  
 end
 
@@ -82,18 +82,15 @@ Vw = inputs.Vw;
 % The velocity of the kite cannot be negative while flying patterns
 temp1         = Vw((outputs.VRO-outputs.VRO_osciAmp)>0);
 % Positive cycle power
-temp2         = Vw(outputs.P_cycleElec > 0.1);
+temp2         = Vw(outputs.P_cycleElec > 0);
 system.cutIn = max(temp1(1), temp2(1));
 % system.cutIn = max(temp2(1));
 
-%% Rated wind speed and power
-temp = find((inputs.P_ratedElec - outputs.P_cycleElec)<0.01);
-if isempty(temp)
-  system.ratedWind  = Vw(outputs.P_cycleElec == max(outputs.P_cycleElec));
-else
-  system.ratedWind  = Vw(temp(1));
-end
-system.ratedPower = max(outputs.P_cycleElec);
+%% Rated wind and power
+temp3 = round(outputs.P_cycleElec./max(outputs.P_cycleElec),2);
+temp4 = Vw(temp3==1);
+system.ratedWind  = temp4(1);
+system.ratedPower = outputs.P_cycleElec(system.ratedWind);
 
 %% System data
 system.VRO_osci         = zeros(length(Vw),length(outputs.VRO_osci(1,:)));
@@ -102,7 +99,7 @@ system.PROeff_elec_osci = zeros(length(Vw),length(outputs.VRO_osci(1,:)));
 system.numPattParts     = outputs.numPattParts;
 system.D_te         = outputs.D_te;
 for i=1:length(Vw)
-    if Vw(i)>system.cutIn
+    if Vw(i)>=system.cutIn
         system.PRO1_mech(i)    = outputs.PRO1_mech(i);
         system.PRI2_mech(i)    = outputs.PRI2_mech(i); 
         system.PROeff_mech(i)  = outputs.PROeff_mech(i);
@@ -161,32 +158,32 @@ end
 %% Plots
 
 %% Plot oscillating VRO and PRO_mech
-i = [7,12,18, 24];
-d.series1 = system.PROeff_elec_osci(i(1),:)/10^3;  
-d.series2 = system.PROeff_elec_osci(i(2),:)/10^3; 
-d.series3 = system.PROeff_elec_osci(i(3),:)/10^3; 
-d.series4 = system.PROeff_elec_osci(i(4),:)/10^3; 
-
-figure('units','inch','Position', [4 4 3.5 2.2])
-hold on
-grid on
-box on
-plot(d.series1,'linewidth',1.2);
-plot(d.series2,'linewidth',1.2);
-plot(d.series3,'linewidth',1.2);
-plot(d.series4,'linewidth',1.2);
-ylabel('Electrical capped power (kW)');
-%ylim([30 100]);
-legend(strcat(num2str(i(1)),'m/s'),strcat(num2str(i(2)),'m/s'),strcat(num2str(i(3)),'m/s'),strcat(num2str(i(4)),'m/s'),'location','southeast');
-xlabel('Positions in a single pattern');
-%xlim([0 25]);
-hold off
+% i = [7,12,18, 24];
+% d.series1 = system.PROeff_elec_osci(i(1),:)/10^3;  
+% d.series2 = system.PROeff_elec_osci(i(2),:)/10^3; 
+% d.series3 = system.PROeff_elec_osci(i(3),:)/10^3; 
+% d.series4 = system.PROeff_elec_osci(i(4),:)/10^3; 
+% 
+% figure('units','inch','Position', [4 4 3.5 2.2])
+% hold on
+% grid on
+% box on
+% plot(d.series1,'linewidth',1.2);
+% plot(d.series2,'linewidth',1.2);
+% plot(d.series3,'linewidth',1.2);
+% plot(d.series4,'linewidth',1.2);
+% ylabel('Electrical capped power (kW)');
+% %ylim([30 100]);
+% legend(strcat(num2str(i(1)),'m/s'),strcat(num2str(i(2)),'m/s'),strcat(num2str(i(3)),'m/s'),strcat(num2str(i(4)),'m/s'),'location','southeast');
+% xlabel('Positions in a single pattern');
+% %xlim([0 25]);
+% hold off
 
 %% Cycle timeseries plots, Check reel-in representation: Time and power in each regime should add to total reel-in energy
 windSpeeds = [system.ratedWind];
 for i = windSpeeds
   tmax = round(max(system.tCycle(windSpeeds)));
-  pmax = 1.2*inputs.F_peakElecP*max(system.Pcycle_elec(windSpeeds))/10^3;
+  pmax = 1.2*inputs.F_peakM2Ecyc*max(system.Pcycle_elec(windSpeeds))/10^3;
 %   pmax = 1.5*max(system.Pcycle_elec(windSpeeds))/10^3;
   pmin = min(-system.PRIeff_elec(windSpeeds))/10^3;
   
@@ -305,52 +302,52 @@ xlim([0 25]);
 hold off
 
 % Power plots
-figure('units','inch','Position', [4 4 3.5 2.2])
-hold on
-grid on
-box on
-plot(Vw, system.PRO_mech./10^3,'-','linewidth',1.2);
-plot(Vw, system.PRO_elec./10^3,'-','linewidth',1.2);
-plot(Vw, system.Pcycle_elec./10^3,'-','linewidth',1.2);
-ylabel('Power (kW)');
-legend('PRO mech','PRO elec','Pcycle elec','location','northwest');
-% legend('Cycle electrical power at grid','location','northwest');
-xlabel('Wind speed at avg. pattern altitude (m/s)');
-xlim([0 25]);
-%ylim([0 160]);
-hold off
+% figure('units','inch','Position', [4 4 3.5 2.2])
+% hold on
+% grid on
+% box on
+% plot(Vw, system.PRO_mech./10^3,'-','linewidth',1.2);
+% plot(Vw, system.PRO_elec./10^3,'-','linewidth',1.2);
+% plot(Vw, system.Pcycle_elec./10^3,'-','linewidth',1.2);
+% ylabel('Power (kW)');
+% legend('PRO mech','PRO elec','Pcycle elec','location','northwest');
+% % legend('Cycle electrical power at grid','location','northwest');
+% xlabel('Wind speed at avg. pattern altitude (m/s)');
+% xlim([0 25]);
+% %ylim([0 160]);
+% hold off
 
 
 %% Power curve comparison plot
-% Loyd
-CL_loyd = inputs.CL_maxAirfoil*inputs.F_CLeff;
-CD_loyd = inputs.CD0 + (CL_loyd-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
-for i = 1:length(Vw)
-    P_Loyd(i) = (4/27)*(CL_loyd^3/CD_loyd^2)*(1/2)*inputs.airDensity*inputs.WA*(Vw(i)^3);
-    if P_Loyd(i)>system.ratedPower
-        P_Loyd(i) = system.ratedPower;
-    end 
-end
-% AP3 6DoF simulation results
-AP3.PC.ws    = [7.32E+00, 8.02E+00, 9.05E+00, 1.00E+01, 1.10E+01, 1.20E+01, ...
-  1.30E+01, 1.41E+01, 1.50E+01, 1.60E+01, 1.70E+01, 1.80E+01, 1.90E+01]; %[m/s]
-AP3.PC.power = [0.00E+00, 7.01E+03, 2.37E+04, 4.31E+04, 6.47E+04, 8.46E+04, ...
-  1.02E+05, 1.20E+05, 1.34E+05, 1.49E+05, 1.50E+05, 1.50E+05, 1.50E+05]./10^3; %[kW]
-
-figure('units','inch','Position', [4 4 3.5 2.2])
-hold on
-grid on
-box on
-plot(Vw, P_Loyd./10^3,'linewidth',1.5);
-plot(Vw, system.Pcycle_elec./10^3,'linewidth',1.5);
-plot(AP3.PC.ws, AP3.PC.power,'k^--','MarkerSize',4);
-legend('Loyd - Ideal','Model results','6DOF simulation','location','southeast');
-% legend('Loyd - Ideal','Model results','location','southeast');
-xlabel('Wind speed at avg. pattern altitude (m/s)');
-ylabel('Power (kW)');
-xlim([0 25]);
-%ylim([0 160]);
-hold off
+% % Loyd
+% CL_loyd = inputs.CL_maxAirfoil*inputs.F_CLeff;
+% CD_loyd = inputs.CD0 + (CL_loyd-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
+% for i = 1:length(Vw)
+%     P_Loyd(i) = (4/27)*(CL_loyd^3/CD_loyd^2)*(1/2)*inputs.airDensity*inputs.WA*(Vw(i)^3);
+%     if P_Loyd(i)>system.ratedPower
+%         P_Loyd(i) = system.ratedPower;
+%     end 
+% end
+% % AP3 6DoF simulation results
+% AP3.PC.ws    = [7.32E+00, 8.02E+00, 9.05E+00, 1.00E+01, 1.10E+01, 1.20E+01, ...
+%   1.30E+01, 1.41E+01, 1.50E+01, 1.60E+01, 1.70E+01, 1.80E+01, 1.90E+01]; %[m/s]
+% AP3.PC.power = [0.00E+00, 7.01E+03, 2.37E+04, 4.31E+04, 6.47E+04, 8.46E+04, ...
+%   1.02E+05, 1.20E+05, 1.34E+05, 1.49E+05, 1.50E+05, 1.50E+05, 1.50E+05]./10^3; %[kW]
+% 
+% figure('units','inch','Position', [4 4 3.5 2.2])
+% hold on
+% grid on
+% box on
+% plot(Vw, P_Loyd./10^3,'linewidth',1.5);
+% plot(Vw, system.Pcycle_elec./10^3,'linewidth',1.5);
+% plot(AP3.PC.ws, AP3.PC.power,'k^--','MarkerSize',4);
+% legend('Loyd - Ideal','Model results','6DOF simulation','location','southeast');
+% % legend('Loyd - Ideal','Model results','location','southeast');
+% xlabel('Wind speed at avg. pattern altitude (m/s)');
+% ylabel('Power (kW)');
+% xlim([0 25]);
+% %ylim([0 160]);
+% hold off
 
 %% 
 % hold on

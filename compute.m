@@ -20,7 +20,7 @@ function [inputs] = compute(i,inputs)
     %outputs.pattRadius(i)      = outputs.m_kite*cos(outputs.pattAngRadius(i))/...
                             %     (0.5*inputs.airDensity*inputs.WA*outputs.CL(i)*sin(outputs.maxRollAngle(i)));
     outputs.sweptArea(i)       = pi()*((outputs.pattRadius(i)+outputs.wingSpan/2)^2 - (outputs.pattRadius(i)-outputs.wingSpan/2)^2); 
-    outputs.L_teMin(i)         = outputs.pattRadius(i)/sin(outputs.pattAngRadius(i))*inputs.F_teLength;
+    outputs.L_teMin(i)         = outputs.pattRadius(i)/sin(outputs.pattAngRadius(i))*inputs.F_minTeLen;
     outputs.pattStartGrClr(i)  = outputs.L_teMin(i)*sin(outputs.avgPattEle(i)-outputs.pattAngRadius(i));
     outputs.H_minPatt(i)       = outputs.L_teMin(i)*cos(outputs.pattAngRadius(i))*sin(outputs.avgPattEle(i));
     outputs.L_teMax(i)         = outputs.L_teMin(i)+outputs.deltaL(i); 
@@ -107,7 +107,7 @@ function [inputs] = compute(i,inputs)
       RPM_max = max(inputs.maxVRI,25); % 25 =  Possible maximum reel-out speed
       outputs.genEff_RO(i,j)        = (a*(outputs.VRO_osci(i,j)/RPM_max)^3+b*(outputs.VRO_osci(i,j)/RPM_max)^2+c*(outputs.VRO_osci(i,j)/RPM_max)+d)^sign(1);
       outputs.PROeff_elec_osci(i,j) = outputs.PROeff_mech_osci(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE;
-      outputs.PROeff_elec_osci_cap(i,j) = min(inputs.F_peakElecP*inputs.P_ratedElec,...
+      outputs.PROeff_elec_osci_cap(i,j) = min(inputs.F_peakM2Ecyc*inputs.P_ratedElec,...
                                      outputs.PROeff_mech_osci(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE);
     end
     
@@ -135,7 +135,7 @@ function [inputs] = compute(i,inputs)
     outputs.PRO_mech(i) = (outputs.PROeff_mech(i)* outputs.tROeff(i) + outputs.PRO1_mech(i)*outputs.t1(i))/outputs.tRO(i);
     outputs.PRO_elec(i) = (outputs.PROeff_elec(i)* outputs.tROeff(i) + outputs.PRO1_elec(i)*outputs.t1(i))/outputs.tRO(i);
     if outputs.VRO(i)<0
-      outputs.PRO_mech(i) = 0;
+      outputs.PRO_mech(i) = 1e-9;
     end
     
     % PRI effective mech
