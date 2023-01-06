@@ -14,7 +14,7 @@ inputs.F_peakM2Ecyc   = 2.5;
 
 inputs.Tmax              = 42; %[kN]
 inputs.F_Tmax            = 1; % 0.8 for gust margin
-inputs.maxTeLen          = 1200;
+inputs.maxTeLen          = 1000;
 inputs.F_minTeLen        = 1; % 1.2
 inputs.minGroundClear    = 75; % [m]
 inputs.Te_matStrength    = 7e8;
@@ -25,12 +25,12 @@ inputs.F_CLeff        = 0.7; % 0.8
 inputs.CL0_airfoil    = 0.65;
 inputs.e              = 0.6; %0.6
 inputs.CD0            = 0.056;
-inputs.CD_te          = 1.2;
+inputs.CD_te          = 1.1; %1.1
 
 % inputs.avgPattEle     = 22*pi()/180; % [rad] 
 % inputs.pattAngRadius  = 12*pi()/180; % [rad] 
 % inputs.maxRollAngle   = 18*pi()/180; % [rad] 
-inputs.maxVRI         = 20;
+inputs.maxVRI         = 30;
 inputs.maxAcc         = 20;
 
 inputs.etaGearbox     = 0.9;

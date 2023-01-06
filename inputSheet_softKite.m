@@ -7,9 +7,10 @@ inputs                = struct();
 inputs.Vw             = 1:1:25; %[m/s]
 inputs.WA             = 100;
 inputs.AR             = 15;
-inputs.P_ratedElec    = 100*1000; %[W]
+inputs.P_ratedElec    = 70*1000; %[W]
 inputs.massOverride   = 1;
-inputs.kiteMass       = 100; %[kg]
+inputs.kiteMass       = 500; %[kg]
+inputs.F_peakM2Ecyc   = 2.5;
 
 inputs.Tmax              = 42; %[kN]
 inputs.F_Tmax            = 0.80;
@@ -37,6 +38,5 @@ inputs.etaSto         = 0.95;
 inputs.etaPE          = 0.98; % Power electronics
 
 inputs.targetPRO_elec = 0;
-inputs.F_peakElecP    = 2.5;
 inputs.gravity        = 9.81;
 inputs.airDensity     = 1.225; %[kg/m^3]  

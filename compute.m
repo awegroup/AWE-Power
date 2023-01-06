@@ -26,7 +26,7 @@ function [inputs] = compute(i,inputs)
     outputs.L_teMax(i)         = outputs.L_teMin(i)+outputs.deltaL(i); 
     outputs.L_teAvg(i)         = (outputs.L_teMax(i)+outputs.L_teMin(i))/2; %[m]
     outputs.H_avgPatt(i)       = outputs.L_teAvg(i)*cos(outputs.pattAngRadius(i))*sin(outputs.avgPattEle(i));
-    outputs.D_te               = sqrt(inputs.Tmax*1000/inputs.Te_matStrength*4/pi()); %[m] *1.1 as safety factor
+    outputs.D_te               = sqrt(inputs.Tmax*1000/inputs.Te_matStrength*4/pi()); %[m] safety factor could be added (say *1.1)
     
     %% Effective mass (Kite + tether)
     outputs.m_te(i)  = inputs.Te_matDensity*pi()/4*outputs.D_te^2*outputs.L_teAvg(i); % Could add (say 0.85) as safety factor on material density
@@ -104,8 +104,8 @@ function [inputs] = compute(i,inputs)
       b = -1.4141;
       c = 0.9747;
       d = 0.7233;
-      RPM_max = max(inputs.maxVRI,25); % 25 =  Possible maximum reel-out speed
-      outputs.genEff_RO(i,j)        = (a*(outputs.VRO_osci(i,j)/RPM_max)^3+b*(outputs.VRO_osci(i,j)/RPM_max)^2+c*(outputs.VRO_osci(i,j)/RPM_max)+d)^sign(1);
+      V_maxGen = max(inputs.maxVRI,25); % 25 =  Possible maximum reel-out speed
+      outputs.genEff_RO(i,j)        = (a*(outputs.VRO_osci(i,j)/V_maxGen)^3+b*(outputs.VRO_osci(i,j)/V_maxGen)^2+c*(outputs.VRO_osci(i,j)/V_maxGen)+d)^sign(1);
       outputs.PROeff_elec_osci(i,j) = outputs.PROeff_mech_osci(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE;
       outputs.PROeff_elec_osci_cap(i,j) = min(inputs.F_peakM2Ecyc*inputs.P_ratedElec,...
                                      outputs.PROeff_mech_osci(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE);
@@ -139,13 +139,19 @@ function [inputs] = compute(i,inputs)
     end
     
     % PRI effective mech
-    outputs.VA_RI(i)      = inputs.Vw(i)*cos(outputs.avgPattEle(i))+outputs.VRI(i);
+    outputs.VA_RI1(i)      = inputs.Vw(i)*cos(outputs.avgPattEle(i))+outputs.VRI(i);
+    outputs.VA_RI(i)      = sqrt(inputs.Vw(i)^2 +outputs.VRI(i)^2 +2*inputs.Vw(i)*outputs.VRI(i)*cos(outputs.avgPattEle(i)));
     outputs.CL_RI(i)       = 2*outputs.W(i)/(outputs.rho_air(i)*outputs.VA_RI(i)^2*inputs.WA);
     outputs.CD_RI(i)       = inputs.CD0+(outputs.CL_RI(i)- inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
     outputs.PRIeff_mech(i) = 0.5*outputs.rho_air(i)*outputs.CD_RI(i)*inputs.WA*outputs.VA_RI(i)^3;
     
     % Generator efficiency during RI: As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
-    outputs.genEff_RI(i)   = outputs.genEff_RO(i);
+    a = 0.671;
+    b = -1.4141;
+    c = 0.9747;
+    d = 0.7233;
+    %RPM_max = max(inputs.maxVRI,25); % 25 =  Possible maximum reel-out speed
+    outputs.genEff_RI(i)        = (a*(outputs.VRI(i)/V_maxGen)^3+b*(outputs.VRI(i)/V_maxGen)^2+c*(outputs.VRI(i)/V_maxGen)+d)^sign(1);
       
     % PRI effective elec
     outputs.PRIeff_elec(i) = outputs.PRIeff_mech(i)/inputs.etaGearbox/inputs.etaSto/outputs.genEff_RI(i)/inputs.etaPE;

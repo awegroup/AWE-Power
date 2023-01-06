@@ -25,7 +25,7 @@ inputs.F_CLeff        = 0.8; % 0.8
 inputs.CL0_airfoil    = 0.65;
 inputs.e              = 0.6;
 inputs.CD0            = 0.056;
-inputs.CD_te          = 1.2;
+inputs.CD_te          = 1.1; %1.2
 
 % inputs.avgPattEle     = 22*pi()/180; % [rad] 
 % inputs.pattAngRadius  = 12*pi()/180; % [rad] 

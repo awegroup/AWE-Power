@@ -5,19 +5,19 @@ function [c, ceq] = constraints(i,inputs)
   %% Inequality constraints
   
   % Min clearance between ground and bottom point of pattern
-  c(1)   = inputs.minGroundClear - outputs.pattStartGrClr(i);
+  c(1)   = (inputs.minGroundClear - outputs.pattStartGrClr(i))/inputs.minGroundClear;
   
   % Capping for requested electrical rated power
-  c(2)   = outputs.P_cycleElec(i) - inputs.P_ratedElec; 
+  c(2)   = (outputs.P_cycleElec(i) - inputs.P_ratedElec)/inputs.P_ratedElec; 
   
   % Peak mech to cycle elec ratio
-  c(3) = outputs.PRO_mech(i) - inputs.F_peakM2Ecyc*inputs.P_ratedElec;
+  c(3) = (outputs.PRO_mech(i) - inputs.F_peakM2Ecyc*inputs.P_ratedElec)/(inputs.F_peakM2Ecyc*inputs.P_ratedElec);
   
   % Tether length limit
-  c(4) = outputs.L_teMax(i) - inputs.maxTeLen; 
+  c(4) = (outputs.L_teMax(i) - inputs.maxTeLen)/inputs.maxTeLen; 
   
   % Min number of patterns to get into transition 
-  c(5) = 0.8 - outputs.numOfPatt(i);
+  c(5) = (1 - outputs.numOfPatt(i))/2;
   
   
   %% Equality constraints

@@ -9,7 +9,7 @@ inputSheet_AP3;
 
 %% Optimise operation for every wind speed: Uncapped electrical power
 %      [deltaL, VRI, CL, avgPattEle, pattAngRadius, pattRadius]
-x0      = [100, 5, 1.5, deg2rad(20),deg2rad(12),200]; % 
+x0      = [100, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
 for i=1:length(inputs.Vw)
   % Output of previous wind speed as input to next wind speed
   x_init = x0;  
@@ -21,12 +21,12 @@ for i=1:length(inputs.Vw)
   options.Display                   = 'iter-detailed';
   options.Algorithm                 = 'sqp';
   options.FiniteDifferenceType      = 'central';
-%   options.FiniteDifferenceStepSize  = [1e-3 1e-3 1e-6 1e-7 1e-7 1e-3];
+  %options.FiniteDifferenceStepSize  = [1e-3 1e-3 1e-6 1e-7 1e-7 1e-3];
   options.FiniteDifferenceStepSize  = 1e-6;
   options.OptimalityTolerance       = 1e-12;
   options.StepTolerance             = 1e-6;
-%   options.MaxFunctionEvaluations    = 5000*numel(x_init);
-%   options.MaxIterations             = 1000*numel(x_init);
+  options.MaxFunctionEvaluations    = 5000*numel(x_init);
+  options.MaxIterations             = 1000*numel(x_init);
 %   options.ConstraintTolerance      = 1e-3;
 %   options.FunctionTolerance        = 1e-9;
 %   options.DiffMaxChange            = 1e-1;
