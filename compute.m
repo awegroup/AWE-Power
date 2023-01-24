@@ -6,13 +6,29 @@ function [inputs] = compute(i,inputs)
       outputs.m_kite = inputs.kiteMass;
     else
       %Vincent's simple mass model
-      a = 1.747e-2;
-      b = 3.84518;
-      k1 = 5;
-      c = 0.46608;
-      d = 0.65962;
-      k2 =1.1935;
-      outputs.m_kite = 10*(a*inputs.WA^2 +b*inputs.WA-k1)*(c*(inputs.AR/12)^2-d*(inputs.AR/12)+k2); 
+%       a = 1.747e-2;
+%       b = 3.84518;
+%       k1 = 5;
+%       c = 0.46608;
+%       d = 0.65962;
+%       k2 =1.1935;
+%       outputs.m_kite = 10*(a*inputs.WA^2 +b*inputs.WA-k1)*(c*(inputs.AR/12)^2-d*(inputs.AR/12)+k2); 
+      
+      a1     = 0.002415;
+      a2     = 0.0090239;
+      b1     = 0.17025;
+      b2     = 3.2493;
+      k1     = 5;
+      c1     = 0.46608;
+      d1     = 0.65962;
+      k2     = 1.1935;
+      AR_ref = 12;
+      
+      a = a1*(inputs.Tmax/inputs.WA) + a2;
+      b = b1*(inputs.Tmax/inputs.WA) + b2;
+      
+      outputs.m_kite = 10*(a*inputs.WA^2 +b*inputs.WA-k1)*(c1*(inputs.AR/AR_ref)^2-d1*(inputs.AR/AR_ref)+k2); 
+      
     end
     
     %% Minimum Tether length and minimum patt. radius - Centrifugal force balance - no gravity
@@ -37,7 +53,16 @@ function [inputs] = compute(i,inputs)
     outputs.CD_tether(i) = (1/4)*inputs.CD_te*outputs.D_te*outputs.L_teAvg(i)/inputs.WA;
     outputs.CD(i)        = outputs.CD_kite(i) + outputs.CD_tether(i);
 
-    %% Air density as a function of average pattern altitude
+    %% Pattern avg. mech reel-out power considering vertical wind shear
+    
+%   function [intermRes] = pattAvgPROmech(i, inputs)
+%     
+%     
+%   end
+    
+   % u(ind) = u_60 .* (z(ind)./60).^alpha;
+    
+    % Air density as a function of height
     % Ref: https://en.wikipedia.org/wiki/Density_of_air
     M = 0.0289644; % [kg/mol]
     R = 8.3144598; % [N·m/(mol·K)]
@@ -45,75 +70,47 @@ function [inputs] = compute(i,inputs)
     L = 0.0065; %[Kelvin/m] 
     outputs.rho_air(i) = inputs.airDensity*(1-L*(5+outputs.H_avgPatt(i))/T)^(inputs.gravity*M/R/L-1); % +5 is for approx. platform height
     
-    %% Roll angle calculation base on new mass, airdensity and pattern radius
-    outputs.rollAngleC(i) = asin(outputs.m_eff(i)*cos(outputs.pattAngRadius(i))/...
+    % Roll angle calculation base on new mass, airdensity and pattern radius
+    outputs.avgRollAngle(i) = asin(outputs.m_eff(i)*cos(outputs.pattAngRadius(i))/...
                             (0.5*outputs.rho_air(i)*inputs.WA*outputs.CL(i)*outputs.pattRadius(i)));
     
-    %% Tether tension, sinkrate, reel-out speed 
+    % Tether tension, sinkrate, reel-out speed, PRO_mech 
     
     outputs.Tmax_act = inputs.Tmax*inputs.F_Tmax*1000; %[N]
     outputs.W(i)     = outputs.m_eff(i)*inputs.gravity;
 
     % Tether tension: Reduction in lift due to roll
-    outputs.T(i)   = min(outputs.Tmax_act, (4/9)*(outputs.CL(i)*cos(outputs.rollAngleC(i)))^3/outputs.CD(i)^2*(1/2)*outputs.rho_air(i)*...
+    outputs.T(i)   = min(outputs.Tmax_act, (4/9)*(outputs.CL(i)*cos(outputs.avgRollAngle(i)))^3/outputs.CD(i)^2*(1/2)*outputs.rho_air(i)*...
                       inputs.WA*(inputs.Vw(i)*cos(outputs.avgPattEle(i)))^2);
     
     % Sink rate: Effect of gravity
-    % Equilibrium force for Aerodynamic resultant
-    outputs.J(i)   = sqrt(outputs.T(i)^2 + outputs.W(i)^2 + 2*outputs.T(i)*outputs.W(i)*sin(outputs.avgPattEle(i)));    
-    
-    % Cycle representative roll angle for effect of gravity
-    % is in other direction than that of from centrifugal force balance
-    outputs.rollAngleG(i)   = asin(outputs.W(i)*cos(outputs.avgPattEle(i))/outputs.J(i));
-    outputs.VSR(i)          = outputs.CD(i)/(outputs.CL(i)*cos(outputs.rollAngleC(i)))^(3/2)*...
-                                (outputs.T(i)+outputs.W(i)*sin(outputs.avgPattEle(i)))/sqrt(0.5*outputs.rho_air(i)*inputs.WA*outputs.J(i));
-              
-    % Avg roll angle is from centrifugal force balance
-    outputs.avgRollAngle(i) = outputs.rollAngleC(i);
+    outputs.J(i)   = sqrt(outputs.T(i)^2 + outputs.W(i)^2 + 2*outputs.T(i)*outputs.W(i)*sin(outputs.avgPattEle(i))); % Equilibrium force for Aerodynamic resultant
+    outputs.VSR(i) = outputs.CD(i)/(outputs.CL(i)*cos(outputs.avgRollAngle(i)))^(3/2)*...
+                         (outputs.T(i)+outputs.W(i)*sin(outputs.avgPattEle(i)))/sqrt(0.5*outputs.rho_air(i)*inputs.WA*outputs.J(i));
          
     % VRO
     outputs.VRO(i) = inputs.Vw(i)*cos(outputs.avgPattEle(i))-outputs.VSR(i);
-    
-    % Reel-out factor
-    outputs.reelOutF(i) = outputs.VRO(i)/inputs.Vw(i);
-   
-    % Airspeed and tangential speed
-     lambda        = 0.5*outputs.rho_air(i)*inputs.WA*outputs.CL(i);
-     delta         = 0.5*outputs.rho_air(i)*inputs.WA*outputs.CD(i);
-     a             = sqrt((lambda^2+delta^2))/outputs.J(i);
-     outputs.VA(i) = 1/sqrt(a); % Apparent speed [m/s];
-     outputs.VC(i) = sqrt(outputs.VA(i)^2 - outputs.VSR(i)^2);
      
-   %% Reel-out speed osci due to gravity. 
-   
-   % MK theory of SR oscillation
-   outputs.T_simple(i)   = min(outputs.Tmax_act, (4/9)*outputs.CL(i)^3/outputs.CD(i)^2*(1/2)*outputs.rho_air(i)*...
-                            inputs.WA*inputs.Vw(i)^2);
-  outputs.VSR_simple(i)  = outputs.CD(i)/outputs.CL(i)^(3/2)*sqrt(outputs.T_simple(i)/0.5*outputs.rho_air(i)*inputs.WA);
-     a_simple = sqrt((lambda^2+delta^2)/(outputs.T_simple(i)^2+outputs.W(i)^2));
-     VA_simple = 1/sqrt(a_simple);
-    VSR_down = VA_simple*a_simple*(lambda*outputs.T_simple(i)-delta*outputs.W(i))/(lambda^2+delta^2);
-%      outputs.VRO_osciAmp(i) = abs(VSR_down - VA_simple);
-     outputs.VRO_osciAmp(i) = 0;
-     outputs.numPattParts           = 31;
-    for j=1:outputs.numPattParts
-      outputs.VRO_osci(i,j)          = outputs.VRO(i) + outputs.VRO_osciAmp(i)*sin((j-1)*2*pi()/(outputs.numPattParts-1));
-      outputs.PROeff_mech_osci(i,j) = outputs.T(i)*outputs.VRO_osci(i,j); %[W]
-      % Generator efficiency. As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
-      a = 0.671;
-      b = -1.4141;
-      c = 0.9747;
-      d = 0.7233;
-      V_maxGen = max(inputs.maxVRI,25); % 25 =  Possible maximum reel-out speed
-      outputs.genEff_RO(i,j)        = (a*(outputs.VRO_osci(i,j)/V_maxGen)^3+b*(outputs.VRO_osci(i,j)/V_maxGen)^2+c*(outputs.VRO_osci(i,j)/V_maxGen)+d)^sign(1);
-      outputs.PROeff_elec_osci(i,j) = outputs.PROeff_mech_osci(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE;
-      outputs.PROeff_elec_osci_cap(i,j) = min(inputs.F_peakM2Ecyc*inputs.P_ratedElec,...
-                                     outputs.PROeff_mech_osci(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE);
-    end
+    % PRO without oscillation theory
+    outputs.PROeff_mech(i) = outputs.T(i)*outputs.VRO(i); %[W]
+    % Generator efficiency. As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
+    a = 0.671;
+    b = -1.4141;
+    c = 0.9747;
+    d = 0.7233;
+    V_maxGen = max(inputs.maxVRI,25); % 25 =  Possible maximum reel-out speed
+    outputs.genEff_RO(i)        = (a*(outputs.VRO(i)/V_maxGen)^3+b*(outputs.VRO(i)/V_maxGen)^2+c*(outputs.VRO(i)/V_maxGen)+d)^sign(1);
     
-    outputs.PROeff_mech(i)     = mean(outputs.PROeff_mech_osci(i,:));
-    outputs.PROeff_elec(i)     = mean(outputs.PROeff_elec_osci(i,:));
-    outputs.PROeff_elec_cap(i) = mean(outputs.PROeff_elec_osci_cap(i,:));
+    
+    %% PRO elec
+    outputs.PROeff_elec(i) = outputs.PROeff_mech(i)*inputs.etaGearbox*outputs.genEff_RO(i)*inputs.etaPE;
+       
+    % Airspeed and tangential speed
+     outputs.lambda(i) = 0.5*outputs.rho_air(i)*inputs.WA*outputs.CL(i);
+     outputs.delta(i)  = 0.5*outputs.rho_air(i)*inputs.WA*outputs.CD(i);
+     outputs.a(i)      = sqrt((outputs.lambda(i)^2+outputs.delta(i)^2))/outputs.J(i);
+     outputs.VA(i) = 1/sqrt(outputs.a(i)); % Apparent speed [m/s];
+     outputs.VC(i) = sqrt(outputs.VA(i)^2 - outputs.VSR(i)^2);
         
     %% Cycle simulation
        
@@ -139,7 +136,9 @@ function [inputs] = compute(i,inputs)
     end
     
     % PRI effective mech
-    outputs.VA_RI1(i)      = inputs.Vw(i)*cos(outputs.avgPattEle(i))+outputs.VRI(i);
+    
+    % UPDATE Vw
+    
     outputs.VA_RI(i)      = sqrt(inputs.Vw(i)^2 +outputs.VRI(i)^2 +2*inputs.Vw(i)*outputs.VRI(i)*cos(outputs.avgPattEle(i)));
     outputs.CL_RI(i)       = 2*outputs.W(i)/(outputs.rho_air(i)*outputs.VA_RI(i)^2*inputs.WA);
     outputs.CD_RI(i)       = inputs.CD0+(outputs.CL_RI(i)- inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
@@ -185,52 +184,38 @@ function [inputs] = compute(i,inputs)
     % Without drivetrain eff
     outputs.P_cycleMech(i) = (outputs.tROeff(i)*outputs.PROeff_mech(i)+outputs.t1(i)*outputs.PRO1_mech(i) - ...
                      outputs.tRIeff(i)*outputs.PRIeff_mech(i)-outputs.t2(i)*outputs.PRI2_mech(i))/outputs.tCycle(i);    
-    
-
-%     %% Coefficient of power (Cp): For comparing with wind turbines
-%     outputs.Cp_reelOut(i) = outputs.PRO_mech(i)/(0.5*outputs.rho_air(i)*outputs.sweptArea(i)*inputs.Vw(i)^3);
-%     % Axial induction factor maximising Cp is a = 0.5 and is independent of reel-out factor
-%     % Ref paper: The Betz limit applied to Airborne Wind Energy, https://doi.org/10.1016/j.renene.2018.04.034
-%     f(i)    = outputs.reelOutF(i);
-%     a_ideal = 0.5;
-%     outputs.Cp_max_ifaIsHalf(i)  = (1-f(i))^2*4*a_ideal*(1-a_ideal)*f(i);
-%     a                            = abs(roots([1 -1 outputs.Cp_reelOut(i)/(4*f(i)*(1-f(i))^2)]));
-%     outputs.axialInductionF(i,1) = a(1);
-%     outputs.axialInductionF(i,2) = a(2);
-%     
-%     % PRO without oscillation theory
-%     outputs.PROeff_mech(i) = outputs.T(i)*outputs.VRO(i); %[W]
-%     % Generator efficiency. As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
-%     a = 0.671;
-%     b = -1.4141;
-%     c = 0.9747;
-%     d = 0.7233;
-%     RPM_max = max(inputs.maxVRI,25); % 25 =  Possible maximum reel-out speed
-%     outputs.genEff_RO(i)        = (a*(outputs.VRO(i)/RPM_max)^3+b*(outputs.VRO(i)/RPM_max)^2+c*(outputs.VRO(i)/RPM_max)+d)^sign(1);
-%     % PRO elec
-%     outputs.PROeff_elec(i) = outputs.PROeff_mech(i)*inputs.etaGearbox*outputs.genEff_RO(i)*inputs.etaPE;
-
-%      % Theory of KE+PE balance
-%      % VC oscillation amplitude
-% %      outputs.VC_osciAmp(i)          = sqrt(outputs.VC(i)^2+2*outputs.pattRadius(i)*inputs.gravity) - outputs.VC(i);
-%      outputs.VC_osciAmp(i)         = 0;     
-%     outputs.numPattParts           = 31;
+ 
+%    %% Reel-out speed osci due to gravity. 
+%    % MK theory of SR oscillation
+%      outputs.T_simple(i)   = min(outputs.Tmax_act, (4/9)*outputs.CL(i)^3/outputs.CD(i)^2*(1/2)*outputs.rho_air(i)*...
+%                             inputs.WA*inputs.Vw(i)^2);
+%     outputs.VSR_simple(i)  = outputs.CD(i)/outputs.CL(i)^(3/2)*sqrt(outputs.T_simple(i)/(0.5*outputs.rho_air(i)*inputs.WA));
+%      outputs.VSR_simple2(i) = outputs.CD(i)/(outputs.CL(i)*cos(outputs.avgRollAngle(i)))^(3/2)*sqrt(outputs.T(i)/(0.5*outputs.rho_air(i)*inputs.WA));
+%      outputs.a_simple(i) = sqrt((outputs.lambda(i)^2+outputs.delta(i)^2)/(outputs.T_simple(i)^2+outputs.W(i)^2));
+%      outputs.VA_simple(i) = 1/sqrt(outputs.a_simple(i));
+%      outputs.s(i) = outputs.a_simple(i)*(outputs.delta(i)*outputs.T_simple(i)-outputs.lambda(i)*outputs.W(i))/(outputs.lambda(i)^2+outputs.delta(i)^2);
+%     outputs.VSR_down(i) = outputs.VA_simple(i)*outputs.s(i);
+%      outputs.VRO_osciAmp1(i) = abs(outputs.VSR_down(i) - outputs.VSR_simple(i));
+%      outputs.VRO_osciAmp2(i) = abs(outputs.VSR(i) - outputs.VSR_simple2(i));
+%      outputs.VRO_osciAmp(i)  = 0;
+%      outputs.numPattParts           = 31;
 %     for j=1:outputs.numPattParts
-%       outputs.VC_osci(i,j)          = outputs.VC(i) + outputs.VC_osciAmp(i)*sin((j-1)*2*pi()/(outputs.numPattParts-1));
-%       outputs.VA_osci(i,j)          = sqrt(outputs.VC_osci(i,j)^2 + outputs.VSR(i)^2); 
-%       outputs.osciFactor(i,j)       = (outputs.VA_osci(i,j)/outputs.VA(i))^2*cos(outputs.avgRollAngle(i));
-%       outputs.VRO_osci(i,j)         = outputs.osciFactor(i,j)*outputs.VRO(i);
+%       outputs.VRO_osci(i,j)          = outputs.VRO(i) + outputs.VRO_osciAmp(i)*sin((j-1)*2*pi()/(outputs.numPattParts-1));      
 %       outputs.PROeff_mech_osci(i,j) = outputs.T(i)*outputs.VRO_osci(i,j); %[W]
 %       % Generator efficiency. As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
 %       a = 0.671;
 %       b = -1.4141;
 %       c = 0.9747;
 %       d = 0.7233;
-%       RPM_max = max(inputs.maxVRI,25); % 25 =  Possible maximum reel-out speed
-%       outputs.genEff_RO(i,j)        = (a*(outputs.VRO_osci(i,j)/RPM_max)^3+b*(outputs.VRO_osci(i,j)/RPM_max)^2+c*(outputs.VRO_osci(i,j)/RPM_max)+d)^sign(1);
+%       V_maxGen = max(inputs.maxVRI,25); % 25 =  Possible maximum reel-out speed
+%       outputs.genEff_RO(i,j)        = (a*(outputs.VRO_osci(i,j)/V_maxGen)^3+b*(outputs.VRO_osci(i,j)/V_maxGen)^2+c*(outputs.VRO_osci(i,j)/V_maxGen)+d)^sign(1);
 %       outputs.PROeff_elec_osci(i,j) = outputs.PROeff_mech_osci(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE;
-%       outputs.PROeff_elec_osci_cap(i,j) = min(inputs.F_peakElecP*inputs.P_ratedElec,...
+%       outputs.PROeff_elec_osci_cap(i,j) = min(inputs.F_peakM2Ecyc*inputs.P_ratedElec,...
 %                                      outputs.PROeff_mech_osci(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE);
 %     end
 %     
+%     outputs.PROeff_mech(i)     = mean(outputs.PROeff_mech_osci(i,:));
+%     outputs.PROeff_elec(i)     = mean(outputs.PROeff_elec_osci(i,:));
+%     outputs.PROeff_elec_cap(i) = mean(outputs.PROeff_elec_osci_cap(i,:));       
+
 end 
