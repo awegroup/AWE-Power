@@ -4,7 +4,12 @@ clear;
 
 inputs                = struct();
 
-inputs.Vw             = 1:1:25; %[m/s]
+inputs.Vw_ref         = 1:1:25; %[m/s]
+inputs.h_ref          = 100; %[m]
+inputs.windShearExp   = 0.12; % 0.143 over land, 0.11 over sea
+% inputs.surfRoughness  = 0.0003; %[m] 0.03 over land, 0.0002 at sea
+% inputs.Vw_60          = inputs.Vw_ref.* log(60/inputs.surfRoughness)/log(inputs.h_ref/inputs.surfRoughness);
+
 inputs.WA             = 150;
 inputs.AR             = 12;
 inputs.P_ratedElec    = 1000*1000; %[W]
@@ -27,12 +32,11 @@ inputs.e              = 0.6;
 inputs.CD0            = 0.056;
 inputs.CD_te          = 1.1; %1.2
 
-% inputs.avgPattEle     = 22*pi()/180; % [rad] 
-% inputs.pattAngRadius  = 12*pi()/180; % [rad] 
-% inputs.maxRollAngle   = 45*pi()/180; % [rad] % 20
 inputs.maxVRI         = 30;
 inputs.maxAcc         = 20;
 
+inputs.etaGen.param   = [0.671, -1.4141, 0.9747, 0.7233];
+inputs.etaGen.Vmax    = max(inputs.maxVRI,25); % 25 =  Possible maximum reel-out speed
 inputs.etaGearbox     = 0.95;
 inputs.etaSto         = 0.95;
 inputs.etaPE          = 0.98; % Power electronics
