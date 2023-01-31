@@ -12,14 +12,16 @@ function [c, ceq] = constraints(i,inputs)
   % Capping for requested electrical rated power
   c(3)   = (outputs.P_cycleElec(i) - inputs.P_ratedElec)/inputs.P_ratedElec; 
   
-  % Peak mech to cycle elec ratio
-  c(4) = (outputs.PRO_mech(i) - inputs.F_peakM2Ecyc*inputs.P_ratedElec)/(inputs.F_peakM2Ecyc*inputs.P_ratedElec);
-  
   % Tether length limit
-  c(5) = (outputs.L_teMax(i) - inputs.maxTeLen)/inputs.maxTeLen; 
+  c(4) = (outputs.L_teMax(i) - inputs.maxTeLen)/inputs.maxTeLen; 
   
   % Min number of patterns to get into transition 
-  c(6) = (1 - mean(outputs.numOfPatt(i,:)))/2;
+  c(5) = (1 - mean(outputs.numOfPatt(i,:)))/2;
+  
+  % Peak mech to cycle elec ratio
+  c(1,6:outputs.deltaLelems+5) = (outputs.PROeff_mech(i,:) - inputs.F_peakM2Ecyc*inputs.P_ratedElec)/(inputs.F_peakM2Ecyc*inputs.P_ratedElec);
+  
+  
   
   
   %% Equality constraints

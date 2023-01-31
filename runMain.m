@@ -73,15 +73,15 @@ postProRes.ratedPower = outputs.P_cycleElec(postProRes.ratedWind);
 postProRes.D_te         = outputs.D_te;
 for i=1:length(Vw)
     if Vw(i)>=postProRes.cutIn
-        postProRes.Vw(i)           = mean(outputs.Vw(i,:));
+        postProRes.Vw(i,:)           = outputs.Vw(i,:);
         postProRes.PRO1_mech(i)    = outputs.PRO1_mech(i);
         postProRes.PRI2_mech(i)    = outputs.PRI2_mech(i); 
-        postProRes.PROeff_mech(i)  = mean(outputs.PROeff_mech(i,:));
-        postProRes.PRIeff_mech(i)  = mean(outputs.PRIeff_mech(i,:));  
+        postProRes.PROeff_mech(i,:)  = outputs.PROeff_mech(i,:);
+        postProRes.PRIeff_mech(i,:)  = outputs.PRIeff_mech(i,:);  
         postProRes.PRO1_elec(i)    = outputs.PRO1_elec(i);
         postProRes.PRI2_elec(i)    = outputs.PRI2_elec(i); 
-        postProRes.PROeff_elec(i)  = mean(outputs.PROeff_elec(i,:));
-        postProRes.PRIeff_elec(i)  = mean(outputs.PRIeff_elec(i,:));
+        postProRes.PROeff_elec(i,:)  = outputs.PROeff_elec(i,:);
+        postProRes.PRIeff_elec(i,:)  = outputs.PRIeff_elec(i,:);
         postProRes.PRO_mech(i)    = outputs.PRO_mech(i);
         postProRes.PRI_mech(i)    = outputs.PRI_mech(i);
         postProRes.PRO_elec(i)    = outputs.PRO_elec(i);
@@ -89,33 +89,33 @@ for i=1:length(Vw)
         postProRes.deltaL(i)      = outputs.deltaL(i);
         postProRes.t1(i)          = outputs.t1(i);
         postProRes.t2(i)          = outputs.t2(i);
-        postProRes.tROeff(i)      = sum(outputs.tROeff(i,:));
-        postProRes.tRIeff(i)      = sum(outputs.tRIeff(i,:));
+        postProRes.tROeff(i,:)      = outputs.tROeff(i,:);
+        postProRes.tRIeff(i,:)      = outputs.tRIeff(i,:);
         postProRes.tRO(i)         = outputs.tRO(i);
         postProRes.tRI(i)         = outputs.tRI(i);
         postProRes.tCycle(i)      = outputs.tCycle(i);
-        postProRes.TT(i)          = mean(outputs.T(i,:));
-        postProRes.VRO(i)         = mean(outputs.VRO(i,:));
+        postProRes.TT(i,:)          = outputs.T(i,:);
+        postProRes.VRO(i,:)         = outputs.VRO(i,:);
         postProRes.VRI(i)         = outputs.VRI(i);
-        postProRes.VRI_app(i)     = mean(outputs.VA_RI(i,:));
+        postProRes.VRI_app(i,:)     = outputs.VA_RI(i,:);
         postProRes.Pcycle_elec(i) = outputs.P_cycleElec(i);
         postProRes.Pcycle_mech(i) = outputs.P_cycleMech(i);
 %         system.VRO_osci(i,:)  = outputs.VRO_osci(i,:);
 %         system.PROeff_mech_osci(i,:)  = outputs.PROeff_mech_osci(i,:);
 %         system.PROeff_elec_osci(i,:)  = outputs.PROeff_elec_osci(i,:);
-        postProRes.cycleAvgPattRad(i) = mean(outputs.pattRadius(i,:));
-        postProRes.H_cycleStart(i)  = outputs.H_cycleStart(i);
-        postProRes.H_cycleAvg(i)    = outputs.H_cycleAvg(i);
-        postProRes.L_teAvg(i)       = outputs.L_teAvg(i);
-        postProRes.avgRollAngle(i)  = rad2deg(outputs.avgRollAngle(i));
-        postProRes.avgPattEle(i)    = rad2deg(outputs.avgPattEle(i));
-        postProRes.pattAngRadius(i) = rad2deg(outputs.pattAngRadius(i));
-        postProRes.CL(i)            = outputs.CL(i);
-        postProRes.CD(i)            = outputs.CD(i);
-        postProRes.numOfPatt(i)     = mean(outputs.numOfPatt(i,:));
-        postProRes.reelOutF(i)      =  postProRes.VRO(i)/postProRes.Vw(i);  
-        postProRes.dutyCycle(i)     = postProRes.tRO(i)/postProRes.tCycle(i);
-        postProRes.tPatt(i)         = 2*pi()*postProRes.cycleAvgPattRad(i)/outputs.VC(i);
+        postProRes.pattRad(i,:)       = outputs.pattRadius(i,:);
+        postProRes.H_cycleStart(i)    = outputs.H_cycleStart(i);
+        postProRes.H_cycleAvg(i)      = outputs.H_cycleAvg(i);
+        postProRes.L_teAvg(i)         = outputs.L_teAvg(i);
+        postProRes.avgRollAngle(i)    = rad2deg(outputs.avgRollAngle(i));
+        postProRes.avgPattEle(i)      = rad2deg(outputs.avgPattEle(i));
+        postProRes.pattAngRadius(i)   = rad2deg(outputs.pattAngRadius(i));
+        postProRes.CL(i)              = outputs.CL(i);
+        postProRes.CD(i)              = outputs.CD(i);
+        postProRes.numOfPatt(i,:)       = outputs.numOfPatt(i,:);
+        postProRes.reelOutF(i,:)      =  postProRes.VRO(i,:)/postProRes.Vw(i,:);  
+        postProRes.dutyCycle(i)       = postProRes.tRO(i)/postProRes.tCycle(i);
+        postProRes.tPatt(i,:)         = 2*pi()*postProRes.pattRad(i,:)/outputs.VC(i);
     end
 %     for j = 1:outputs.numPattParts
 %       system.tPatt(i)  = system.tPatt(i) + 2*pi()*system.pattRadius(i)/outputs.numPattParts/outputs.VC_osci(i,j);
@@ -158,14 +158,14 @@ for i = windSpeeds
   grid on
   box on
   yline(0);
-  yline(postProRes.Pcycle_elec(timeseries.ws(i).ws)/10^3,'--');
+  yline(postProRes.Pcycle_elec(timeseries.ws(i).ws)/10^3,'--','linewidth',1);
   plot(timeseries.ws(i).t_inst, timeseries.ws(i).P_inst,'linewidth',1.5);
   ylabel('Electrical power (kW)');
   xlabel('Time (s)');
   xlim([0 tmax]);
   ylim([pmin pmax]);
   title(strcat('Wind speed at H_{cycleAvg}:',num2str(timeseries.ws(i).ws),'m/s'));
-  legend('','Cycle average','Instantaneous','location','northwest');
+  %legend('','Cycle average','Reel-out average','location','northwest');
   hold off
 end
 
@@ -200,14 +200,14 @@ hold on
 grid on
 box on
 yyaxis left
-plot(Vw, postProRes.VRO,'d:','markersize',3);
+plot(Vw, mean(postProRes.VRO,2),'d:','markersize',3);
 plot(Vw, postProRes.VRI,'^:','markersize',3);
 ylabel('Speed (m/s)');
 yyaxis right
 plot(Vw, postProRes.tRO,'o:','markersize',3);
 plot(Vw, postProRes.tRI,'+:','markersize',3);
 ylabel('Time (s)');
-legend('V_{RO}','V_{RI}','t_{RO}','t_{RI}','location','northwest');
+legend('V_{RO,avg}','V_{RI}','t_{RO}','t_{RI}','location','northwest');
 xlabel('Wind speed at 100m height (m/s)');
 xlim([0 25]);
 %ylim([0 160]);
@@ -220,11 +220,11 @@ hold on
 grid on
 box on
 plot(Vw, postProRes.H_cycleAvg,'d:','markersize',3);
-plot(Vw, postProRes.cycleAvgPattRad,'o:','markersize',3);
+plot(Vw, mean(postProRes.pattRad,2),'o:','markersize',3);
 plot(Vw, postProRes.deltaL,'^:','markersize',3);
 plot(Vw, postProRes.L_teAvg,'+:','markersize',3);
 ylabel('Length (m)');
-legend('H_{cycleAvg}','R_{acycleAvg}','ΔL','L_{te,avg}','location','northwest','Orientation','vertical');
+legend('H_{cycleAvg}','R_{cycleAvg}','ΔL','L_{te,avg}','location','northwest','Orientation','vertical');
 xlabel('Wind speed at 100m height (m/s)');
 xlim([0 25]);
 %ylim([0 160]);
@@ -255,23 +255,23 @@ box on
 yyaxis left
 plot(Vw, postProRes.CL,'^:','markersize',3);
 plot(Vw, postProRes.CD,'+:','markersize',3);
-plot(Vw, postProRes.reelOutF,'o:','markersize',3);
+plot(Vw, mean(postProRes.reelOutF,2),'o:','markersize',3);
 ylabel('(-)');
 yyaxis right
-plot(Vw, postProRes.TT./10^3,'x:','markersize',3);
+plot(Vw, mean(postProRes.TT,2)./10^3,'x:','markersize',3);
 ylabel('Tether force (kN)');
-ylim([0 1.1*max(postProRes.TT)/10^3]);
-legend('C_{L}','C_{D}','f','F_t','location','northwest');
+ylim([0 1.1*max(mean(postProRes.TT,2))/10^3]);
+legend('C_{L}','C_{D}','f_{avg}','F_{t,avg}','location','northwest');
 xlabel('Wind speed at 100m height (m/s)');
 xlim([0 25]);
 %ylim([0 160]);
 hold off
 
 % Cycle efficiencies
-ERO_elec = postProRes.PROeff_elec.*postProRes.tROeff + postProRes.PRO1_elec.*postProRes.t1;
-ERI_elec = postProRes.PRIeff_elec.*postProRes.tRIeff + postProRes.PRI2_elec.*postProRes.t2;
-ERO_mech = postProRes.PROeff_mech.*postProRes.tROeff + postProRes.PRO1_mech.*postProRes.t1;
-ERI_mech = postProRes.PRIeff_mech.*postProRes.tRIeff + postProRes.PRI2_mech.*postProRes.t2;
+ERO_elec = sum(postProRes.PROeff_elec.*postProRes.tROeff,2)' + postProRes.PRO1_elec.*postProRes.t1;
+ERI_elec = sum(postProRes.PRIeff_elec.*postProRes.tRIeff,2)' + postProRes.PRI2_elec.*postProRes.t2;
+ERO_mech = sum(postProRes.PROeff_mech.*postProRes.tROeff,2)' + postProRes.PRO1_mech.*postProRes.t1;
+ERI_mech = sum(postProRes.PRIeff_mech.*postProRes.tRIeff,2)' + postProRes.PRI2_mech.*postProRes.t2;
 figure('units','inch','Position', [11 3 3.5 2.2])
 colororder(newcolors)
 hold on
