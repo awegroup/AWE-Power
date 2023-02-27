@@ -6,7 +6,7 @@ inputs                = struct();
 
 inputs.Vw_ref         = 1:1:25; %[m/s]
 inputs.h_ref          = 100; %[m]
-inputs.windShearExp   = 0.12; % 0.143 over land, 0.11 over sea
+inputs.windShearExp   = 0.11; % 0.143 over land, 0.11 over sea
 % inputs.surfRoughness  = 0.0003; %[m] 0.03 over land, 0.0002 at sea
 % inputs.Vw_60          = inputs.Vw_ref.* log(60/inputs.surfRoughness)/log(inputs.h_ref/inputs.surfRoughness);
 
@@ -21,6 +21,7 @@ inputs.Tmax              = 500; %[kN]
 inputs.F_Tmax            = 0.8; % 0.8 for gust margin
 inputs.F_minTeLen        = 1.2; %1.2
 inputs.maxTeLen          = 1000;
+inputs.maxHeight         = 600;
 inputs.minGroundClear    = 100; % [m]
 inputs.Te_matStrength    = 7e8;
 inputs.Te_matDensity     = 980; %[kg/m^3] 

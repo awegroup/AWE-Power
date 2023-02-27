@@ -11,8 +11,11 @@ function [d] = createTimeseries(ws, system)
     
     d.t_inst = cumsum([0 system.tROeff(d.ws,:) d.t1 d.t2 system.tRIeff(d.ws,:) d.t2]);
     
-    d.P_inst = [0 system.PROeff_elec(d.ws,:) 0 ...
+    d.P_e_inst = [0 system.PROeff_elec(d.ws,:) 0 ...
                 -flip(system.PRIeff_elec(d.ws,1)) -flip(system.PRIeff_elec(d.ws,:)) 0]./10^3;
+              
+    d.P_m_inst = [0 system.PROeff_mech(d.ws,:) 0 ...
+                -flip(system.PRIeff_mech(d.ws,1)) -flip(system.PRIeff_mech(d.ws,:)) 0]./10^3;
     
 %     d.t1a_inst     = 0:0.01:d.t1;
 %     d.tROeff_inst  = d.t1:0.01:d.tROeff;

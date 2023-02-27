@@ -18,11 +18,11 @@ function [c, ceq] = constraints(i,inputs)
   % Min number of patterns to get into transition 
   c(5) = (1 - mean(outputs.numOfPatt(i,:)))/2;
   
+  % Max. cycle avg height
+  c(6) = (outputs.H_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight;
+  
   % Peak mech to cycle elec ratio
-  c(1,6:outputs.deltaLelems+5) = (outputs.PROeff_mech(i,:) - inputs.F_peakM2Ecyc*inputs.P_ratedElec)/(inputs.F_peakM2Ecyc*inputs.P_ratedElec);
-  
-  
-  
+  c(1,7:outputs.deltaLelems+6) = (outputs.PROeff_mech(i,:) - inputs.F_peakM2Ecyc*inputs.P_ratedElec)/(inputs.F_peakM2Ecyc*inputs.P_ratedElec);
   
   %% Equality constraints
   

@@ -5,6 +5,7 @@ clear global
 
 inputSheet_AP3;
 % inputSheet;
+% inputSheet_provided_HV;
 % inputSheet_softKite;
 
 %% Optimise operation for every wind speed: Uncapped electrical power
@@ -13,7 +14,7 @@ x0      = [100, 4, 1.5, deg2rad(20),deg2rad(12),200]; %
 for i=1:length(inputs.Vw_ref)
   % Output of previous wind speed as input to next wind speed
   x_init = x0;  
-%  x_init    = [100, 15, 1.5, deg2rad(20),deg2rad(12),100]; % 
+%  x_init    = [100, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
   x0     = x_init./x_init;
   lb     = [20, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),sqrt(inputs.AR*inputs.WA)/2]./x_init; % 
   ub     = [500, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),500]./x_init; % 
@@ -22,9 +23,9 @@ for i=1:length(inputs.Vw_ref)
   options.Algorithm                 = 'sqp';
   options.FiniteDifferenceType      = 'central';
   %options.FiniteDifferenceStepSize  = [1e-3 1e-3 1e-6 1e-7 1e-7 1e-3];
-  options.FiniteDifferenceStepSize  = 1e-6;
-  options.OptimalityTolerance       = 1e-12;
-  options.StepTolerance             = 1e-6;
+%   options.FiniteDifferenceStepSize  = 1e-6;
+%   options.OptimalityTolerance       = 1e-12;
+%   options.StepTolerance             = 1e-6;
   options.MaxFunctionEvaluations    = 5000*numel(x_init);
   options.MaxIterations             = 1000*numel(x_init);
 %   options.ConstraintTolerance      = 1e-3;
@@ -50,7 +51,7 @@ for i=1:length(inputs.Vw_ref)
 end
 
 %% Post processing
-Vw = inputs.Vw_ref;
+Vw = inputs.Vw_ref; 
 
 %% Cut-in wind speed
 % temp1         = Vw((outputs.VRO-outputs.VRO_osciAmp)>0);
@@ -106,7 +107,7 @@ for i=1:length(Vw)
         postProRes.pattRad(i,:)       = outputs.pattRadius(i,:);
         postProRes.H_cycleStart(i)    = outputs.H_cycleStart(i);
         postProRes.H_cycleAvg(i)      = outputs.H_cycleAvg(i);
-        postProRes.L_teAvg(i)         = outputs.L_teAvg(i);
+        postProRes.L_teMax(i)         = outputs.L_teMax(i);
         postProRes.avgRollAngle(i)    = rad2deg(outputs.avgRollAngle(i));
         postProRes.avgPattEle(i)      = rad2deg(outputs.avgPattEle(i));
         postProRes.pattAngRadius(i)   = rad2deg(outputs.pattAngRadius(i));
@@ -159,13 +160,14 @@ for i = windSpeeds
   box on
   yline(0);
   yline(postProRes.Pcycle_elec(timeseries.ws(i).ws)/10^3,'--','linewidth',1);
-  plot(timeseries.ws(i).t_inst, timeseries.ws(i).P_inst,'linewidth',1.5);
+  plot(timeseries.ws(i).t_inst, timeseries.ws(i).P_e_inst,'linewidth',1.5);
+  plot(timeseries.ws(i).t_inst, timeseries.ws(i).P_m_inst,'linewidth',1.5);
   ylabel('Electrical power (kW)');
   xlabel('Time (s)');
-  xlim([0 tmax]);
-  ylim([pmin pmax]);
-  title(strcat('Wind speed at H_{cycleAvg}:',num2str(timeseries.ws(i).ws),'m/s'));
-  %legend('','Cycle average','Reel-out average','location','northwest');
+  %xlim([0 tmax]);
+  %ylim([pmin pmax]);
+  title(strcat('Wind speed at 100m:',num2str(timeseries.ws(i).ws),'m/s'));
+%   legend('Electrical','Mechanical','location','northwest');
   hold off
 end
 
@@ -183,13 +185,14 @@ newcolors = [ % 0.25, 0.25, 0.25
 % Wind profile
 Vref = 10; % m/s
 z = 10:10:600; % m
-V = Vref * (z/inputs.h_ref).^inputs.windShearExp;
+V = Vref * (z/inputs.h_ref).^inputs.windShearExp/Vref;
 figure('units','inch','Position', [15 6 3.5 2.2])
 hold on
 box on
 grid on
 plot(V,z,'linewidth',1.5)
-xlabel('Wind Speed (m/s)')
+xlim([0.5 1.5])
+xlabel('Wind Speed (-)')
 ylabel('Height (m)')
 
 
@@ -222,9 +225,9 @@ box on
 plot(Vw, postProRes.H_cycleAvg,'d:','markersize',3);
 plot(Vw, mean(postProRes.pattRad,2),'o:','markersize',3);
 plot(Vw, postProRes.deltaL,'^:','markersize',3);
-plot(Vw, postProRes.L_teAvg,'+:','markersize',3);
+plot(Vw, postProRes.L_teMax,'+:','markersize',3);
 ylabel('Length (m)');
-legend('H_{cycleAvg}','R_{cycleAvg}','ΔL','L_{te,avg}','location','northwest','Orientation','vertical');
+legend('H_{cycleAvg}','R_{cycleAvg}','ΔL','L_{t,max}','location','northwest','Orientation','vertical');
 xlabel('Wind speed at 100m height (m/s)');
 xlim([0 25]);
 %ylim([0 160]);
@@ -282,7 +285,7 @@ plot(Vw, (ERO_elec-ERI_elec)./ERO_mech*100,'+','markersize',3);
 plot(Vw, postProRes.dutyCycle*100,'d','markersize',3);
 ylabel('Efficiency (%)');
 ylim([30 100]);
-legend('η_{Cycle,mech}','η_{Cycle,elec}','Duty cycle','location','southeast');
+legend('η_{m,cycle}','η_{e,cycle}','Duty cycle','location','southeast');
 xlabel('Wind speed at 100m height (m/s)');
 xlim([0 25]);
 hold off
@@ -300,7 +303,8 @@ plot(Vw, postProRes.PRI_elec./10^3,'--','linewidth',1.2);
 plot(Vw, postProRes.PRO_elec./10^3,'-.','linewidth',1.2);
 plot(Vw, postProRes.Pcycle_elec./10^3,'-','linewidth',1.2);
 ylabel('Power (kW)');
-legend('P_{RI,mech}','P_{RO,mech}','P_{RI,elec}','P_{RO,elec}','P_{cycle,elec}','location','northwest');
+%title('Cycle averages');
+legend('P_{m,RI}','P_{m,RO}','P_{e,RI}','P_{e,RO}','P_{e,avg}','location','northwest');
 xlabel('Wind speed at 100m height (m/s)');
 xlim([0 25]);
 hold off
@@ -331,7 +335,7 @@ plot(Vw, P_Loyd./10^3,'--','linewidth',1.5);
 plot(Vw, postProRes.Pcycle_elec./10^3,'-','linewidth',1.5);
 plot(AP3.PC.ws, AP3.PC.power,'k^--','MarkerSize',4);
 ylabel('Power (kW)');
-legend('Loyd - Ideal','Model results','6DOF simulation','location','southeast');
+legend('Loyd','Model','6DOF','location','southeast');
 % legend('Loyd - Ideal','Model results','location','southeast');
 xlabel('Wind speed at 100m height (m/s)');
 xlim([0 25]);

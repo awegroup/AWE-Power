@@ -42,7 +42,7 @@ function [inputs] = compute(i,inputs)
     %% Cycle avg. mech reel-out power considering vertical wind shear
      
     % Divide the reel-out length in equal number of elements of around 5m lengths
-     outputs.deltaLelems = 50; % Found to be not sensitive to the number of elements
+     outputs.deltaLelems = 25; % Found to be not sensitive to the number of elements once element size ~<=1.5m
      outputs.elemDeltaL(i) = outputs.deltaL(i)/outputs.deltaLelems;
   
      % For each element of deltaL

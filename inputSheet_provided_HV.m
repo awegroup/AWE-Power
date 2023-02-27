@@ -4,19 +4,25 @@ clear;
 
 inputs                = struct();
 
-inputs.Vw             = 1:1:25; %[m/s]
-inputs.WA             = 150;
+inputs.Vw_ref         = 1:1:25; %[m/s]
+inputs.h_ref          = 100; %[m]
+inputs.windShearExp   = 0.143; % 0.143 over land, 0.11 over sea
+% inputs.surfRoughness  = 0.0003; %[m] 0.03 over land, 0.0002 at sea
+% inputs.Vw_60          = inputs.Vw_ref.* log(60/inputs.surfRoughness)/log(inputs.h_ref/inputs.surfRoughness);
+
+inputs.WA             = 220; %150
 inputs.AR             = 12;
 inputs.P_ratedElec    = 2500*1000; %[W]
 inputs.massOverride   = 0;
 inputs.kiteMass       = 500; %[kg]
-inputs.F_peakM2Ecyc   = 2.5;
+inputs.F_peakM2Ecyc   = 2.5; %2.5
 
-inputs.Tmax              = 750; %[kN]
+inputs.Tmax              = 900; %[kN]
 inputs.F_Tmax            = 1.0; % 0.8 for gust margin
 inputs.F_minTeLen        = 1; %1.2
-inputs.maxTeLen          = 1000;
-inputs.minGroundClear    = 75; % [m]
+inputs.maxTeLen          = 1200;
+inputs.maxHeight         = 600;
+inputs.minGroundClear    = 80; % [m]
 inputs.Te_matStrength    = 7e8;
 inputs.Te_matDensity     = 980; %[kg/m^3] 
 
@@ -27,16 +33,20 @@ inputs.e              = 0.6;
 inputs.CD0            = 0.056;
 inputs.CD_te          = 1.1; %1.2
 
-% inputs.avgPattEle     = 22*pi()/180; % [rad] 
-% inputs.pattAngRadius  = 12*pi()/180; % [rad] 
-% inputs.maxRollAngle   = 45*pi()/180; % [rad] % 20
 inputs.maxVRI         = 30;
 inputs.maxAcc         = 20;
 
-inputs.etaGearbox     = 0.95;
-inputs.etaSto         = 0.95;
-inputs.etaPE          = 0.98; % Power electronics
-
+inputs.etaGen.param   = [0.671, -1.4141, 0.9747, 0.7233];
+inputs.etaGen.Vmax    = max(inputs.maxVRI,25); % 25 =  Possible maximum reel-out speed
+inputs.etaGearbox     = 0.9;
+inputs.etaSto         = 0.9;
+inputs.etaPE          = 0.95; % Power electronics
 inputs.targetPRO_elec = 0;
 inputs.gravity        = 9.81;
 inputs.airDensity     = 1.225; %[kg/m^3]  
+
+
+%%
+% figure()
+% Vw = mean(postProRes.Vw,2);
+% plot(round(Vw,2), postProRes.Pcycle_elec./10^3,'-','linewidth',1.2);
