@@ -4,7 +4,7 @@ clear;
 
 inputs                = struct();
 
-inputs.Vw_ref         = 1:1:25; %[m/s]
+inputs.Vw_ref         = 15; 1:1:25; %[m/s]
 inputs.h_ref          = 100; %[m]
 inputs.windShearExp   = 0.11; % 0.143 over land, 0.11 over sea
 % inputs.surfRoughness  = 0.0003; %[m] 0.03 over land, 0.0002 at sea
