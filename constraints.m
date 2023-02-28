@@ -22,7 +22,7 @@ function [c, ceq] = constraints(i,inputs)
   c(6) = (outputs.H_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight;
   
   % Peak mech to cycle elec ratio
-  c(1,7:outputs.deltaLelems+6) = (outputs.PROeff_mech(i,:) - inputs.F_peakM2Ecyc*inputs.P_ratedElec)/(inputs.F_peakM2Ecyc*inputs.P_ratedElec);
+ % c(1,7:outputs.deltaLelems+6) = (outputs.PROeff_mech(i,:) - inputs.F_peakM2Ecyc*inputs.P_ratedElec)/(inputs.F_peakM2Ecyc*inputs.P_ratedElec);
   
   %% Equality constraints
   
@@ -30,9 +30,9 @@ function [c, ceq] = constraints(i,inputs)
   ceq(1)    = 0;
   
   % Only used in second iter of optimisation when capping max. electrical power
-%   if inputs.targetPRO_elec ~=0
-%       % Capping for max. reel-out electrical power
-%       ceq(2)    = outputs.PROeff_elec(i) - inputs.targetPRO_elec(i);
-%   end
+  if inputs.targetPRO_elec ~= 0
+      % Capping for max. reel-out electrical power
+      ceq(2)    = mean(outputs.PROeff_elec(i,:)) - inputs.targetPRO_elec(i);
+  end
  
 end

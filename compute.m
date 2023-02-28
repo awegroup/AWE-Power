@@ -81,6 +81,13 @@ function [inputs] = compute(i,inputs)
         outputs.VSR(i,j) = outputs.CD(i)/(outputs.CL(i)*cos(outputs.avgRollAngle(i,j)))^(3/2)*...
                              (outputs.T(i,j)+outputs.W(i)*sin(outputs.avgPattEle(i)))/sqrt(0.5*outputs.rho_air(i,j)*inputs.WA*outputs.J(i,j));
 
+        % Airspeed and tangential speed
+         outputs.lambda(i,j) = 0.5*outputs.rho_air(i,j)*inputs.WA*outputs.CL(i);
+         outputs.delta(i,j)  = 0.5*outputs.rho_air(i,j)*inputs.WA*outputs.CD(i);
+         outputs.a(i,j)      = sqrt((outputs.lambda(i,j)^2+outputs.delta(i,j)^2))/outputs.J(i,j);
+         outputs.VA(i,j)     = 1/sqrt(outputs.a(i,j)); % Apparent speed [m/s];
+         outputs.VC(i,j)     = sqrt(outputs.VA(i,j)^2 - outputs.VSR(i,j)^2);
+                           
         % VRO
         outputs.VRO(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i))-outputs.VSR(i,j);
 
@@ -93,13 +100,6 @@ function [inputs] = compute(i,inputs)
                                       inputs.etaGen.param(2)*(outputs.VRO(i,j)/inputs.etaGen.Vmax)^2 + ...
                                         inputs.etaGen.param(3)*(outputs.VRO(i,j)/inputs.etaGen.Vmax)+inputs.etaGen.param(4))^sign(1);
         outputs.PROeff_elec(i,j) = outputs.PROeff_mech(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE;
-
-        % Airspeed and tangential speed
-         outputs.lambda(i,j) = 0.5*outputs.rho_air(i,j)*inputs.WA*outputs.CL(i);
-         outputs.delta(i,j)  = 0.5*outputs.rho_air(i,j)*inputs.WA*outputs.CD(i);
-         outputs.a(i,j)      = sqrt((outputs.lambda(i,j)^2+outputs.delta(i,j)^2))/outputs.J(i,j);
-         outputs.VA(i,j)     = 1/sqrt(outputs.a(i,j)); % Apparent speed [m/s];
-         outputs.VC(i,j)     = sqrt(outputs.VA(i,j)^2 - outputs.VSR(i,j)^2);
 
         % PRI effective mech
         outputs.VA_RI(i,j)       = sqrt(outputs.Vw(i,j)^2 +outputs.VRI(i)^2 +2*outputs.Vw(i,j)*outputs.VRI(i)*cos(outputs.avgPattEle(i)));
@@ -116,7 +116,7 @@ function [inputs] = compute(i,inputs)
         outputs.PRIeff_elec(i,j) = outputs.PRIeff_mech(i,j)/inputs.etaGearbox/inputs.etaSto/outputs.genEff_RI(i)/inputs.etaPE;
 
      end
-     
+         
       %% Cycle simulation
      
       % tRO
@@ -166,8 +166,39 @@ function [inputs] = compute(i,inputs)
 
       outputs.tPatt(i,:)     = 2*pi()*outputs.pattRadius(i,:)./outputs.VC(i,:);
       outputs.numOfPatt(i,:) = outputs.tRO(i)./outputs.tPatt(i,:);
+      
+      %% Reel-out speed oscillation due to gravity
+      
+      if inputs.targetPRO_elec == 0
+      
+        outputs.T_simple(i)    = min(outputs.Tmax_act, (4/9)*outputs.CL(i)^3/outputs.CD(i)^2*(1/2)*mean(outputs.rho_air(i,:))*...
+                                  inputs.WA*mean(outputs.Vw(i,:))^2);
+        outputs.VSR_simple(i)  = outputs.CD(i)/outputs.CL(i)^(3/2)*sqrt(outputs.T_simple(i)/(0.5*mean(outputs.rho_air(i,:))*inputs.WA));
+        outputs.a_simple(i)    = sqrt((mean(outputs.lambda(i,:))^2+mean(outputs.delta(i,:))^2)/(outputs.T_simple(i)^2+outputs.W(i)^2));
+        outputs.VA_simple(i)   = 1/sqrt(outputs.a_simple(i));
+        outputs.s(i)           = outputs.a_simple(i)*(mean(outputs.delta(i,:))*outputs.T_simple(i)-mean(outputs.lambda(i,:))*outputs.W(i))/...
+                                    (mean(outputs.lambda(i,:))^2+mean(outputs.delta(i,:))^2);
+        outputs.VSR_down(i)    = outputs.VA_simple(i)*outputs.s(i);
+        outputs.VRO_osciAmp(i) = abs(outputs.VSR_down(i) - outputs.VSR_simple(i));
+        % To match the number of deltaL elements to the number of elements considering pattern 
+  %       if mean(outputs.numOfPatt(i,:)) == 0 
+  %         mean(outputs.numOfPatt(i,:)) = 1;
+  %       else
+        outputs.numPattParts   = outputs.deltaLelems/mean(outputs.numOfPatt(i,:));  
+  %       end
 
-      % P_cycleElec 
+        for j=1:round(outputs.numPattParts*mean(outputs.numOfPatt(i,:)))
+          outputs.VRO_osci(i,j)          = outputs.VRO(i,j) + outputs.VRO_osciAmp(i)*sin((j-1)*2*pi()/(outputs.numPattParts-1));      
+          outputs.PROeff_mech_osci(i,j) = outputs.T(i)*outputs.VRO_osci(i,j); %[W]
+          outputs.PROeff_elec_osci(i,j) = outputs.PROeff_mech_osci(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE;
+          outputs.PROeff_elec_osci_cap(i,j) = min(inputs.F_peakM2Ecyc*inputs.P_ratedElec,...
+                                         outputs.PROeff_mech_osci(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE);
+        end
+        outputs.PROeff_elec_cap(i) = mean(outputs.PROeff_elec_osci_cap(i,:)); 
+      
+      end
+
+      %% P_cycleElec 
       if outputs.VRO(i,:)<0
         outputs.P_cycleElec(i) = 0;
       else
@@ -177,41 +208,5 @@ function [inputs] = compute(i,inputs)
 
       % Without drivetrain eff
       outputs.P_cycleMech(i) = (sum(outputs.tROeff(i,:).*outputs.PROeff_mech(i,:)) + outputs.t1(i)*outputs.PRO1_mech(i) - ...
-                                   sum(outputs.tRIeff(i,:).*outputs.PRIeff_mech(i,:)) - outputs.t2(i)*outputs.PRI2_mech(i))/outputs.tCycle(i);    
- 
-                   
-  
-%    %% Reel-out speed osci due to gravity. 
-%    % MK theory of SR oscillation
-%      outputs.T_simple(i)   = min(outputs.Tmax_act, (4/9)*outputs.CL(i)^3/outputs.CD(i)^2*(1/2)*outputs.rho_air(i)*...
-%                             inputs.WA*inputs.Vw(i)^2);
-%     outputs.VSR_simple(i)  = outputs.CD(i)/outputs.CL(i)^(3/2)*sqrt(outputs.T_simple(i)/(0.5*outputs.rho_air(i)*inputs.WA));
-%      outputs.VSR_simple2(i) = outputs.CD(i)/(outputs.CL(i)*cos(outputs.avgRollAngle(i)))^(3/2)*sqrt(outputs.T(i)/(0.5*outputs.rho_air(i)*inputs.WA));
-%      outputs.a_simple(i) = sqrt((outputs.lambda(i)^2+outputs.delta(i)^2)/(outputs.T_simple(i)^2+outputs.W(i)^2));
-%      outputs.VA_simple(i) = 1/sqrt(outputs.a_simple(i));
-%      outputs.s(i) = outputs.a_simple(i)*(outputs.delta(i)*outputs.T_simple(i)-outputs.lambda(i)*outputs.W(i))/(outputs.lambda(i)^2+outputs.delta(i)^2);
-%     outputs.VSR_down(i) = outputs.VA_simple(i)*outputs.s(i);
-%      outputs.VRO_osciAmp1(i) = abs(outputs.VSR_down(i) - outputs.VSR_simple(i));
-%      outputs.VRO_osciAmp2(i) = abs(outputs.VSR(i) - outputs.VSR_simple2(i));
-%      outputs.VRO_osciAmp(i)  = 0;
-%      outputs.numPattParts           = 31;
-%     for i=1:outputs.numPattParts
-%       outputs.VRO_osci(i,i)          = outputs.VRO(i) + outputs.VRO_osciAmp(i)*sin((i-1)*2*pi()/(outputs.numPattParts-1));      
-%       outputs.PROeff_mech_osci(i,i) = outputs.T(i)*outputs.VRO_osci(i,i); %[W]
-%       % Generator efficiency. As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
-%       a = 0.671;
-%       b = -1.4141;
-%       c = 0.9747;
-%       d = 0.7233;
-%       V_maxGen = max(inputs.maxVRI,25); % 25 =  Possible maximum reel-out speed
-%       outputs.genEff_RO(i,i)        = (a*(outputs.VRO_osci(i,i)/V_maxGen)^3+b*(outputs.VRO_osci(i,i)/V_maxGen)^2+c*(outputs.VRO_osci(i,i)/V_maxGen)+d)^sign(1);
-%       outputs.PROeff_elec_osci(i,i) = outputs.PROeff_mech_osci(i,i)*inputs.etaGearbox*outputs.genEff_RO(i,i)*inputs.etaPE;
-%       outputs.PROeff_elec_osci_cap(i,i) = min(inputs.F_peakM2Ecyc*inputs.P_ratedElec,...
-%                                      outputs.PROeff_mech_osci(i,i)*inputs.etaGearbox*outputs.genEff_RO(i,i)*inputs.etaPE);
-%     end
-%     
-%     outputs.PROeff_mech(i)     = mean(outputs.PROeff_mech_osci(i,:));
-%     outputs.PROeff_elec(i)     = mean(outputs.PROeff_elec_osci(i,:));
-%     outputs.PROeff_elec_cap(i) = mean(outputs.PROeff_elec_osci_cap(i,:));       
-
+                                   sum(outputs.tRIeff(i,:).*outputs.PRIeff_mech(i,:)) - outputs.t2(i)*outputs.PRI2_mech(i))/outputs.tCycle(i);
 end 

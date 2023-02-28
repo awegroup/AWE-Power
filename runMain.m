@@ -50,6 +50,42 @@ for i=1:length(inputs.Vw_ref)
    end  
 end
 
+%% Second optimisation iteration for following mean of capped electrical power from the first iteration
+outputs1 = outputs;
+clear outputs
+inputs.targetPRO_elec = outputs1.PROeff_elec_cap;
+%      [deltaL, VRI, CL, avgPattEle, pattAngRadius, startPattRadius]
+x0      = [100, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
+for i=1:length(inputs.Vw_ref)
+  % Output of previous wind speed as input to next wind speed
+  x_init = x0;  
+%  x_init    = [100, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
+  x0     = x_init./x_init;
+  lb     = [20, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),sqrt(inputs.AR*inputs.WA)/2]./x_init; % 
+  ub     = [500, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),500]./x_init; % 
+  options                           = optimoptions('fmincon');
+  options.Display                   = 'iter-detailed';
+  options.Algorithm                 = 'sqp';
+  options.FiniteDifferenceType      = 'central';
+  options.MaxFunctionEvaluations    = 5000*numel(x_init);
+  options.MaxIterations             = 1000*numel(x_init);
+  con = @(x) constraints(i,inputs);
+  
+  [x,fval,exitflag(i),optHist(i),lambda(i)] = fmincon(@(x) objective(x,x_init,i,inputs),x0,[],[],[],[],lb,ub,con,options);
+  
+  % Storing final results
+   [~,inputs,outputs] = objective(x,x_init,i,inputs);
+   x0 = x.*x_init;
+     
+   
+   % Changing initial guess if previous wind speed evaluation is infeasible
+   if outputs.P_cycleElec(i) <= 0
+       x0 = [100, 5, 1.5, deg2rad(20),deg2rad(12),200]; % 
+   end  
+end
+% Storing back the capped powerresults from first optimisation
+outputs.PROeff_elec_osci = outputs1.PROeff_elec_osci_cap;
+
 %% Post processing
 Vw = inputs.Vw_ref; 
 
@@ -363,32 +399,7 @@ hold off
 % %xlim([0 25]);
 % hold off
 
-%% Second optimisation iteration for following capped electrical power
-% outputs1 = outputs;
-% clear outputs
-% inputs.targetPRO_elec = outputs1.PROeff_elec_cap;
-% x0      = [100, 30, 1.5, deg2rad(20),deg2rad(12),100]; %
-% for i=1:length(inputs.Vw)
-%   % Output of previous wind speed as input to next wind speed
-%   x_init = x0;
-%   x0     = x_init./x_init;
-%   lb     = [20, 5, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),50]./x_init; % 
-%   ub     = [300, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),500]./x_init; % 
-%   con    = @(x) constraints(i,inputs);
-%   
-%   [x,fval,exitflag(i),optHist(i),lambda(i)] = fmincon(@(x) objective(x,x_init,i,inputs),x0,[],[],[],[],lb,ub,con,options);
-%   
-%   % Storing final results
-%    [~,inputs,outputs] = objective(x,x_init,i,inputs);
-%    x0 = x.*x_init;
-%    
-%    % Changing initial guess if previous wind speed evaluation is infeasible
-%    if outputs.P_cycleElec(i) < 0
-%        x0 = [100, 15, 1.5, deg2rad(20),deg2rad(12),100]; % 
-%    end  
-% end
-% % Storing back the capped powerresults from first optimisation
-% outputs.PROeff_elec_osci = outputs1.PROeff_elec_osci_cap;
+
 
 %% GA
 %    outputs = struct();
