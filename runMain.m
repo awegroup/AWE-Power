@@ -10,25 +10,25 @@ inputSheet_AP3;
 
 %% Optimise operation for every wind speed: Uncapped electrical power
 %      [deltaL, VRI, CL, avgPattEle, pattAngRadius, startPattRadius]
-x0      = [100, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
+x0      = [200, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
 for i=1:length(inputs.Vw_ref)
   % Output of previous wind speed as input to next wind speed
   x_init = x0;  
-%  x_init    = [100, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
+%  x_init    = [200, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
   x0     = x_init./x_init;
-  lb     = [20, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),sqrt(inputs.AR*inputs.WA)/2]./x_init; % 
-  ub     = [500, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),500]./x_init; % 
+  lb     = [100, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),sqrt(inputs.AR*inputs.WA)/2]./x_init; % 
+  ub     = [600, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),500]./x_init; % 
   options                           = optimoptions('fmincon');
   options.Display                   = 'iter-detailed';
   options.Algorithm                 = 'sqp';
   options.FiniteDifferenceType      = 'central';
-  %options.FiniteDifferenceStepSize  = [1e-3 1e-3 1e-6 1e-7 1e-7 1e-3];
+  options.FiniteDifferenceStepSize  = [1e-12 1e-12 eps^(1/3) eps^(1/3) eps^(1/3) eps^(1/3)];
 %   options.FiniteDifferenceStepSize  = 1e-6;
-%   options.OptimalityTolerance       = 1e-12;
+  options.OptimalityTolerance       = 1e-9;
 %   options.StepTolerance             = 1e-6;
   options.MaxFunctionEvaluations    = 5000*numel(x_init);
   options.MaxIterations             = 1000*numel(x_init);
-%   options.ConstraintTolerance      = 1e-3;
+  options.ConstraintTolerance      = 1e-3;
 %   options.FunctionTolerance        = 1e-9;
 %   options.DiffMaxChange            = 1e-1;
 %   options.DiffMinChange            = 0;
@@ -46,29 +46,34 @@ for i=1:length(inputs.Vw_ref)
    
    % Changing initial guess if previous wind speed evaluation is infeasible
    if outputs.P_cycleElec(i) <= 0
-       x0 = [100, 5, 1.5, deg2rad(20),deg2rad(12),200]; % 
+       x0 = [200, 5, 1.5, deg2rad(20),deg2rad(12),200]; % 
    end  
 end
 
 %% Second optimisation iteration for following mean of capped electrical power from the first iteration
 outputs1 = outputs;
 clear outputs
-inputs.targetPRO_elec = outputs1.PROeff_elec_cap;
+inputs.targetPRO_mech = outputs1.PROeff_mech_cap;
 %      [deltaL, VRI, CL, avgPattEle, pattAngRadius, startPattRadius]
-x0      = [100, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
+x0      = [200, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
 for i=1:length(inputs.Vw_ref)
   % Output of previous wind speed as input to next wind speed
   x_init = x0;  
-%  x_init    = [100, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
+%  x_init    = [200, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
   x0     = x_init./x_init;
-  lb     = [20, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),sqrt(inputs.AR*inputs.WA)/2]./x_init; % 
-  ub     = [500, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),500]./x_init; % 
+  lb     = [100, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),sqrt(inputs.AR*inputs.WA)/2]./x_init; % 
+  ub     = [600, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),500]./x_init; % 
   options                           = optimoptions('fmincon');
   options.Display                   = 'iter-detailed';
   options.Algorithm                 = 'sqp';
   options.FiniteDifferenceType      = 'central';
+  options.FiniteDifferenceStepSize  = [1e-12 1e-12 eps^(1/3) eps^(1/3) eps^(1/3) eps^(1/3)];
+  options.OptimalityTolerance       = 1e-9;
+%   options.StepTolerance             = 1e-6;
   options.MaxFunctionEvaluations    = 5000*numel(x_init);
   options.MaxIterations             = 1000*numel(x_init);
+  options.ConstraintTolerance      = 1e-3;
+
   con = @(x) constraints(i,inputs);
   
   [x,fval,exitflag(i),optHist(i),lambda(i)] = fmincon(@(x) objective(x,x_init,i,inputs),x0,[],[],[],[],lb,ub,con,options);
@@ -80,10 +85,11 @@ for i=1:length(inputs.Vw_ref)
    
    % Changing initial guess if previous wind speed evaluation is infeasible
    if outputs.P_cycleElec(i) <= 0
-       x0 = [100, 5, 1.5, deg2rad(20),deg2rad(12),200]; % 
+       x0 = [200, 5, 1.5, deg2rad(20),deg2rad(12),200]; % 
    end  
 end
-% Storing back the capped powerresults from first optimisation
+% Storing back the capped power results from first optimisation
+outputs.PROeff_mech_osci = outputs1.PROeff_mech_osci_cap;
 outputs.PROeff_elec_osci = outputs1.PROeff_elec_osci_cap;
 
 %% Post processing
@@ -175,37 +181,37 @@ for i=1:length(Vw)
 end
 
 %% Representative instantaneous cycle data
-timeseries = struct();
-for i = postProRes.cutIn:length(Vw)
-  [timeseries.ws(i)] = createTimeseries(i,postProRes);
-end
-
-%% Plots
-
-% Cycle timeseries plots, Check reel-in representation: Time and power in each regime should add to total reel-in energy
-windSpeeds = [postProRes.ratedWind];
-for i = windSpeeds
-  tmax = round(max(postProRes.tCycle(windSpeeds)));
-  pmax = 1.2*inputs.F_peakM2Ecyc*max(postProRes.Pcycle_elec(windSpeeds))/10^3;
-%   pmax = 1.5*max(postProRes.Pcycle_elec(windSpeeds))/10^3;
-  pmin = min(-postProRes.PRIeff_elec(windSpeeds))/10^3;
-  
-  figure('units','inch','Position', [15 3 3.5 2.2])
-  hold on
-  grid on
-  box on
-  yline(0);
-  yline(postProRes.Pcycle_elec(timeseries.ws(i).ws)/10^3,'--','linewidth',1);
-  plot(timeseries.ws(i).t_inst, timeseries.ws(i).P_e_inst,'linewidth',1.5);
-  plot(timeseries.ws(i).t_inst, timeseries.ws(i).P_m_inst,'linewidth',1.5);
-  ylabel('Electrical power (kW)');
-  xlabel('Time (s)');
-  %xlim([0 tmax]);
-  %ylim([pmin pmax]);
-  title(strcat('Wind speed at 100m:',num2str(timeseries.ws(i).ws),'m/s'));
-%   legend('Electrical','Mechanical','location','northwest');
-  hold off
-end
+% timeseries = struct();
+% for i = postProRes.cutIn:length(Vw)
+%   [timeseries.ws(i)] = createTimeseries(i,postProRes);
+% end
+% 
+% %% Plots
+% 
+% % Cycle timeseries plots, Check reel-in representation: Time and power in each regime should add to total reel-in energy
+% windSpeeds = [postProRes.ratedWind];
+% for i = windSpeeds
+%   tmax = round(max(postProRes.tCycle(windSpeeds)));
+%   pmax = 1.2*inputs.F_peakM2Ecyc*max(postProRes.Pcycle_elec(windSpeeds))/10^3;
+% %   pmax = 1.5*max(postProRes.Pcycle_elec(windSpeeds))/10^3;
+%   pmin = min(-postProRes.PRIeff_elec(windSpeeds))/10^3;
+%   
+%   figure('units','inch','Position', [15 3 3.5 2.2])
+%   hold on
+%   grid on
+%   box on
+%   yline(0);
+%   yline(postProRes.Pcycle_elec(timeseries.ws(i).ws)/10^3,'--','linewidth',1);
+%   plot(timeseries.ws(i).t_inst, timeseries.ws(i).P_e_inst,'linewidth',1.5);
+%   plot(timeseries.ws(i).t_inst, timeseries.ws(i).P_m_inst,'linewidth',1.5);
+%   ylabel('Electrical power (kW)');
+%   xlabel('Time (s)');
+%   %xlim([0 tmax]);
+%   %ylim([pmin pmax]);
+%   title(strcat('Wind speed at 100m:',num2str(timeseries.ws(i).ws),'m/s'));
+% %   legend('Electrical','Mechanical','location','northwest');
+%   hold off
+% end
 
 % Parameter plots
 

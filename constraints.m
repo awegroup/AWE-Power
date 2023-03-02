@@ -26,13 +26,12 @@ function [c, ceq] = constraints(i,inputs)
   
   %% Equality constraints
   
-  % Algorithm requires an argument        
-  ceq(1)    = 0;
-  
   % Only used in second iter of optimisation when capping max. electrical power
-  if inputs.targetPRO_elec ~= 0
-      % Capping for max. reel-out electrical power
-      ceq(2)    = mean(outputs.PROeff_elec(i,:)) - inputs.targetPRO_elec(i);
+  if inputs.targetPRO_mech ~= 0
+      % Capping for max. reel-out mech power
+      ceq(1)    = (mean(outputs.PROeff_mech(i,:)) - inputs.targetPRO_mech(i))/inputs.targetPRO_mech(i);
+  else
+      ceq(1)    = 0;
   end
  
 end
