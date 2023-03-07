@@ -16,7 +16,7 @@ function [c, ceq] = constraints(i,inputs)
   c(4) = (outputs.L_teMax(i) - inputs.maxTeLen)/inputs.maxTeLen; 
   
   % Min number of patterns to get into transition 
-  c(5) = (1 - mean(outputs.numOfPatt(i,:)))/2;
+  c(5) = (1 - mean(outputs.numOfPatt(i,:)))/3;
   
   % Max. cycle avg height
   c(6) = (outputs.H_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight;
@@ -26,12 +26,10 @@ function [c, ceq] = constraints(i,inputs)
   
   %% Equality constraints
   
-  % Only used in second iter of optimisation when capping max. electrical power
-  if inputs.targetPRO_mech ~= 0
-      % Capping for max. reel-out mech power
-      ceq(1)    = (mean(outputs.PROeff_mech(i,:)) - inputs.targetPRO_mech(i))/inputs.targetPRO_mech(i);
+  if inputs.targetPRO_mech ~= 0 % Only run in Second Optimisation to follow capped mean mech. power
+      ceq(1)    = (mean(outputs.PROeff_mech(i,:)) - inputs.targetPRO_mech(i))/inputs.targetPRO_mech(i)/10;
   else
-      ceq(1)    = 0;
+      ceq(1)    = 0; % For First Optimisation
   end
  
 end

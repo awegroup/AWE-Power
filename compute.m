@@ -169,7 +169,7 @@ function [inputs] = compute(i,inputs)
       
       %% Reel-out speed oscillation due to gravity
       
-      if inputs.targetPRO_mech == 0
+      if inputs.targetPRO_mech == 0 % Only run in First Optimisation 
       
         outputs.T_simple(i)    = min(outputs.Tmax_act, (4/9)*outputs.CL(i)^3/outputs.CD(i)^2*(1/2)*mean(outputs.rho_air(i,:))*...
                                   inputs.WA*mean(outputs.Vw(i,:))^2);
@@ -179,7 +179,7 @@ function [inputs] = compute(i,inputs)
         outputs.s(i)           = outputs.a_simple(i)*(mean(outputs.delta(i,:))*outputs.T_simple(i)-mean(outputs.lambda(i,:))*outputs.W(i))/...
                                     (mean(outputs.lambda(i,:))^2+mean(outputs.delta(i,:))^2);
         outputs.VSR_down(i)    = outputs.VA_simple(i)*outputs.s(i);
-        outputs.VRO_osciAmp(i) = abs(outputs.VSR_down(i) - outputs.VSR_simple(i));
+        outputs.VRO_osciAmp(i) = abs(outputs.VSR_down(i) - outputs.VSR_simple(i))*cos(outputs.avgPattEle(i));
 %         outputs.VRO_osciAmp(i) = 0;
         % To match the number of deltaL elements to the number of elements considering pattern 
         if mean(outputs.numOfPatt(i,:)) == 0 
@@ -187,10 +187,13 @@ function [inputs] = compute(i,inputs)
         end
         outputs.numPattParts(i)   = outputs.deltaLelems/mean(outputs.numOfPatt(i,:));  
         for j=1:round(outputs.numPattParts(i)*mean(outputs.numOfPatt(i,:)))
-          outputs.VRO_osci(i,j)             = outputs.VRO(i,j) + outputs.VRO_osciAmp(i)*sin((j-1)*2*pi()/(outputs.numPattParts(i)-1));      
+          outputs.VRO_osci(i,j)             = outputs.VRO(i,j) + outputs.VRO_osciAmp(i)*sin((j-1)*2*pi()/(outputs.numPattParts(i))+270/180*pi());      
           outputs.PROeff_mech_osci(i,j)     = outputs.T(i)*outputs.VRO_osci(i,j); %[W]
           outputs.PROeff_mech_osci_cap(i,j) = min(inputs.F_peakM2Ecyc*inputs.P_ratedElec, outputs.PROeff_mech_osci(i,j));
-          outputs.PROeff_elec_osci_cap(i,j) = outputs.PROeff_mech_osci_cap(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE;
+          outputs.genEff_RO_osci(i,j)  = (inputs.etaGen.param(1)*(outputs.VRO_osci(i,j)/inputs.etaGen.Vmax)^3 + ...
+                                           inputs.etaGen.param(2)*(outputs.VRO_osci(i,j)/inputs.etaGen.Vmax)^2 + ...
+                                            inputs.etaGen.param(3)*(outputs.VRO_osci(i,j)/inputs.etaGen.Vmax)+inputs.etaGen.param(4))^sign(1);
+          outputs.PROeff_elec_osci_cap(i,j) = outputs.PROeff_mech_osci_cap(i,j)*inputs.etaGearbox*outputs.genEff_RO_osci(i,j)*inputs.etaPE;
         end
         outputs.PROeff_mech_cap(i) = mean(outputs.PROeff_mech_osci_cap(i,:)); 
         outputs.PROeff_elec_cap(i) = mean(outputs.PROeff_elec_osci_cap(i,:)); 

@@ -22,13 +22,12 @@ for i=1:length(inputs.Vw_ref)
   options.Display                   = 'iter-detailed';
   options.Algorithm                 = 'sqp';
   options.FiniteDifferenceType      = 'central';
-  options.FiniteDifferenceStepSize  = [1e-12 1e-12 eps^(1/3) eps^(1/3) eps^(1/3) eps^(1/3)];
+%  options.FiniteDifferenceStepSize  = [1e-12 1e-12 eps^(1/3) eps^(1/3) eps^(1/3) eps^(1/3)];
 %   options.FiniteDifferenceStepSize  = 1e-6;
-  options.OptimalityTolerance       = 1e-9;
+%  options.OptimalityTolerance       = 1e-9;
 %   options.StepTolerance             = 1e-6;
-  options.MaxFunctionEvaluations    = 5000*numel(x_init);
-  options.MaxIterations             = 1000*numel(x_init);
-  options.ConstraintTolerance      = 1e-3;
+%  options.MaxFunctionEvaluations    = 5000*numel(x_init);
+%  options.MaxIterations             = 1000*numel(x_init);
 %   options.FunctionTolerance        = 1e-9;
 %   options.DiffMaxChange            = 1e-1;
 %   options.DiffMinChange            = 0;
@@ -49,8 +48,11 @@ for i=1:length(inputs.Vw_ref)
        x0 = [200, 5, 1.5, deg2rad(20),deg2rad(12),200]; % 
    end  
 end
+% Store optimisation results data
+optData(1).optHist  = optHist;
+optData(1).exitflag = exitflag;
 
-%% Second optimisation iteration for following mean of capped electrical power from the first iteration
+%% Second optimisation iteration for following mean of capped mech. power from the first iteration
 outputs1 = outputs;
 clear outputs
 inputs.targetPRO_mech = outputs1.PROeff_mech_cap;
@@ -67,12 +69,12 @@ for i=1:length(inputs.Vw_ref)
   options.Display                   = 'iter-detailed';
   options.Algorithm                 = 'sqp';
   options.FiniteDifferenceType      = 'central';
-  options.FiniteDifferenceStepSize  = [1e-12 1e-12 eps^(1/3) eps^(1/3) eps^(1/3) eps^(1/3)];
-  options.OptimalityTolerance       = 1e-9;
+%   options.FiniteDifferenceStepSize  = [1e-12 1e-12 eps^(1/3) eps^(1/3) eps^(1/3) eps^(1/3)];
+%   options.OptimalityTolerance       = 1e-9;
 %   options.StepTolerance             = 1e-6;
-  options.MaxFunctionEvaluations    = 5000*numel(x_init);
-  options.MaxIterations             = 1000*numel(x_init);
-  options.ConstraintTolerance      = 1e-3;
+  options.MaxFunctionEvaluations    = 400*numel(x_init);
+  options.MaxIterations             = 200*numel(x_init);
+  options.ConstraintTolerance       = 1e-3;
 
   con = @(x) constraints(i,inputs);
   
@@ -88,9 +90,13 @@ for i=1:length(inputs.Vw_ref)
        x0 = [200, 5, 1.5, deg2rad(20),deg2rad(12),200]; % 
    end  
 end
-% Storing back the capped power results from first optimisation
+
+% Storing back the capped oscillating power results from first optimisation
 outputs.PROeff_mech_osci = outputs1.PROeff_mech_osci_cap;
 outputs.PROeff_elec_osci = outputs1.PROeff_elec_osci_cap;
+% Store optimisation results data
+optData(2).optHist  = optHist;
+optData(2).exitflag = exitflag;
 
 %% Post processing
 Vw = inputs.Vw_ref; 
@@ -180,49 +186,13 @@ for i=1:length(Vw)
 %     outputs.axialInductionF(i,2) = a(2);
 end
 
-%% Representative instantaneous cycle data
-% timeseries = struct();
-% for i = postProRes.cutIn:length(Vw)
-%   [timeseries.ws(i)] = createTimeseries(i,postProRes);
-% end
-% 
-% %% Plots
-% 
-% % Cycle timeseries plots, Check reel-in representation: Time and power in each regime should add to total reel-in energy
-% windSpeeds = [postProRes.ratedWind];
-% for i = windSpeeds
-%   tmax = round(max(postProRes.tCycle(windSpeeds)));
-%   pmax = 1.2*inputs.F_peakM2Ecyc*max(postProRes.Pcycle_elec(windSpeeds))/10^3;
-% %   pmax = 1.5*max(postProRes.Pcycle_elec(windSpeeds))/10^3;
-%   pmin = min(-postProRes.PRIeff_elec(windSpeeds))/10^3;
-%   
-%   figure('units','inch','Position', [15 3 3.5 2.2])
-%   hold on
-%   grid on
-%   box on
-%   yline(0);
-%   yline(postProRes.Pcycle_elec(timeseries.ws(i).ws)/10^3,'--','linewidth',1);
-%   plot(timeseries.ws(i).t_inst, timeseries.ws(i).P_e_inst,'linewidth',1.5);
-%   plot(timeseries.ws(i).t_inst, timeseries.ws(i).P_m_inst,'linewidth',1.5);
-%   ylabel('Electrical power (kW)');
-%   xlabel('Time (s)');
-%   %xlim([0 tmax]);
-%   %ylim([pmin pmax]);
-%   title(strcat('Wind speed at 100m:',num2str(timeseries.ws(i).ws),'m/s'));
-% %   legend('Electrical','Mechanical','location','northwest');
-%   hold off
-% end
+%% Representative pattern average cycle timeseries data
+timeseries = struct();
+for i = postProRes.cutIn:length(Vw)
+  [timeseries.ws(i)] = createTimeseries(i,postProRes);
+end
 
-% Parameter plots
-
-newcolors = [ % 0.25, 0.25, 0.25
-  0 0.4470 0.7410
-0.8500 0.3250 0.0980 
-0.4660, 0.6740, 0.1880
-0.9290, 0.6940, 0.1250
-0.4940, 0.1840, 0.5560
-0.6350 0.0780 0.1840
-0.3010 0.7450 0.9330];
+%% Plots
 
 % Wind profile
 Vref = 10; % m/s
@@ -237,6 +207,56 @@ xlim([0.5 1.5])
 xlabel('Wind Speed (-)')
 ylabel('Height (m)')
 
+newcolors = [ % 0.25, 0.25, 0.25
+  0 0.4470 0.7410
+0.8500 0.3250 0.0980 
+0.4660, 0.6740, 0.1880
+0.9290, 0.6940, 0.1250
+0.4940, 0.1840, 0.5560
+0.6350 0.0780 0.1840
+0.3010 0.7450 0.9330];
+
+% Cycle timeseries plots: Pattern averages
+windSpeeds = [16];
+for i = windSpeeds
+  tmax = round(max(postProRes.tCycle(windSpeeds)));
+  pmax = 1.2*inputs.F_peakM2Ecyc*max(postProRes.Pcycle_elec(windSpeeds))/10^3;
+%   pmax = 1.5*max(postProRes.Pcycle_elec(windSpeeds))/10^3;
+  pmin = min(-postProRes.PRIeff_elec(windSpeeds))/10^3;
+  
+  figure('units','inch','Position', [15 3 3.5 2.2])
+  hold on
+  grid on
+  box on
+  yline(0);
+  yline(postProRes.Pcycle_elec(timeseries.ws(i).ws)/10^3,'--','linewidth',1);
+  plot(timeseries.ws(i).t_inst, timeseries.ws(i).P_e_inst,'linewidth',1.5);
+  plot(timeseries.ws(i).t_inst, timeseries.ws(i).P_m_inst,'linewidth',1.5);
+  ylabel('Electrical power (kW)');
+  xlabel('Time (s)');
+  %xlim([0 tmax]);
+  %ylim([pmin pmax]);
+  title(strcat('Wind speed at 100m:',num2str(timeseries.ws(i).ws),'m/s'));
+%   legend('Electrical','Mechanical','location','northwest');
+  hold off
+end
+
+% Mechanical reel-out power oscillation and capping
+i = [8, 13,25];
+d.series1 = outputs.PROeff_mech_osci(i(1),:)/10^3;  
+d.series2 = outputs.PROeff_mech_osci(i(2),:)/10^3; 
+d.series3 = outputs.PROeff_mech_osci(i(3),:)/10^3; 
+figure('units','inch','Position', [4 4 3.5 2.2])
+hold on
+grid on
+box on
+plot(d.series1,'linewidth',1.2);
+plot(d.series2,'linewidth',1.2);
+plot(d.series3,'linewidth',1.2);
+ylabel('P_{m,RO} (kW)');
+legend(strcat(num2str(i(1)),'m/s'),strcat(num2str(i(2)),'m/s'),strcat(num2str(i(3)),'m/s'),'location','southeast');
+xlabel('Discretised reel-out phase');
+hold off
 
 % VRO, VRI, tRO, tRI
 figure('units','inch','Position', [3 3 3.5 2.2])
@@ -352,7 +372,7 @@ xlim([0 25]);
 hold off
 
 
-%% Power curve comparison plot
+% Power curve comparison plot
 % Loyd
 CL_loyd = inputs.CL_maxAirfoil*inputs.F_CLeff;
 CD_loyd = inputs.CD0 + (CL_loyd-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
@@ -367,7 +387,6 @@ AP3.PC.ws    = [7.32E+00, 8.02E+00, 9.05E+00, 1.00E+01, 1.10E+01, 1.20E+01, ...
   1.30E+01, 1.41E+01, 1.50E+01, 1.60E+01, 1.70E+01, 1.80E+01, 1.90E+01]; %[m/s]
 AP3.PC.power = [0.00E+00, 7.01E+03, 2.37E+04, 4.31E+04, 6.47E+04, 8.46E+04, ...
   1.02E+05, 1.20E+05, 1.34E+05, 1.49E+05, 1.50E+05, 1.50E+05, 1.50E+05]./10^3; %[kW]
-
 figure('units','inch','Position', [4 4 3.5 2.2])
 colororder(newcolors)
 hold on
@@ -382,42 +401,12 @@ legend('Loyd','Model','6DOF','location','southeast');
 xlabel('Wind speed at 100m height (m/s)');
 xlim([0 25]);
 hold off
-
-%% Plot oscillating VRO and PRO_mech
-% i = [7,12,18, 24];
-% d.series1 = system.PROeff_elec_osci(i(1),:)/10^3;  
-% d.series2 = system.PROeff_elec_osci(i(2),:)/10^3; 
-% d.series3 = system.PROeff_elec_osci(i(3),:)/10^3; 
-% d.series4 = system.PROeff_elec_osci(i(4),:)/10^3; 
-% 
-% figure('units','inch','Position', [4 4 3.5 2.2])
-% hold on
-% grid on
-% box on
-% plot(d.series1,'linewidth',1.2);
-% plot(d.series2,'linewidth',1.2);
-% plot(d.series3,'linewidth',1.2);
-% plot(d.series4,'linewidth',1.2);
-% ylabel('Electrical capped power (kW)');
-% %ylim([30 100]);
-% legend(strcat(num2str(i(1)),'m/s'),strcat(num2str(i(2)),'m/s'),strcat(num2str(i(3)),'m/s'),strcat(num2str(i(4)),'m/s'),'location','southeast');
-% xlabel('Positions in a single pattern');
-% %xlim([0 25]);
-% hold off
-
-
-
-%% GA
-%    outputs = struct();
-%     lb     = [50, 5, inputs.CL0_airfoil, deg2rad(2), deg2rad(2),deg2rad(2)];
-%     ub     = [250, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(90),deg2rad(60),deg2rad(90)];
-%     options                           = optimoptions('ga');
-%     con = @(x) constraints_GA(i,inputs,outputs);
-%   obj = @(x) objective_GA(i,inputs,outputs);
-%   [x, fval,exitflag(i),optHist(i)] = ga(obj ,numel(lb),[],[],[],[],lb,ub,con,options);
-%      %Storing final results
-%    [~,inputs,outputs] = objective_GA(x,i,inputs,outputs);
-
-
-
  
+%% Sine wave plot for VRO oscillation
+% t = linspace(270*pi/180,(270+360)*pi/180,1000);  
+% x = sin(t); 
+% figure() 
+% hold on
+% plot(t,x,'linewidth',2);
+% axis off
+% box on
