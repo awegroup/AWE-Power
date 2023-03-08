@@ -410,3 +410,28 @@ hold off
 % plot(t,x,'linewidth',2);
 % axis off
 % box on
+
+%% Oscillation theories comparison
+% figure()
+% hold on
+% box on
+% grid on
+% plot(outputs.VRO_osci(7,:))
+% plot(outputs.VRO_osci2(7,:))
+% ylim([-3 20])
+% 
+% figure()
+% hold on
+% box on
+% grid on
+% plot(outputs.VRO_osci(16,:))
+% plot(outputs.VRO_osci2(16,:))
+% ylim([-3 20])
+% 
+% figure()
+% hold on
+% box on
+% grid on
+% plot(outputs.VRO_osci(25,:))
+% plot(outputs.VRO_osci2(25,:))
+% ylim([-3 20])

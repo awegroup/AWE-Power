@@ -171,6 +171,7 @@ function [inputs] = compute(i,inputs)
       
       if inputs.targetPRO_mech == 0 % Only run in First Optimisation 
       
+        % Vertical and Horizontal Sink rate difference theory
         outputs.T_simple(i)    = min(outputs.Tmax_act, (4/9)*outputs.CL(i)^3/outputs.CD(i)^2*(1/2)*mean(outputs.rho_air(i,:))*...
                                   inputs.WA*mean(outputs.Vw(i,:))^2);
         outputs.VSR_simple(i)  = outputs.CD(i)/outputs.CL(i)^(3/2)*sqrt(outputs.T_simple(i)/(0.5*mean(outputs.rho_air(i,:))*inputs.WA));
@@ -187,7 +188,16 @@ function [inputs] = compute(i,inputs)
         end
         outputs.numPattParts(i)   = outputs.deltaLelems/mean(outputs.numOfPatt(i,:));  
         for j=1:round(outputs.numPattParts(i)*mean(outputs.numOfPatt(i,:)))
-          outputs.VRO_osci(i,j)             = outputs.VRO(i,j) + outputs.VRO_osciAmp(i)*sin((j-1)*2*pi()/(outputs.numPattParts(i))+270/180*pi());      
+          
+          % Vertical and Horizontal Sink rate difference theory
+          outputs.VRO_osci(i,j)             = outputs.VRO(i,j) + outputs.VRO_osciAmp(i)*sin((j-1)*2*pi()/(outputs.numPattParts(i))+270/180*pi()); 
+          
+          % KE + PE exchange theory
+          outputs.VA_osciAmp(i,j) = sqrt(outputs.VA(i,j)^2+2*inputs.gravity*outputs.pattRadius(i,j)) - outputs.VA(i,j);
+          outputs.VA_osci(i,j)    = outputs.VA(i,j) + outputs.VA_osciAmp(i)*sin((j-1)*2*pi()/(outputs.numPattParts(i))+270/180*pi());
+          outputs.osciFactor(i,j) = (outputs.VA_osci(i,j)/outputs.VA(i,j))^2*cos(outputs.avgPattEle(i));
+          outputs.VRO_osci2(i,j)   = outputs.VRO(i,j)*outputs.osciFactor(i,j);
+            
           outputs.PROeff_mech_osci(i,j)     = outputs.T(i)*outputs.VRO_osci(i,j); %[W]
           outputs.PROeff_mech_osci_cap(i,j) = min(inputs.F_peakM2Ecyc*inputs.P_ratedElec, outputs.PROeff_mech_osci(i,j));
           outputs.genEff_RO_osci(i,j)  = (inputs.etaGen.param(1)*(outputs.VRO_osci(i,j)/inputs.etaGen.Vmax)^3 + ...
@@ -197,7 +207,12 @@ function [inputs] = compute(i,inputs)
         end
         outputs.PROeff_mech_cap(i) = mean(outputs.PROeff_mech_osci_cap(i,:)); 
         outputs.PROeff_elec_cap(i) = mean(outputs.PROeff_elec_osci_cap(i,:)); 
-      end
+      
+
+        end
+      
+      
+      
 
       %% P_cycleElec 
       if outputs.VRO(i,:)<0
