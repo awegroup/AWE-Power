@@ -169,7 +169,7 @@ function [inputs] = compute(i,inputs)
       
       %% Reel-out speed oscillation due to gravity
       
-      if inputs.targetPRO_mech == 0 % Only run in First Optimisation 
+      if inputs.targetPRO_mech == 0 % Only run in First Optimisation-run
       
         % Vertical and Horizontal Sink rate difference theory
         outputs.T_simple(i)    = min(outputs.Tmax_act, (4/9)*outputs.CL(i)^3/outputs.CD(i)^2*(1/2)*mean(outputs.rho_air(i,:))*...
@@ -180,7 +180,7 @@ function [inputs] = compute(i,inputs)
         outputs.s(i)           = outputs.a_simple(i)*(mean(outputs.delta(i,:))*outputs.T_simple(i)-mean(outputs.lambda(i,:))*outputs.W(i))/...
                                     (mean(outputs.lambda(i,:))^2+mean(outputs.delta(i,:))^2);
         outputs.VSR_down(i)    = outputs.VA_simple(i)*outputs.s(i);
-        outputs.VRO_osciAmp(i) = abs(outputs.VSR_down(i) - outputs.VSR_simple(i))*cos(outputs.avgPattEle(i));
+        outputs.VRO_osciAmp(i) = abs(abs(outputs.VSR_down(i)) - outputs.VSR_simple(i))*cos(outputs.avgPattEle(i));
 %         outputs.VRO_osciAmp(i) = 0;
         % To match the number of deltaL elements to the number of elements considering pattern 
         if mean(outputs.numOfPatt(i,:)) == 0 
@@ -207,12 +207,7 @@ function [inputs] = compute(i,inputs)
         end
         outputs.PROeff_mech_cap(i) = mean(outputs.PROeff_mech_osci_cap(i,:)); 
         outputs.PROeff_elec_cap(i) = mean(outputs.PROeff_elec_osci_cap(i,:)); 
-      
-
-        end
-      
-      
-      
+      end
 
       %% P_cycleElec 
       if outputs.VRO(i,:)<0
