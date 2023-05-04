@@ -17,11 +17,18 @@ if inputs.mainPlots == 1
   Vref = 10; % m/s
   z = 10:10:600; % m
   V = Vref * (z/inputs.h_ref).^inputs.windShearExp/Vref;
+%   MegAWES Onshore location Cabauw. Wind speeds normalized with value at 100m
+  z_MegAWES = [10,20,40,60,80,100,120,140,150,160,180,200,220,250,300,500,600];
+  V_MegAWES_Cabauw = [0.541219682843206,0.607355091566827,0.768630154201962,0.868484406441142,0.941395360902529,1,1.04810058627160,1.08638854381156,1.10277338731106,1.11715868927737,1.14412258234309,1.16573551308321,1.18394938534465,1.20653423381438,1.23266397972046,1.26662287360302,1.26414483994687];
+  V_MegAWES_Ijmuiden = [0.847612611633547,0.870603040595613,0.927240267828556,0.959346286990695,0.982291573490674,1,1.01377720773809,1.02356771954493,1.02766760602000,1.03079423355205,1.03659625208888,1.04025827758100,1.04284618416620,1.04496440015282,1.04461712713371,1.02473617783789,1.01076976884552];
   figure('units','inch','Position', [15 6 3.5 2.2])
   hold on
   box on
   grid on
   plot(V,z,'linewidth',1.5)
+  plot(V_MegAWES_Cabauw,z_MegAWES,'linewidth',1.5)
+  plot(V_MegAWES_Ijmuiden,z_MegAWES,'linewidth',1.5)
+  legend('α = 0.143','Cabauw,NL','Ijmuiden,NL');
   xlim([0.5 1.5])
   xlabel('Wind Speed (-)')
   ylabel('Height (m)')
@@ -109,7 +116,7 @@ if inputs.mainPlots == 1
   plot(Vw, postProRes.deltaL,'^:','markersize',3);
   plot(Vw, postProRes.L_teMax,'+:','markersize',3);
   ylabel('Length (m)');
-  legend('H_{cycleAvg}','R_{cycleAvg}','ΔL','L_{t,max}','location','northwest','Orientation','vertical');
+  legend('H_{p,avg}','R_{p,avg}','Δl','l_{t,max}','location','northwest','Orientation','vertical');
   xlabel('Wind speed at 100m height (m/s)');
   xlim([0 25]);
   %ylim([0 160]);
@@ -125,7 +132,7 @@ if inputs.mainPlots == 1
   plot(Vw, postProRes.avgPattEle,'^:','markersize',3);
   plot(Vw, postProRes.pattAngRadius,'o:','markersize',3);
   ylabel('Angle (deg)');
-  legend('Avg. roll angle','Avg. patt ele','Patt. angular radius','location','northwest','Orientation','vertical');
+  legend('ϕ_{avg}','β_{avg}','Δβ_{avg}','location','northwest','Orientation','vertical');
   xlabel('Wind speed at 100m height (m/s)');
   xlim([0 25]);
   %ylim([0 160]);
@@ -146,7 +153,7 @@ if inputs.mainPlots == 1
   plot(Vw, mean(postProRes.TT,2)./10^3,'x:','markersize',3);
   ylabel('Tether force (kN)');
   ylim([0 1.1*max(mean(postProRes.TT,2))/10^3]);
-  legend('C_{L}','C_{D}','f_{avg}','F_{t,avg}','location','northwest');
+  legend('C_{L}','C_{D}','f','F_{t}','location','northwest');
   xlabel('Wind speed at 100m height (m/s)');
   xlim([0 25]);
   %ylim([0 160]);
@@ -186,7 +193,7 @@ if inputs.mainPlots == 1
   plot(Vw, postProRes.Pcycle_elec./10^3,'-','linewidth',1.4);
   ylabel('Power (kW)');
   %title('Cycle averages');
-  legend('P_{m,o,avg}','P_{e,o,avg}','P_{m,i}','P_{e,i}','P_{e,avg}','location','northwest');
+  legend('P_{m,o,mean}','P_{e,o,mean}','P_{m,i}','P_{e,i}','P_{e,avg}','location','northwest');
   xlabel('Wind speed at 100m height (m/s)');
   xlim([0 25]);
   hold off
@@ -253,7 +260,7 @@ plot(P(1).WA./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(4).WA./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(5).WA./1e3,'o-','linewidth',1,'MarkerSize',2);
 legend(strcat(num2str(s(2).WA),'m^2'),strcat(num2str(s(3).WA),'m^2'),strcat(num2str(s(1).WA),'m^2'),strcat(num2str(s(4).WA),'m^2'),strcat(num2str(s(5).WA),'m^2'),'location','southeast');
-xlabel('Wind speed at pattern altitude (m/s)');
+xlabel('Wind speed at 100m height (m/s)');
 ylabel('Power (kW)');
 xlim([3 20]);
 hold off
@@ -283,11 +290,10 @@ plot(P(1).kiteMass./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(4).kiteMass./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(5).kiteMass./1e3,'o-','linewidth',1,'MarkerSize',2);
 legend(strcat(num2str(s(2).kiteMass),'kg'),strcat(num2str(s(3).kiteMass),'kg'),strcat(num2str(s(1).kiteMass),'kg'),strcat(num2str(s(4).kiteMass),'kg'),strcat(num2str(s(5).kiteMass),'kg'),'location','southeast');
-xlabel('Wind speed at pattern altitude (m/s)');
+xlabel('Wind speed at 100m height (m/s)');
 ylabel('Power (kW)');
 xlim([3 20]);
 hold off
-inputs.massOverride   = 0;
 
 
 %% Kite CL 
@@ -313,7 +319,7 @@ plot(P(1).CL./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(4).CL./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(5).CL./1e3,'o-','linewidth',1,'MarkerSize',2);
 legend(strcat(num2str(s(2).CL),''),strcat(num2str(s(3).CL),''),strcat(num2str(s(1).CL),''),strcat(num2str(s(4).CL),''),strcat(num2str(s(5).CL),''),'location','southeast');
-xlabel('Wind speed at pattern altitude (m/s)');
+xlabel('Wind speed at 100m height (m/s)');
 ylabel('Power (kW)');
 xlim([3 20]);
 hold off
@@ -343,11 +349,10 @@ plot(P(1).Tmax./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(4).Tmax./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(5).Tmax./1e3,'o-','linewidth',1,'MarkerSize',2);
 legend(strcat(num2str(s(2).Tmax),'kN'),strcat(num2str(s(3).Tmax),'kN'),strcat(num2str(s(1).Tmax),'kN'),strcat(num2str(s(4).Tmax),'kN'),strcat(num2str(s(5).Tmax),'kN'),'location','southeast');
-xlabel('Wind speed at pattern altitude (m/s)');
+xlabel('Wind speed at 100m height (m/s)');
 ylabel('Power (kW)');
 xlim([3 20]);
 hold off
-inputs.massOverride   = 0;
 
 %% Tether strength
 inputSheet_AP3;
@@ -372,7 +377,7 @@ plot(P(1).TeSig./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(4).TeSig./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(5).TeSig./1e3,'o-','linewidth',1,'MarkerSize',2);
 legend(strcat(num2str(s(2).TeSig),'kg/m^3'),strcat(num2str(s(3).TeSig),'kg/m^3'),strcat(num2str(s(1).TeSig),'kg/m^3'),strcat(num2str(s(4).TeSig),'kg/m^3'),strcat(num2str(s(5).TeSig),'kg/m^3'),'location','southeast');
-xlabel('Wind speed at pattern altitude (m/s)');
+xlabel('Wind speed at 100m height (m/s)');
 ylabel('Power (kW)');
 xlim([3 20]);
 hold off
@@ -401,7 +406,7 @@ plot(P(1).TeCd./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(4).TeCd./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(5).TeCd./1e3,'o-','linewidth',1,'MarkerSize',2);
 legend(strcat(num2str(s(2).TeCd),''),strcat(num2str(s(3).TeCd),''),strcat(num2str(s(1).TeCd),''),strcat(num2str(s(4).TeCd),''),strcat(num2str(s(5).TeCd),''),'location','southeast');
-xlabel('Wind speed at pattern altitude (m/s)');
+xlabel('Wind speed at 100m height (m/s)');
 ylabel('Power (kW)');
 xlim([3 20]);
 hold off
@@ -429,7 +434,7 @@ plot(P(1).PbyA./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(4).PbyA./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(5).PbyA./1e3,'o-','linewidth',1,'MarkerSize',2);
 legend(strcat(num2str(s(2).PbyA),''),strcat(num2str(s(3).PbyA),''),strcat(num2str(s(1).PbyA),''),strcat(num2str(s(4).PbyA),''),strcat(num2str(s(5).PbyA),''),'location','southeast');
-xlabel('Wind speed at pattern altitude (m/s)');
+xlabel('Wind speed at 100m height (m/s)');
 ylabel('Power (kW)');
 xlim([3 20]);
 hold off
@@ -438,10 +443,10 @@ hold off
 %% Maximum winch speed
 inputSheet_AP3;
 s(1).VRI  = inputs.maxVRI;
-s(2).VRI  = 0.7*s(1).VRI;
-s(3).VRI  = 0.85*s(1).VRI;
-s(4).VRI  = 1.15*s(1).VRI;
-s(5).VRI  = 1.3*s(1).VRI;
+s(2).VRI  = 0.5*s(1).VRI;
+s(3).VRI  = 0.75*s(1).VRI;
+s(4).VRI  = 1.25*s(1).VRI;
+s(5).VRI  = 1.5*s(1).VRI;
 for i = 1:numel(s)
   inputs.maxVRI  = s(i).VRI;
   [optData,outputs,postProRes,timeseries] = main(inputs);
@@ -458,7 +463,7 @@ plot(P(1).VRI./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(4).VRI./1e3,'o-','linewidth',1,'MarkerSize',2);
 plot(P(5).VRI./1e3,'o-','linewidth',1,'MarkerSize',2);
 legend(strcat(num2str(s(2).VRI),'m/s'),strcat(num2str(s(3).VRI),'m/s'),strcat(num2str(s(1).VRI),'m/s'),strcat(num2str(s(4).VRI),'m/s'),strcat(num2str(s(5).VRI),'m/s'),'location','southeast');
-xlabel('Wind speed at pattern altitude (m/s)');
+xlabel('Wind speed at 100m height (m/s)');
 ylabel('Power (kW)');
 xlim([3 20]);
 hold off
