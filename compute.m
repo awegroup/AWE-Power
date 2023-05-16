@@ -69,8 +69,11 @@ function [inputs] = compute(i,inputs)
         end
 
         % Roll angle calculation for the particular element
-        outputs.avgRollAngle(i,j) = asin(outputs.m_eff(i)*cos(outputs.pattAngRadius(i))/...
-                                (0.5*outputs.rho_air(i,j)*inputs.WA*outputs.CL(i)*outputs.pattRadius(i,j)));
+%         outputs.avgRollAngle(i,j) = asin(outputs.m_eff(i)*cos(outputs.pattAngRadius(i))/...
+%                                 (0.5*outputs.rho_air(i,j)*inputs.WA*outputs.CL(i)*outputs.pattRadius(i,j)));
+        outputs.avgRollAngle(i,j) = asin(outputs.m_eff(i)/(cos(outputs.pattAngRadius(i))*...
+                                0.5*outputs.rho_air(i,j)*inputs.WA*outputs.CL(i)*outputs.pattRadius(i,j)));
+
 
         % Tether tension: Reduction in lift due to roll
         outputs.T(i,j)   = min(outputs.Tmax_act, (4/9)*(outputs.CL(i)*cos(outputs.avgRollAngle(i,j)))^3/outputs.CD(i)^2*(1/2).*outputs.rho_air(i,j)*...
@@ -180,8 +183,8 @@ function [inputs] = compute(i,inputs)
         outputs.s(i)           = outputs.a_simple(i)*(mean(outputs.delta(i,:))*outputs.T_simple(i)-mean(outputs.lambda(i,:))*outputs.W(i))/...
                                     (mean(outputs.lambda(i,:))^2+mean(outputs.delta(i,:))^2);
         outputs.VSR_down(i)    = outputs.VA_simple(i)*outputs.s(i);
-        outputs.VRO_osciAmp(i) = abs(abs(outputs.VSR_down(i)) - outputs.VSR_simple(i))*cos(outputs.avgPattEle(i));
-%         outputs.VRO_osciAmp(i) = 0;
+%         outputs.VRO_osciAmp(i) = abs(abs(outputs.VSR_down(i)) - outputs.VSR_simple(i))*cos(outputs.avgPattEle(i));
+        outputs.VRO_osciAmp(i) = 0;
         % To match the number of deltaL elements to the number of elements considering pattern 
         if mean(outputs.numOfPatt(i,:)) == 0 
           outputs.numOfPatt(i,:) = 1;
