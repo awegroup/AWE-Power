@@ -23,7 +23,7 @@ function [c, ceq] = constraints(i,inputs)
  
   % Peak mech to cycle elec ratio
   % If not running second optimisation
- c(1,7:inputs.numDeltaLelems+6) = (outputs.PROeff_mech(i,:) - inputs.F_peakM2Ecyc*inputs.P_ratedElec)/(inputs.F_peakM2Ecyc*inputs.P_ratedElec);
+  c(1,7:inputs.numDeltaLelems+6) = (outputs.PROeff_mech(i,:) - inputs.F_peakM2Ecyc*inputs.P_ratedElec)/(inputs.F_peakM2Ecyc*inputs.P_ratedElec);
   
   %% Equality constraints
   
@@ -32,11 +32,6 @@ function [c, ceq] = constraints(i,inputs)
   else
       ceq(1)    = 0; % For First Optimisation
   end
-  
-  % To maintain constant gradient in parameter values over one cycle -
-%   better numeric results
-%   isDescending = issorted(outputs.Vc_top(i,:), 'descend');
-%  ceq(2)       = 1 - isDescending;
   
   % Kite tangential speed
   ceq(1,2:inputs.numDeltaLelems+1) = (outputs.Va_top(i,:).^2 - outputs.Vc_top(i,:).^2 - (outputs.VSR_top(i,:)/outputs.rollAngleTop(i,:)).^2)./50.^2;

@@ -44,12 +44,11 @@ if inputs.mainPlots == 1
 
   
   % Cycle timeseries plots: Pattern averages
-  windSpeeds = [13,14,16,25];
+  windSpeeds = [8,postProRes.ratedWind,25];
   for i = windSpeeds
     tmax = round(max(postProRes.tCycle(windSpeeds)));
-    pmax = 1.2*inputs.F_peakM2Ecyc*max(postProRes.Pcycle_elec(windSpeeds))/10^3;
-  %   pmax = 1.5*max(postProRes.Pcycle_elec(windSpeeds))/10^3;
-    pmin = min(-postProRes.PRIeff_elec(windSpeeds))/10^3;
+    pmax = 1.1*inputs.F_peakM2Ecyc*max(postProRes.Pcycle_elec(windSpeeds))/10^3;
+    pmin = 1.1*min(-postProRes.PRIeff_elec(windSpeeds))/10^3;
 
     figure('units','inch','Position', [15 3 3.5 2.2])
     hold on
@@ -61,8 +60,8 @@ if inputs.mainPlots == 1
     plot(timeseries.ws(i).t_inst, timeseries.ws(i).P_m_inst,'linewidth',1.5);
     ylabel('Power (kW)');
     xlabel('Time (s)');
-    %xlim([0 tmax]);
-    %ylim([pmin pmax]);
+    xlim([0 tmax]);
+    ylim([pmin pmax]);
     title(strcat('Wind speed at 100m:',num2str(timeseries.ws(i).ws),'m/s'));
   %   legend('Electrical','Mechanical','location','northwest');
     hold off
@@ -106,7 +105,7 @@ if inputs.mainPlots == 1
   %ylim([0 160]);
   hold off
 
-  % H_cycleAvg, Patt radius, Delta L, Avg tether length
+  % H_cycleAvg, Patt radius, Delta L, Max tether length
   figure('units','inch','Position', [3 6 3.5 2.2])
   colororder(newcolors)
   hold on

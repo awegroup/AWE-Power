@@ -22,7 +22,7 @@ inputs.F_Tmax            = 0.9; % 0.8 for gust margin
 inputs.maxTeLen          = 1000; %[m]
 inputs.F_minTeLen        = 1; % 1.2
 inputs.maxHeight         = 600; %[m]
-inputs.minGroundClear    = 80; %80? % [m]
+inputs.minGroundClear    = 50; %80? % [m]
 inputs.Te_matStrength    = 7e8;
 inputs.Te_matDensity     = 980; %[kg/m^3] 
 

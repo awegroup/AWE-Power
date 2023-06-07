@@ -5,7 +5,7 @@ function [inputs] = compute(i,inputs)
     if inputs.massOverride == 1
       outputs.m_kite = inputs.kiteMass;
     else
-      %Vincent's simple mass model      
+      %Vincent Bonnin's simple mass model developed at Ampyx Power. Based on AP3 data and projected data for larger systems (AP4-AP5)      
       a1     = 0.002415;       a2     = 0.0090239;       b1     = 0.17025;       b2     = 3.2493;
       k1     = 5;              c1     = 0.46608;         d1     = 0.65962;       k2     = 1.1935;
       AR_ref = 12;
@@ -14,7 +14,7 @@ function [inputs] = compute(i,inputs)
       outputs.m_kite = 10*(a*inputs.WA^2 +b*inputs.WA-k1)*(c1*(inputs.AR/AR_ref)^2-d1*(inputs.AR/AR_ref)+k2); 
     end
     
-    %% Minimum Tether length and minimum patt. radius - Centrifugal force balance - no gravity
+    %% Tether length and height calculations based on variable values
     outputs.wingSpan           = sqrt(inputs.AR*inputs.WA);     
     outputs.L_teMin(i)         = outputs.startPattRadius(i)/sin(outputs.pattAngRadius(i))*inputs.F_minTeLen;
     outputs.pattStartGrClr(i)  = outputs.L_teMin(i)*sin(outputs.avgPattEle(i)-outputs.pattAngRadius(i));
@@ -30,130 +30,128 @@ function [inputs] = compute(i,inputs)
     outputs.m_te(i)  = inputs.Te_matDensity*pi()/4*outputs.D_te^2*outputs.L_teAvg(i); % Could add (say 0.85) as safety factor on material density
     outputs.m_eff(i) = outputs.m_kite+sin(outputs.avgPattEle(i))*outputs.m_te(i);
 
-    
-
     %% Tmax and W
     outputs.Tmax_act = inputs.Tmax*inputs.F_Tmax*1000; %[N]
     outputs.W(i)     = outputs.m_eff(i)*inputs.gravity;
     
     %% Cycle avg. mech reel-out power considering vertical wind shear
      
-    % Divide the reel-out length in equal number of elements of around 5m lengths
-     outputs.deltaLelems = inputs.numDeltaLelems; % Found to be not sensitive to the number of elements once element size ~<=1.5m
+    % Discretizing the reel-out length in chosen number of elements
+    % Found to be not sensitive to the number of elements
+     outputs.deltaLelems   = inputs.numDeltaLelems; 
      outputs.elemDeltaL(i) = outputs.deltaL(i)/outputs.deltaLelems;
   
-     % For each element of deltaL
+     % Assigning and evaluating a single flight state equilibrium for each element
      for j = 1:outputs.deltaLelems
-       
-       %% Effective CD
-      outputs.CD_kite(i,j)   = inputs.CD0 + (outputs.CL(i,j)-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
-      outputs.CD_tether(i)   = (1/4)*inputs.CD_te*outputs.D_te*outputs.L_teAvg(i)/inputs.WA;
-      outputs.CD(i,j)        = outputs.CD_kite(i,j) + outputs.CD_tether(i);
-       
-       if j == 1
-         outputs.h_inCycle(i,j) = outputs.H_cycleStart(i) + outputs.elemDeltaL(i)/2*sin(outputs.avgPattEle(i));
-       else
-         outputs.h_inCycle(i,j) = outputs.h_inCycle(i,j-1) + outputs.elemDeltaL(i)*sin(outputs.avgPattEle(i));
-       end
-       
-       outputs.Vw(i,j) = inputs.Vw_ref(i)*(outputs.h_inCycle(i,j)/inputs.h_ref)^inputs.windShearExp;
-        % Air density as a function of height   % Ref: https://en.wikipedia.org/wiki/Density_of_air
-        M = 0.0289644; % [kg/mol]
-        R = 8.3144598; % [N·m/(mol·K)]
-        T = 288.15; %[Kelvin]
-        L = 0.0065; %[Kelvin/m] 
-        outputs.rho_air(i,j) = inputs.airDensity*(1-L*(5+ outputs.h_inCycle(i,j))/T)^(inputs.gravity*M/R/L-1); % +5 is for approx. platform height
+      
+        % Effective CD
+        outputs.CD_kite(i,j)   = inputs.CD0 + (outputs.CL(i,j)-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
+        outputs.CD_tether(i)   = (1/4)*inputs.CD_te*outputs.D_te*outputs.L_teAvg(i)/inputs.WA;
+        outputs.CD(i,j)        = outputs.CD_kite(i,j) + outputs.CD_tether(i);
 
+        % Pattern average height
+        if j == 1
+          outputs.h_inCycle(i,j) = outputs.H_cycleStart(i) + outputs.elemDeltaL(i)/2*sin(outputs.avgPattEle(i));
+        else
+          outputs.h_inCycle(i,j) = outputs.h_inCycle(i,j-1) + outputs.elemDeltaL(i)*sin(outputs.avgPattEle(i));
+        end
+        
         % Pattern radius at point of interest on deltaL
         if j == 1
           outputs.pattRadius(i,j) = (outputs.startPattRadius(i) + (outputs.elemDeltaL(i)*tan(outputs.pattAngRadius(i)) + outputs.startPattRadius(i)))/2;
         else
           outputs.pattRadius(i,j) = (outputs.pattRadius(i,j-1) + (j*outputs.elemDeltaL(i)*tan(outputs.pattAngRadius(i)) + outputs.startPattRadius(i)))/2;
         end
-
-        % Evaluating Top and Bottom points on the pattern. Pattern mean is
-        % mean of Top and Bottom
         
-        % Intermediate calculation
+        % Evaluating flight state equilibrium at the Top point of the pattern
+        
+        % Wind speed at pattern avg height
+        outputs.Vw(i,j) = inputs.Vw_ref(i)*((outputs.h_inCycle(i,j)+outputs.pattRadius(i,j)*cos(outputs.pattAngRadius(i)))...
+                            /inputs.h_ref)^inputs.windShearExp;
+        
+        % Air density as a function of height   % Ref: https://en.wikipedia.org/wiki/Density_of_air
+        M = 0.0289644; % [kg/mol]
+        R = 8.3144598; % [N·m/(mol·K)]
+        T = 288.15;    % [Kelvin]
+        L = 0.0065;    % [Kelvin/m] 
+        outputs.rho_air(i,j) = inputs.airDensity*(1-L*(outputs.h_inCycle(i,j)+outputs.pattRadius(i,j)*cos(outputs.pattAngRadius(i)))/T)^(inputs.gravity*M/R/L-1); 
+        
+        % Intermediate calculation for brevity
         outputs.lambda(i,j) = 0.5*outputs.rho_air(i,j)*inputs.WA*outputs.CL(i,j);
         outputs.delta(i,j)  = 0.5*outputs.rho_air(i,j)*inputs.WA*outputs.CD(i,j);
-        
-        % Top pattern point
         
         % Centripetal force
          outputs.Fc_top(i,j) = outputs.m_eff(i)*outputs.Vc_top(i,j)^2/outputs.pattRadius(i,j);
         
         % Airspeed
-        outputs.Va_top(i,j) = sqrt((outputs.W(i)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))+outputs.Fc_top(i,j)*cos(outputs.avgPattEle(i)-outputs.pattAngRadius(i)))/...
+        outputs.Va_top(i,j) = sqrt((outputs.W(i)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))+outputs.Fc_top(i,j)*cos(outputs.pattAngRadius(i)))/...
                                 (outputs.lambda(i,j)*sin(outputs.rollAngleTop(i,j))));
         
                                
-        % Tether tension: Reduction in lift due to roll
+        % Tether force
         outputs.T_top(i,j)   = min(outputs.Tmax_act, outputs.lambda(i,j)*cos(outputs.rollAngleTop(i,j))*outputs.Va_top(i,j)^2 - ...
-               outputs.W(i)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.Fc_top(i,j)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i)));
+               outputs.W(i)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.Fc_top(i,j)*sin(outputs.pattAngRadius(i)));
           
-         % Resultant Aero force
+        % Resultant Aero force
         outputs.Fa_top(i,j) = outputs.Va_top(i,j)^2*sqrt(outputs.lambda(i,j)^2+outputs.delta(i,j)^2);
         
         % Sink rate
-%         outputs.VSR_top(i,j) = outputs.CD(i,j)/outputs.CL(i,j)^(3/2)*sqrt((outputs.T_top(i,j)+outputs.W(i)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i))...
-%                 +outputs.Fc_top(i,j)*sin(outputs.avgPattEle(i)-outputs.pattAngRadius(i)))*cos(outputs.rollAngleTop(i,j))/(0.5*outputs.rho_air(i,j)*inputs.WA));
-        
         outputs.VSR_top(i,j) = outputs.Va_top(i,j)*outputs.CD(i,j)/outputs.CL(i,j)*cos(outputs.rollAngleTop(i,j));
-                         
-        % VRO
+%         outputs.VSR_top2(i,j) = outputs.CD(i,j)/outputs.CL(i,j)^(3/2)*sqrt((outputs.T_top(i,j)+outputs.W(i)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i))...
+%                 +outputs.Fc_top(i,j)*sin(outputs.avgPattEle(i)-outputs.pattAngRadius(i)))*cos(outputs.rollAngleTop(i,j))/(0.5*outputs.rho_air(i,j)*inputs.WA));
+           
+        % Reel-out speed
         outputs.VRO_top(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.VSR_top(i,j);
 
+        % Updating variable names for brevity in the following sections
         outputs.VRO(i,j)  = outputs.VRO_top(i,j);
         outputs.T(i,j)    = outputs.T_top(i,j);
         outputs.VC(i,j)   = outputs.Vc_top(i,j);
          
-        % PRO 
+        % Effective mechanical reel-out power
         outputs.PROeff_mech(i,j) = outputs.T(i,j)*outputs.VRO(i,j); %[W]
        
-        
-        
-        %% PRO elec
+        % Effective electrical reel-out power
         % Generator efficiency. As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
         outputs.genEff_RO(i,j)  = (inputs.etaGen.param(1)*(outputs.VRO(i,j)/inputs.etaGen.Vmax)^3 + ...
                                       inputs.etaGen.param(2)*(outputs.VRO(i,j)/inputs.etaGen.Vmax)^2 + ...
                                         inputs.etaGen.param(3)*(outputs.VRO(i,j)/inputs.etaGen.Vmax)+inputs.etaGen.param(4))^sign(1);
         outputs.PROeff_elec(i,j) = outputs.PROeff_mech(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE;
 
-        % PRI effective mech
+        % Effective mechanical reel-in power
         outputs.VA_RI(i,j)       = sqrt(outputs.Vw(i,j)^2 +outputs.VRI(i)^2 +2*outputs.Vw(i,j)*outputs.VRI(i)*cos(outputs.avgPattEle(i)));
         outputs.CL_RI(i,j)       = 2*outputs.W(i)/(outputs.rho_air(i,j)*outputs.VA_RI(i,j)^2*inputs.WA);
         outputs.CD_RI(i,j)       = inputs.CD0+(outputs.CL_RI(i,j)- inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e) + outputs.CD_tether(i);
-
         outputs.PRIeff_mech(i,j) = 0.5*outputs.rho_air(i,j)*outputs.CD_RI(i,j)*inputs.WA*outputs.VA_RI(i,j)^3;
 
         % Generator efficiency during RI: As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
         outputs.genEff_RI(i) = (inputs.etaGen.param(1)*(outputs.VRI(i)/inputs.etaGen.Vmax)^3 + ...
                                  inputs.etaGen.param(2)*(outputs.VRI(i)/inputs.etaGen.Vmax)^2 + ...
                                   inputs.etaGen.param(3)*(outputs.VRI(i)/inputs.etaGen.Vmax)+inputs.etaGen.param(4))^sign(1);
-        % PRI effective elec
+        
+        % Effective electrical reel-in power
         outputs.PRIeff_elec(i,j) = outputs.PRIeff_mech(i,j)/inputs.etaGearbox/inputs.etaSto/outputs.genEff_RI(i)/inputs.etaPE;
 
      end
          
-      %% Cycle simulation
+    %% Cycle simulation
      
-      % tRO
-       if outputs.VRO(i,:)<0
-        outputs.t1(i)             = 0;
-        outputs.tROeff(i,:)       = 0./outputs.VRO(i,:);
-        outputs.tRO(i)            = 0;
-       else
-        outputs.t1(i)       = outputs.VRO(i,1)/inputs.maxAcc;
-        outputs.tROeff(i,:) = outputs.elemDeltaL(i)./outputs.VRO(i,:);
-        outputs.tRO(i)      = outputs.t1(i) + sum(outputs.tROeff(i,:));
-       end
+    % Reel-out time
+     if outputs.VRO(i,:)<0
+      outputs.t1(i)             = 0;
+      outputs.tROeff(i,:)       = 0./outputs.VRO(i,:);
+      outputs.tRO(i)            = 0;
+     else
+      outputs.t1(i)       = outputs.VRO(i,1)/inputs.maxAcc;
+      outputs.tROeff(i,:) = outputs.elemDeltaL(i)./outputs.VRO(i,:);
+      outputs.tRO(i)      = outputs.t1(i) + sum(outputs.tROeff(i,:));
+     end
      
       % Reel-out power during transition
       outputs.PRO1_mech(i) = outputs.PROeff_mech(i,1)/2;
       outputs.PRO1_elec(i) = outputs.PROeff_elec(i,1)/2;
 
-      % PRO 
+      % Reel-out power 
       if outputs.VRO(i,:)<0
         outputs.PRO_mech(i) = 1e-9;
       else
@@ -161,7 +159,7 @@ function [inputs] = compute(i,inputs)
         outputs.PRO_elec(i) = (sum(outputs.PROeff_elec(i,:).*outputs.tROeff(i,:)) + outputs.PRO1_elec(i)*outputs.t1(i))/outputs.tRO(i);
       end
 
-      % tRI
+      % Reel-in time
       if outputs.VRO(i,:)<0
         outputs.t2(i)             = 0;
         outputs.tRIeff(i,:)       = ones(1,outputs.deltaLelems).*0;
@@ -172,21 +170,22 @@ function [inputs] = compute(i,inputs)
         outputs.tRI(i)      = outputs.t2(i) + sum(outputs.tRIeff(i,:));
       end
       
-      % Transition reel-in mech power
+      % Reel-in power duing transition
       outputs.PRI2_mech(i)     = outputs.PRIeff_mech(i,1)/2;
       outputs.PRI2_elec(i)     = outputs.PRIeff_elec(i,1)/2;
 
-      % PRI 
+      % Reel-in power 
       outputs.PRI_mech(i) = (sum(outputs.PRIeff_mech(i,:).*outputs.tRIeff(i,:)) + outputs.PRI2_mech(i)*outputs.t2(i))/outputs.tRI(i);
       outputs.PRI_elec(i) = (sum(outputs.PRIeff_elec(i,:).*outputs.tRIeff(i,:)) + outputs.PRI2_elec(i)*outputs.t2(i))/outputs.tRI(i);
 
-      % tCycle
+      % Cycle time
       outputs.tCycle(i) = outputs.tRO(i)+outputs.tRI(i);
 
+      % Time for one pattern revolution and number of patterns in the cycle
       outputs.tPatt(i,:)     = 2*pi()*outputs.pattRadius(i,:)./outputs.VC(i,:);
       outputs.numOfPatt(i,:) = outputs.tRO(i)./outputs.tPatt(i,:);
       
-      %% Reel-out speed oscillation due to gravity
+      %% Reel-out speed oscillation theory - Primary driver - Gravity
       
       if inputs.targetPRO_mech == 0 % Only run in First Optimisation-run
 %       
@@ -228,7 +227,7 @@ function [inputs] = compute(i,inputs)
         outputs.PROeff_elec_cap(i) = mean(outputs.PROeff_elec_osci_cap(i,:)); 
       end
 
-      %% P_cycleElec 
+      %% Electrical cycle power
       if outputs.VRO(i,:)<0
         outputs.P_cycleElec(i) = 0;
       else
@@ -236,7 +235,7 @@ function [inputs] = compute(i,inputs)
                                    sum(outputs.tRIeff(i,:).*outputs.PRIeff_elec(i,:)) -outputs.t2(i)*outputs.PRI2_elec(i))/outputs.tCycle(i);    
       end
 
-      % Without drivetrain eff
+      % Mechanical cycle power - without drivetrain eff
       outputs.P_cycleMech(i) = (sum(outputs.tROeff(i,:).*outputs.PROeff_mech(i,:)) + outputs.t1(i)*outputs.PRO1_mech(i) - ...
                                    sum(outputs.tRIeff(i,:).*outputs.PRIeff_mech(i,:)) - outputs.t2(i)*outputs.PRI2_mech(i))/outputs.tCycle(i);
 end 

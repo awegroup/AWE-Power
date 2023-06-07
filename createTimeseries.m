@@ -1,59 +1,20 @@
-function [d] = createTimeseries(ws, system)
+function [ts] = createTimeseries(ws, system)
   
-    d.ws     = ws;
-    d.t1     = round(system.t1(d.ws),2);
-    d.tROeff = round(sum(system.tROeff(d.ws,:),2),2);
-    d.t2     = round(system.t2(d.ws),2);
-    d.tRIeff = round(sum(system.tRIeff(d.ws,:),2),2);
-    d.tRO    = d.t1 + d.tROeff; %[s]
-    d.tRI    = d.t2 + d.tRIeff; %[s]
-    d.tCycle = d.tRO+d.tRI; %[s]
+    ts.ws     = ws;
+    ts.t1     = round(system.t1(ts.ws),2);
+    ts.tROeff = round(sum(system.tROeff(ts.ws,:),2),2);
+    ts.t2     = round(system.t2(ts.ws),2);
+    ts.tRIeff = round(sum(system.tRIeff(ts.ws,:),2),2);
+    ts.tRO    = ts.t1 + ts.tROeff; %[s]
+    ts.tRI    = ts.t2 + ts.tRIeff; %[s]
+    ts.tCycle = ts.tRO+ts.tRI; %[s]
     
-    d.t_inst = cumsum([0 system.tROeff(d.ws,:) d.t1 d.t2 system.tRIeff(d.ws,:) d.t2]);
+    ts.t_inst = cumsum([0 ts.t1 system.tROeff(ts.ws,:) ts.t1 ts.t2 system.tRIeff(ts.ws,:) ts.t2 0]);
     
-    d.P_e_inst = [0 system.PROeff_elec(d.ws,:) 0 ...
-                -flip(system.PRIeff_elec(d.ws,1)) -flip(system.PRIeff_elec(d.ws,:)) 0]./10^3;
+    ts.P_e_inst = [0 system.PROeff_elec(ts.ws,1) system.PROeff_elec(ts.ws,:) 0 ...
+                -flip(system.PRIeff_elec(ts.ws,1)) -flip(system.PRIeff_elec(ts.ws,:)) 0 0]./10^3;
               
-    d.P_m_inst = [0 system.PROeff_mech(d.ws,:) 0 ...
-                -flip(system.PRIeff_mech(d.ws,1)) -flip(system.PRIeff_mech(d.ws,:)) 0]./10^3;
+    ts.P_m_inst = [0 system.PROeff_mech(ts.ws,1) system.PROeff_mech(ts.ws,:) 0 ...
+                -flip(system.PRIeff_mech(ts.ws,1)) -flip(system.PRIeff_mech(ts.ws,:)) 0 0]./10^3;
     
-%     d.t1a_inst     = 0:0.01:d.t1;
-%     d.tROeff_inst  = d.t1:0.01:d.tROeff;
-%     d.t1b_inst     = d.tROeff:0.01:d.tROeff+d.t1;
-%     d.t2a_inst     = d.t1b_inst(end):0.01:d.t1b_inst(end)+d.t2;
-%     d.tRIeff_inst  = d.t2a_inst(end):0.01:d.t2a_inst(end)+d.tRIeff-d.t2;
-%     d.t2b_inst     = d.tRIeff_inst(end):0.01:d.tRIeff_inst(end)+d.t2;
-% 
-%     d.t_inst       = [d.t1a_inst d.tROeff_inst d.t1b_inst d.t2a_inst d.tRIeff_inst d.t2b_inst];
-%     
-% %     q  = fix(system.numOfPatt(ws));
-% %     r  = mod(system.numOfPatt(ws),1);
-% %     a1 = repmat(system.PROeff_elec_osci(ws,2:end),1,q-1);
-% %     a2 = system.PROeff_elec_osci(ws,2:round(system.numPattParts*r));
-% %     p  = cat(2,system.PROeff_elec_osci(ws,:),a1,a2);
-% %     d.PRO  = interp1(1:length(p), p, linspace(1, length(p), length(d.tROeff_inst)), 'linear')./10^3;
-%    
-%     d.PRO  = mean(system.PROeff_elec(d.ws,:),2)/10^3;
-%     d.PRI  = mean(system.PRIeff_elec(d.ws,:),2)/10^3; %[kW]
-% 
-%     for i=1:length(d.t1a_inst)
-%         d.P1a_inst(i) = d.PRO(1)/d.t1a_inst(end)*d.t1a_inst(i);
-%     end
-%     for i=1:length(d.tROeff_inst)
-% %         d.PROeff_inst(i) = d.PRO(i);
-%         d.PROeff_inst(i) = d.PRO;
-%     end
-%     for i=1:length(d.t1b_inst)
-%         d.P1b_inst(i) = -d.PRO(end)/(d.t1b_inst(end)-d.t1b_inst(1))*(d.t1b_inst(i)-d.t1b_inst(1))+d.PRO(end);
-%     end
-%     for i=1:length(d.t2a_inst)
-%         d.P2a_inst(i) = (-d.PRI)/(d.t2a_inst(end)-d.t2a_inst(1))*(d.t2a_inst(i)-d.t2a_inst(1));
-%     end
-%     for i=1:length(d.tRIeff_inst)
-%         d.PRIeff_inst(i) = -d.PRI;
-%     end
-%     for i=1:length(d.t2b_inst)
-%         d.P2b_inst(i) = d.PRI/(d.t2b_inst(end)-d.t2b_inst(1))*(d.t2b_inst(i)-d.t2b_inst(1))+(-d.PRI);
-%     end
-%     d.P_inst      = [d.P1a_inst d.PROeff_inst d.P1b_inst  d.P2a_inst d.PRIeff_inst d.P2b_inst];
 end
