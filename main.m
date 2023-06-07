@@ -1,23 +1,25 @@
 function [optData,outputs,postProRes,timeseries] = main(inputs)
   %% Optimise operation for every wind speed: Uncapped electrical power
-  %      [deltaL, VRI, CL, avgPattEle, pattAngRadius, startPattRadius]
-  x0      = [200, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
+  %      [deltaL, VRI, avgPattEle, pattAngRadius, startPattRadius, CL, rollAngleTop,kiteSpeedTangTop]
+  u = ones(1,inputs.numDeltaLelems);
+  x0      = [200, 4, deg2rad(20), deg2rad(12), 60, 1.5*u, deg2rad(400)*u, 40*u]; % 
   for i=1:length(inputs.Vw_ref)
     % Output of previous wind speed as input to next wind speed
+%     x0 =[200, 4, deg2rad(20), deg2rad(12), 60, 1.5*u, deg2rad(50)*u, 30*u]; 
     x_init = x0;  
-  %  x_init    = [200, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
     x0     = x_init./x_init;
-    lb     = [100, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),sqrt(inputs.AR*inputs.WA)/2]./x_init; % 
-    ub     = [600, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),500]./x_init; % 
+    % sqrt(inputs.AR*inputs.WA)/2
+    lb     = [100, 2, deg2rad(5), deg2rad(3), 30, inputs.CL0_airfoil*u, deg2rad(5)*u, 20*u]./x_init; % 
+    ub     = [600, inputs.maxVRI, deg2rad(80), deg2rad(80), 500, inputs.CL_maxAirfoil*inputs.F_CLeff*u, deg2rad(80)*u, 50*u]./x_init; % 
     options                           = optimoptions('fmincon');
-    options.Display                   = 'iter-detailed';
+    options.Display                   = 'final-detailed';
     options.Algorithm                 = 'sqp';
     options.FiniteDifferenceType      = 'central';
   %  options.FiniteDifferenceStepSize  = [1e-12 1e-12 eps^(1/3) eps^(1/3) eps^(1/3) eps^(1/3)];
  % options.FiniteDifferenceStepSize  = [eps^(1/3) eps^(1/3) eps^(1/3) 1e-12 eps^(1/3) eps^(1/3)];
   %   options.FiniteDifferenceStepSize  = 1e-6;
   %  options.OptimalityTolerance       = 1e-9;
-  %   options.StepTolerance             = 1e-6;
+%     options.StepTolerance             = 1e-6;
    options.MaxFunctionEvaluations    = 500*numel(x_init);
    options.MaxIterations             = 100*numel(x_init);
   %   options.FunctionTolerance        = 1e-9;
@@ -37,59 +39,60 @@ function [optData,outputs,postProRes,timeseries] = main(inputs)
 
      % Changing initial guess if previous wind speed evaluation is infeasible
      if outputs.P_cycleElec(i) <= 0
-         x0 = [200, 5, 1.5, deg2rad(20),deg2rad(12),200]; % 
+         x0 = [200, 4, deg2rad(20), deg2rad(12), 60, 1.5*u, deg2rad(40)*u, 40*u]; % 
      end  
   end
+  disp(exitflag)
   % Store optimisation results data
   optData(1).optHist  = optHist;
   optData(1).exitflag = exitflag;
 
   %% Second optimisation iteration for following mean of capped mech. power from the first iteration
-  outputs1 = outputs;
-  clear outputs
-  inputs.targetPRO_mech = outputs1.PROeff_mech_cap;
-  %      [deltaL, VRI, CL, avgPattEle, pattAngRadius, startPattRadius]
-  x0      = [200, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
-  for i=1:length(inputs.Vw_ref)
-    % Output of previous wind speed as input to next wind speed
-    x_init = x0;  
-  %  x_init    = [200, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
-    x0     = x_init./x_init;
-    lb     = [100, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),sqrt(inputs.AR*inputs.WA)/2]./x_init; % 
-    ub     = [600, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),500]./x_init; % 
-    options                           = optimoptions('fmincon');
-    options.Display                   = 'iter-detailed';
-    options.Algorithm                 = 'sqp';
-    options.FiniteDifferenceType      = 'central';
-  %   options.FiniteDifferenceStepSize  = [1e-12 1e-12 eps^(1/3) eps^(1/3) eps^(1/3) eps^(1/3)];
-  %options.FiniteDifferenceStepSize  = [eps^(1/3) eps^(1/3) eps^(1/3) 1e-12 eps^(1/3) eps^(1/3)];
-  %   options.OptimalityTolerance       = 1e-9;
-  %   options.StepTolerance             = 1e-6;
-    options.MaxFunctionEvaluations    = 1000*numel(x_init);
-    options.MaxIterations             = 1000*numel(x_init);
-    options.ConstraintTolerance       = 1e-3;
-
-    con = @(x) constraints(i,inputs);
-
-    [x,fval,exitflag(i),optHist(i),lambda(i)] = fmincon(@(x) objective(x,x_init,i,inputs),x0,[],[],[],[],lb,ub,con,options);
-
-    % Storing final results
-     [~,inputs,outputs] = objective(x,x_init,i,inputs);
-     x0 = x.*x_init;
-
-
-     % Changing initial guess if previous wind speed evaluation is infeasible
-     if outputs.P_cycleElec(i) <= 0
-         x0 = [200, 5, 1.5, deg2rad(20),deg2rad(12),200]; % 
-     end  
-  end
-
-  % Storing back the capped oscillating power results from first optimisation
-  outputs.PROeff_mech_osci = outputs1.PROeff_mech_osci_cap;
-  outputs.PROeff_elec_osci = outputs1.PROeff_elec_osci_cap;
-  % Store optimisation results data
-  optData(2).optHist  = optHist;
-  optData(2).exitflag = exitflag;
+%   outputs1 = outputs;
+%   clear outputs
+%   inputs.targetPRO_mech = outputs1.PROeff_mech_cap;
+%   %      [deltaL, VRI, CL, avgPattEle, pattAngRadius, startPattRadius]
+%   x0      = [200, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
+%   for i=1:length(inputs.Vw_ref)
+%     % Output of previous wind speed as input to next wind speed
+%     x_init = x0;  
+%   %  x_init    = [200, 4, 1.5, deg2rad(20),deg2rad(12),200]; % 
+%     x0     = x_init./x_init;
+%     lb     = [100, 2, inputs.CL0_airfoil, deg2rad(5), deg2rad(5),sqrt(inputs.AR*inputs.WA)/2]./x_init; % 
+%     ub     = [600, inputs.maxVRI, inputs.CL_maxAirfoil*inputs.F_CLeff, deg2rad(80),deg2rad(80),500]./x_init; % 
+%     options                           = optimoptions('fmincon');
+%     options.Display                   = 'iter-detailed';
+%     options.Algorithm                 = 'sqp';
+%     options.FiniteDifferenceType      = 'central';
+%   %   options.FiniteDifferenceStepSize  = [1e-12 1e-12 eps^(1/3) eps^(1/3) eps^(1/3) eps^(1/3)];
+%   %options.FiniteDifferenceStepSize  = [eps^(1/3) eps^(1/3) eps^(1/3) 1e-12 eps^(1/3) eps^(1/3)];
+%   %   options.OptimalityTolerance       = 1e-9;
+%   %   options.StepTolerance             = 1e-6;
+%     options.MaxFunctionEvaluations    = 1000*numel(x_init);
+%     options.MaxIterations             = 1000*numel(x_init);
+%     options.ConstraintTolerance       = 1e-3;
+% 
+%     con = @(x) constraints(i,inputs);
+% 
+%     [x,fval,exitflag(i),optHist(i),lambda(i)] = fmincon(@(x) objective(x,x_init,i,inputs),x0,[],[],[],[],lb,ub,con,options);
+% 
+%     % Storing final results
+%      [~,inputs,outputs] = objective(x,x_init,i,inputs);
+%      x0 = x.*x_init;
+% 
+% 
+%      % Changing initial guess if previous wind speed evaluation is infeasible
+%      if outputs.P_cycleElec(i) <= 0
+%          x0 = [200, 5, 1.5, deg2rad(20),deg2rad(12),200]; % 
+%      end  
+%   end
+% 
+%   % Storing back the capped oscillating power results from first optimisation
+%   outputs.PROeff_mech_osci = outputs1.PROeff_mech_osci_cap;
+%   outputs.PROeff_elec_osci = outputs1.PROeff_elec_osci_cap;
+%   % Store optimisation results data
+%   optData(2).optHist  = optHist;
+%   optData(2).exitflag = exitflag;
 
   %% Post processing
   Vw = inputs.Vw_ref; 
@@ -149,13 +152,20 @@ function [optData,outputs,postProRes,timeseries] = main(inputs)
           postProRes.H_cycleStart(i)    = outputs.H_cycleStart(i);
           postProRes.H_cycleAvg(i)      = outputs.H_cycleAvg(i);
           postProRes.L_teMax(i)         = outputs.L_teMax(i);
-          postProRes.avgRollAngle(i)    = rad2deg(outputs.avgRollAngle(i));
+          
+          %%
+          
+          postProRes.avgRollAngle(i,:)    = rad2deg(outputs.rollAngleTop(i,:));
+%           postProRes.avgRollAngle(i)    = rad2deg(outputs.avgRollAngle(i));
+
+          %%
+          
           postProRes.avgPattEle(i)      = rad2deg(outputs.avgPattEle(i));
           postProRes.pattAngRadius(i)   = rad2deg(outputs.pattAngRadius(i));
-          postProRes.CL(i)              = outputs.CL(i);
-          postProRes.CD(i)              = outputs.CD(i);
-          postProRes.numOfPatt(i,:)       = outputs.numOfPatt(i,:);
-          postProRes.reelOutF(i,:)      =  postProRes.VRO(i,:)/postProRes.Vw(i,:);  
+          postProRes.CL(i,:)            = outputs.CL(i,:);
+          postProRes.CD(i,:)            = outputs.CD(i,:);
+          postProRes.numOfPatt(i,:)     = outputs.numOfPatt(i,:);
+          postProRes.reelOutF(i,:)      = postProRes.VRO(i,:)/postProRes.Vw(i,:);  
           postProRes.dutyCycle(i)       = postProRes.tRO(i)/postProRes.tCycle(i);
           postProRes.tPatt(i,:)         = 2*pi()*postProRes.pattRad(i,:)/outputs.VC(i);
       end
