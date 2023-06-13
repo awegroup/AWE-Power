@@ -4,7 +4,7 @@ function [optData,outputs,postProRes,timeseries] = main(inputs)
   
   nx = ones(1,inputs.numDeltaLelems);
   %         [deltaL, VRI, avgPattEle,  pattAngRadius, startPattRadius, CL,     rollAngleTop,   kiteSpeedTangTop]
-  x0      = [200,    4,   deg2rad(20), deg2rad(12),   60,              1.5*nx, deg2rad(30)*nx, 30*nx]; 
+  x0      = [200,    4,   deg2rad(20), deg2rad(12),   60,              1.5*nx, deg2rad(50)*nx, 20*nx]; 
   
   for i=1:length(inputs.Vw_ref)
     % Output of previous wind speed as input to next wind speed
