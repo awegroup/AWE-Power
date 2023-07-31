@@ -103,10 +103,12 @@ function [inputs] = compute(i,inputs)
         outputs.VRO_top(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.VSR_top(i,j);
 
        
-        %% Bottom point
+        %% Evaluating first at Bottom point and then at top point
+        
+        % For noe, the variable names 'top' are used as 'bot and viceversa
         
 %         % Speed at bottom point
-%         outputs.Vc_bot(i,j) = sqrt(outputs.Vc_top(i,j)^2 + 2*inputs.gravity*2*outputs.pattRadius(i,j));
+%         outputs.Vc_bot(i,j) = sqrt(outputs.Vc_top(i,j)^2 + 2*inputs.gravity*2*outputs.pattRadius(i,j)*cos(outputs.avgPattEle(i)));
 %         
 %         % Centripetal force
 %          outputs.Fc_bot(i,j) = outputs.m_eff(i)*outputs.Vc_bot(i,j)^2/outputs.pattRadius(i,j);
@@ -127,6 +129,9 @@ function [inputs] = compute(i,inputs)
 %         
 %         % Reel-out speed
 %         outputs.VRO_bot(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i)-outputs.pattAngRadius(i))-outputs.VSR_bot(i,j);
+%         
+%         % Power at bottom point
+%         outputs.PROeff_mech_bot(i,j) = outputs.T_bot(i,j)*outputs.VRO_bot(i,j); %[W]
         
         
         %% Updating variable names for brevity in the following sections
@@ -264,19 +269,4 @@ function [inputs] = compute(i,inputs)
       % Mechanical cycle power - without drivetrain eff
       outputs.P_cycleMech(i) = (sum(outputs.tROeff(i,:).*outputs.PROeff_mech(i,:)) + outputs.t1(i)*outputs.PRO1_mech(i) - ...
                                    sum(outputs.tRIeff(i,:).*outputs.PRIeff_mech(i,:)) - outputs.t2(i)*outputs.PRI2_mech(i))/outputs.tCycle(i);
-end 
-
- 
-        
-
-        % Ideal case values
-%         outputs.T_simple(i,j)   = min(outputs.Tmax_act, (4/9)*outputs.CL(i)^3/outputs.CD(i)^2*(1/2).*outputs.rho_air(i,j)*...
-%                            inputs.WA*(outputs.Vw(i,j).*cos(outputs.avgPattEle(i)))^2);
-%         outputs.VSR_simple(i,j) = outputs.CD(i)/outputs.CL(i)^(3/2)*...
-%                              sqrt(outputs.T_simple(i,j)/(0.5*outputs.rho_air(i,j)*inputs.WA));  
-
-         
-
-% Bottom, test case
-        
-%        
+end      

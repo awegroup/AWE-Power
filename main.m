@@ -3,22 +3,22 @@ function [optData,outputs,postProRes,timeseries] = main(inputs)
   %% Optimise operation for every wind speed: Uncapped electrical power
   
   nx = ones(1,inputs.numDeltaLelems);
-  %         [deltaL, VRI, avgPattEle,  pattAngRadius, startPattRadius, CL,     rollAngleTop,   kiteSpeedTangTop]
-  x0      = [200,    4,   deg2rad(20), deg2rad(12),   60,              1.5*nx, deg2rad(50)*nx, 20*nx]; 
+  %         [deltaL, VRI, avgPattEle,  pattAngRadius, startPattRadius, CL,     rollAngleTop,   kiteSpeedTangTop, rollAngleBot]
+  x0      = [200,    4,   deg2rad(20), deg2rad(12),   40,              1.5*nx, deg2rad(50)*nx, 20*nx,            deg2rad(70)*nx]; 
   
   for i=1:length(inputs.Vw_ref)
     % Output of previous wind speed as input to next wind speed
     x_init = x0;  
     x0     = x_init./x_init;
     % sqrt(inputs.AR*inputs.WA)/2
-    lb     = [100, 2,             deg2rad(5),  deg2rad(3),  30,  inputs.CL0_airfoil*nx,                  deg2rad(5)*nx,  20*nx]./x_init; % 
-    ub     = [600, inputs.maxVRI, deg2rad(80), deg2rad(80), 500, inputs.CL_maxAirfoil*inputs.F_CLeff*nx, deg2rad(80)*nx, 50*nx]./x_init; % 
+    lb     = [100, 2,             deg2rad(5),  deg2rad(3),  30,  inputs.CL0_airfoil*nx,                  deg2rad(5)*nx,  20*nx, deg2rad(5)*nx]./x_init; % 
+    ub     = [600, inputs.maxVRI, deg2rad(80), deg2rad(80), 500, inputs.CL_maxAirfoil*inputs.F_CLeff*nx, deg2rad(80)*nx, 50*nx, deg2rad(80)*nx]./x_init; % 
     options                           = optimoptions('fmincon');
-    options.Display                   = 'final-detailed';
+    options.Display                   = 'iter-detailed';
     options.Algorithm                 = 'sqp';
     options.FiniteDifferenceType      = 'central';
 %    options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-8 1e-8 1e-12 1e-6*nx 1e-6*nx 1e-6*nx];
-    options.FiniteDifferenceStepSize  = 1e-5.*[1 1 1 1 1 nx nx nx];
+    options.FiniteDifferenceStepSize  = 1e-5.*[1 1 1 1 1 nx nx nx nx];
   %  options.OptimalityTolerance       = 1e-9;
   %     options.StepTolerance             = 1e-6;
     options.MaxFunctionEvaluations    = 800*numel(x_init);
@@ -40,7 +40,7 @@ function [optData,outputs,postProRes,timeseries] = main(inputs)
 
     % Changing initial guess if previous wind speed evaluation is infeasible
     if outputs.P_cycleElec(i) <= 0
-        x0 = [200, 4, deg2rad(20), deg2rad(12), 60, 1.5*nx, deg2rad(30)*nx, 20*nx]; % 
+        x0 = [200, 4, deg2rad(20), deg2rad(12), 60, 1.5*nx, deg2rad(50)*nx, 20*nx, deg2rad(70)*nx]; % 
     end  
   end
   disp(exitflag)

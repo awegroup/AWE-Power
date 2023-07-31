@@ -20,10 +20,13 @@ function [c, ceq] = constraints(i,inputs)
   
   % Max. cycle avg height
   c(6) = (outputs.H_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight;
- 
+  
   % Peak mech to cycle elec ratio
   % If not running second optimisation
   c(1,7:inputs.numDeltaLelems+6) = (outputs.PROeff_mech(i,:) - inputs.F_peakM2Ecyc*inputs.P_ratedElec)/(inputs.F_peakM2Ecyc*inputs.P_ratedElec);
+  
+  % Feasibility at bottom point
+%   c(1,inputs.numDeltaLelems+7:2*inputs.numDeltaLelems+6) = (outputs.Fc_bot(i,:).*cos(outputs.pattAngRadius(i)) - outputs.W(i)*cos(outputs.avgPattEle(i)-outputs.pattAngRadius(i)))/(outputs.m_kite*inputs.gravity*10);
   
   %% Equality constraints
   
@@ -33,7 +36,10 @@ function [c, ceq] = constraints(i,inputs)
       ceq(1)    = 0; % For First Optimisation
   end
   
-  % Kite tangential speed
+  % Kite tangential speed at top pattern point
   ceq(1,2:inputs.numDeltaLelems+1) = (outputs.Va_top(i,:).^2 - outputs.Vc_top(i,:).^2 - (outputs.VSR_top(i,:)/outputs.rollAngleTop(i,:)).^2)./50.^2;
+  
+  % Kite tangential speed at bottom pattern point
+%   ceq(1,inputs.numDeltaLelems+2:2*inputs.numDeltaLelems+1) = (outputs.Va_top(i,:).^2 - outputs.Vc_top(i,:).^2 - (outputs.VSR_top(i,:)/outputs.rollAngleTop(i,:)).^2)./50.^2;
 
 end

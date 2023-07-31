@@ -18,7 +18,7 @@ inputs.kiteMass       = 20; %[kg]
 inputs.F_peakM2Ecyc   = 3;
 
 inputs.Tmax              = 42; % 42 %[kN]
-inputs.F_Tmax            = 0.8; % 0.8 for gust margin
+inputs.F_Tmax            = 0.9; % 0.8 for gust margin
 inputs.maxTeLen          = 1000; %[m]
 inputs.F_minTeLen        = 1; % 1.2
 inputs.maxHeight         = 600; %[m]
