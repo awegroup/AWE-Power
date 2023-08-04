@@ -16,7 +16,7 @@ function [inputs] = compute(i,inputs)
     
     %% Tether length and height calculations based on variable values
     outputs.wingSpan           = sqrt(inputs.AR*inputs.WA);     
-    outputs.L_teMin(i)         = outputs.startPattRadius(i)/sin(outputs.pattAngRadius(i))*inputs.F_minTeLen;
+    outputs.L_teMin(i)         = outputs.startPattRadius(i)/sin(outputs.pattAngRadius(i));
     outputs.pattStartGrClr(i)  = outputs.L_teMin(i)*sin(outputs.avgPattEle(i)-outputs.pattAngRadius(i));
     outputs.H_cycleStart(i)    = outputs.L_teMin(i)*cos(outputs.pattAngRadius(i))*sin(outputs.avgPattEle(i));
     outputs.L_teMax(i)         = outputs.L_teMin(i)+outputs.deltaL(i)/cos(outputs.pattAngRadius(i)); 
@@ -27,7 +27,7 @@ function [inputs] = compute(i,inputs)
     outputs.D_te               = sqrt(inputs.Tmax*1000/inputs.Te_matStrength*4/pi()); %[m] safety factor could be added (say *1.1)
     
     %% Effective mass (Kite + tether)
-    outputs.m_te(i)  = inputs.Te_matDensity*pi()/4*outputs.D_te^2*outputs.L_teAvg(i); % Could add (say 0.85) as safety factor on material density
+    outputs.m_te(i)  = inputs.Te_matDensity*pi()/4*outputs.D_te^2*outputs.L_teAvg(i)*inputs.F_TeCurve; % Could add (say 0.85) as safety factor on material density
     outputs.m_eff(i) = outputs.m_kite+sin(outputs.avgPattEle(i))*outputs.m_te(i);
 
     %% Tmax and W
@@ -46,7 +46,7 @@ function [inputs] = compute(i,inputs)
       
         % Effective CD
         outputs.CD_kite(i,j)   = inputs.CD0 + (outputs.CL(i,j)-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
-        outputs.CD_tether(i)   = (1/4)*inputs.CD_te*outputs.D_te*outputs.L_teAvg(i)/inputs.WA;
+        outputs.CD_tether(i)   = (1/4)*inputs.CD_te*outputs.D_te*outputs.L_teAvg(i)*inputs.F_TeCurve/inputs.WA;
         outputs.CD(i,j)        = outputs.CD_kite(i,j) + outputs.CD_tether(i);
 
         % Pattern average height
@@ -63,8 +63,6 @@ function [inputs] = compute(i,inputs)
           outputs.pattRadius(i,j) = (outputs.pattRadius(i,j-1) + (j*outputs.elemDeltaL(i)*tan(outputs.pattAngRadius(i)) + outputs.startPattRadius(i)))/2;
         end
         
-        %% Evaluating flight state equilibrium at the Top point of the pattern
-        
         % Wind speed at pattern avg height
         outputs.Vw(i,j) = inputs.Vw_ref(i)*((outputs.h_inCycle(i,j)+outputs.pattRadius(i,j)*cos(outputs.pattAngRadius(i)))...
                             /inputs.h_ref)^inputs.windShearExp;
@@ -80,58 +78,186 @@ function [inputs] = compute(i,inputs)
         outputs.lambda(i,j) = 0.5*outputs.rho_air(i,j)*inputs.WA*outputs.CL(i,j);
         outputs.delta(i,j)  = 0.5*outputs.rho_air(i,j)*inputs.WA*outputs.CD(i,j);
         
+        %% Force balance, Only Aero, No gravity, No Centripetal
+        
+       % Top point of the pattern
+           
+%         % Airspeed
+%         outputs.Va_top(i,j) = outputs.Vc_top(i,j)/sqrt(1-(outputs.CD(i,j)/outputs.CL(i,j))^2);
+% 
+%         % Resultant Aero force
+%         outputs.Fa_top(i,j) = outputs.Va_top(i,j)^2*sqrt(outputs.lambda(i,j)^2+outputs.delta(i,j)^2);
+%         
+%         % Tether force
+%         outputs.T_top(i,j)   = min(outputs.Tmax_act, outputs.Fa_top(i,j));                      
+%      
+%         % Sink rate in tether tension direction
+%        outputs.VSR_top(i,j) = outputs.Va_top(i,j)*outputs.CD(i,j)/outputs.CL(i,j);
+% 
+%         % Reel-out speed
+%        outputs.VRO_top(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.VSR_top(i,j);
+%        outputs.reelOutF(i,j) = outputs.VRO_top(i,j)/outputs.Vw(i,j);
+        
+        % Bottom point
+        
+%         % Airspeed
+%         outputs.Va_top(i,j) = outputs.Vc_top(i,j)/sqrt(1-(outputs.CD(i,j)/outputs.CL(i,j))^2);
+%         
+%          % Resultant Aero force
+%         outputs.Fa_top(i,j) = outputs.Va_top(i,j)^2*sqrt(outputs.lambda(i,j)^2+outputs.delta(i,j)^2);
+%         
+%         % Tether force
+%         outputs.T_top(i,j)   = min(outputs.Tmax_act, outputs.Fa_top(i,j));                      
+%      
+%           
+%         % Sink rate in tether tension direction
+%         outputs.VSR_top(i,j) = outputs.Va_top(i,j)*outputs.CD(i,j)/outputs.CL(i,j);
+%        
+%         % Reel-out speed
+%         outputs.VRO_top(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i)-outputs.pattAngRadius(i))-outputs.VSR_top(i,j);
+%         outputs.reelOutF(i,j) = outputs.VRO_top(i,j)/outputs.Vw(i,j);
+        
+%% Force Balance. Only Aero and Gravity, No Centripetal      
+  
+        % Top point of the pattern
+        
+%         % Airspeed
+%         outputs.Va_top(i,j) = sqrt(outputs.W(i)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))/...
+%                                 outputs.lambda(i,j)*sin(outputs.rollAngleTop(i,j)));
+%         
+%          % Resultant Aero force
+%         outputs.Fa_top(i,j) = outputs.Va_top(i,j)^2*sqrt(outputs.lambda(i,j)^2+outputs.delta(i,j)^2);
+%         
+%                               
+%         % Tether force
+%         outputs.T_top(i,j)   = min(outputs.Tmax_act, outputs.Fa_top(i,j)*cos(outputs.rollAngleTop(i,j)) - ...
+%                outputs.W(i)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i)));
+%           
+%         % Sink rate in tether tension direction
+%         outputs.VSR_top(i,j) = outputs.Va_top(i,j)*outputs.CD(i,j)/outputs.CL(i,j);
+%        
+%         % Reel-out speed
+%         outputs.VRO_top(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.VSR_top(i,j);
+%         outputs.reelOutF(i,j) = outputs.VRO_top(i,j)/outputs.Vw(i,j);
+     
+      %  Bottom point of the pattern
+        
+%         % Airspeed
+%         outputs.Va_top(i,j) = sqrt(outputs.W(i)*cos(outputs.avgPattEle(i)-outputs.pattAngRadius(i))/...
+%                                 outputs.lambda(i,j)*sin(outputs.rollAngleTop(i,j)));
+%         
+%          % Resultant Aero force
+%         outputs.Fa_top(i,j) = outputs.Va_top(i,j)^2*sqrt(outputs.lambda(i,j)^2+outputs.delta(i,j)^2);
+%         
+%                               
+%         % Tether force
+%         outputs.T_top(i,j)   = min(outputs.Tmax_act, outputs.Fa_top(i,j)*cos(outputs.rollAngleTop(i,j)) - ...
+%                outputs.W(i)*sin(outputs.avgPattEle(i)-outputs.pattAngRadius(i)));
+%           
+%         % Sink rate in tether tension direction
+%         outputs.VSR_top(i,j) = outputs.Va_top(i,j)*outputs.CD(i,j)/outputs.CL(i,j);
+%        
+%         % Reel-out speed
+%         outputs.VRO_top(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i)-outputs.pattAngRadius(i))-outputs.VSR_top(i,j);
+%           outputs.reelOutF(i,j) = outputs.VRO_top(i,j)/outputs.Vw(i,j);
+
+%% Force balance, Only Aero and Centripetal, No Gravity
+
+          % Top point of the pattern
+        
+%         % Centripetal force
+%          outputs.Fc_top(i,j) = outputs.m_eff(i)*outputs.Vc_top(i,j)^2/outputs.pattRadius(i,j);
+%         
+%         % Airspeed
+%         outputs.Va_top(i,j) = sqrt(outputs.Fc_top(i,j)*cos(outputs.pattAngRadius(i))/...
+%                                 outputs.lambda(i,j)*sin(outputs.rollAngleTop(i,j)));
+%         
+%          % Resultant Aero force
+%         outputs.Fa_top(i,j) = outputs.Va_top(i,j)^2*sqrt(outputs.lambda(i,j)^2+outputs.delta(i,j)^2);
+%         
+%                               
+%         % Tether force
+%         outputs.T_top(i,j)   = min(outputs.Tmax_act, outputs.Fa_top(i,j)*cos(outputs.rollAngleTop(i,j)) - ...
+%                               outputs.Fc_top(i,j)*sin(outputs.pattAngRadius(i)));
+%           
+%         % Sink rate in tether tension direction
+%         outputs.VSR_top(i,j) = outputs.Va_top(i,j)*outputs.CD(i,j)/outputs.CL(i,j);
+%        
+%         % Reel-out speed
+%         outputs.VRO_top(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.VSR_top(i,j);
+%         outputs.reelOutF(i,j) = outputs.VRO_top(i,j)/outputs.Vw(i,j);
+     
+        %Bottom point of the pattern
+        
+%         % Centripetal force
+%          outputs.Fc_top(i,j) = outputs.m_eff(i)*outputs.Vc_top(i,j)^2/outputs.pattRadius(i,j);
+%         
+%         % Airspeed
+%         outputs.Va_top(i,j) = sqrt(outputs.Fc_top(i,j)*cos(outputs.pattAngRadius(i))/...
+%                                 outputs.lambda(i,j)*sin(outputs.rollAngleTop(i,j)));
+%         
+%          % Resultant Aero force
+%         outputs.Fa_top(i,j) = outputs.Va_top(i,j)^2*sqrt(outputs.lambda(i,j)^2+outputs.delta(i,j)^2);
+%         
+%                               
+%         % Tether force
+%         outputs.T_top(i,j)   = min(outputs.Tmax_act, outputs.Fa_top(i,j)*cos(outputs.rollAngleTop(i,j)) - ...
+%                             outputs.Fc_top(i,j)*sin(outputs.pattAngRadius(i)));
+%           
+%         % Sink rate in tether tension direction
+%         outputs.VSR_top(i,j) = outputs.Va_top(i,j)*outputs.CD(i,j)/outputs.CL(i,j);
+%        
+%         % Reel-out speed
+%         outputs.VRO_top(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i)-outputs.pattAngRadius(i))-outputs.VSR_top(i,j);
+%           outputs.reelOutF(i,j) = outputs.VRO_top(i,j)/outputs.Vw(i,j); 
+
+%% Force balance, All forces
+        
+        % Top point of the pattern
+
         % Centripetal force
          outputs.Fc_top(i,j) = outputs.m_eff(i)*outputs.Vc_top(i,j)^2/outputs.pattRadius(i,j);
         
         % Airspeed
         outputs.Va_top(i,j) = sqrt((outputs.W(i)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))+outputs.Fc_top(i,j)*cos(outputs.pattAngRadius(i)))/...
-                                (outputs.lambda(i,j)*sin(outputs.rollAngleTop(i,j))));
-                            
-        % Tether force
-        outputs.T_top(i,j)   = min(outputs.Tmax_act, outputs.lambda(i,j)*cos(outputs.rollAngleTop(i,j))*outputs.Va_top(i,j)^2 - ...
-               outputs.W(i)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.Fc_top(i,j)*sin(outputs.pattAngRadius(i)));
-          
-        % Resultant Aero force
+                               (outputs.lambda(i,j)*sin(outputs.rollAngleTop(i,j))));
+
+         % Resultant Aero force
         outputs.Fa_top(i,j) = outputs.Va_top(i,j)^2*sqrt(outputs.lambda(i,j)^2+outputs.delta(i,j)^2);
         
-        % Sink rate
-        outputs.VSR_top(i,j) = outputs.Va_top(i,j)*outputs.CD(i,j)/outputs.CL(i,j)*cos(outputs.rollAngleTop(i,j));
-%         outputs.VSR_top2(i,j) = outputs.CD(i,j)/outputs.CL(i,j)^(3/2)*sqrt((outputs.T_top(i,j)+outputs.W(i)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i))...
-%                 +outputs.Fc_top(i,j)*sin(outputs.avgPattEle(i)-outputs.pattAngRadius(i)))*cos(outputs.rollAngleTop(i,j))/(0.5*outputs.rho_air(i,j)*inputs.WA));
-           
-        % Reel-out speed
-        outputs.VRO_top(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.VSR_top(i,j);
-
+        % Tether force
+        outputs.T_top(i,j)   = min(outputs.Tmax_act, outputs.Fa_top(i,j)*cos(outputs.rollAngleTop(i,j)) - ...
+               outputs.W(i)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.Fc_top(i,j)*sin(outputs.pattAngRadius(i)));
+          
+        % Sink rate in tether tension direction
+       outputs.VSR_top(i,j) = outputs.Va_top(i,j)*outputs.CD(i,j)/outputs.CL(i,j);%*cos(outputs.rollAngleTop(i,j));
        
-        %% Evaluating first at Bottom point and then at top point
+        % Reel-out speed
+       outputs.VRO_top(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.VSR_top(i,j);
+       outputs.reelOutF(i,j) = outputs.VRO_top(i,j)/outputs.Vw(i,j);
+     
+        %Bottom point of the pattern
         
-        % For noe, the variable names 'top' are used as 'bot and viceversa
-        
-%         % Speed at bottom point
-%         outputs.Vc_bot(i,j) = sqrt(outputs.Vc_top(i,j)^2 + 2*inputs.gravity*2*outputs.pattRadius(i,j)*cos(outputs.avgPattEle(i)));
-%         
 %         % Centripetal force
-%          outputs.Fc_bot(i,j) = outputs.m_eff(i)*outputs.Vc_bot(i,j)^2/outputs.pattRadius(i,j);
+%          outputs.Fc_top(i,j) = outputs.m_eff(i)*outputs.Vc_top(i,j)^2/outputs.pattRadius(i,j);
 %         
-%          % Airspeed
-%         outputs.Va_bot(i,j) = sqrt((outputs.W(i)*cos(outputs.avgPattEle(i)-outputs.pattAngRadius(i))-outputs.Fc_bot(i,j)*cos(outputs.pattAngRadius(i)))/...
-%                                 (outputs.lambda(i,j)*sin(outputs.rollAngleBot(i,j))));
-%                             
+%         % Airspeed
+%        outputs.Va_top(i,j) = sqrt((outputs.W(i)*cos(outputs.avgPattEle(i)-outputs.pattAngRadius(i))-outputs.Fc_top(i,j)*cos(outputs.pattAngRadius(i)))/...
+%                                (outputs.lambda(i,j)*sin(outputs.rollAngleTop(i,j))));
+%                                                                   
+%          % Resultant Aero force
+%         outputs.Fa_top(i,j) = outputs.Va_top(i,j)^2*sqrt(outputs.lambda(i,j)^2+outputs.delta(i,j)^2);
+%         
 %         % Tether force
-%         outputs.T_bot(i,j)   = min(outputs.Tmax_act, outputs.lambda(i,j)*cos(outputs.rollAngleBot(i,j))*outputs.Va_bot(i,j)^2 - ...
-%                outputs.W(i)*sin(outputs.avgPattEle(i)-outputs.pattAngRadius(i))-outputs.Fc_bot(i,j)*sin(outputs.pattAngRadius(i)));
+%         outputs.T_top(i,j)   = min(outputs.Tmax_act, outputs.Fa_top(i,j)*cos(outputs.rollAngleTop(i,j)) - ...
+%                outputs.W(i)*sin(outputs.avgPattEle(i)-outputs.pattAngRadius(i))-outputs.Fc_top(i,j)*sin(outputs.pattAngRadius(i)));
 %           
-%         % Resultant Aero force
-%         outputs.Fa_bot(i,j) = outputs.Va_bot(i,j)^2*sqrt(outputs.lambda(i,j)^2+outputs.delta(i,j)^2);
-%         
-%         % Sink rate
-%         outputs.VSR_bot(i,j) = outputs.Va_bot(i,j)*outputs.CD(i,j)/outputs.CL(i,j)*cos(outputs.rollAngleBot(i,j));
-%         
+%         % Sink rate in tether tension direction
+%         outputs.VSR_top(i,j) = outputs.Va_top(i,j)*outputs.CD(i,j)/outputs.CL(i,j);%*cos(outputs.rollAngleTop(i,j));
+%        
 %         % Reel-out speed
-%         outputs.VRO_bot(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i)-outputs.pattAngRadius(i))-outputs.VSR_bot(i,j);
-%         
-%         % Power at bottom point
-%         outputs.PROeff_mech_bot(i,j) = outputs.T_bot(i,j)*outputs.VRO_bot(i,j); %[W]
+%         outputs.VRO_top(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i)-outputs.pattAngRadius(i))-outputs.VSR_top(i,j);
+%         outputs.reelOutF(i,j) = outputs.VRO_top(i,j)/outputs.Vw(i,j);
         
         
         %% Updating variable names for brevity in the following sections
@@ -270,3 +396,43 @@ function [inputs] = compute(i,inputs)
       outputs.P_cycleMech(i) = (sum(outputs.tROeff(i,:).*outputs.PROeff_mech(i,:)) + outputs.t1(i)*outputs.PRO1_mech(i) - ...
                                    sum(outputs.tRIeff(i,:).*outputs.PRIeff_mech(i,:)) - outputs.t2(i)*outputs.PRI2_mech(i))/outputs.tCycle(i);
 end      
+   %% Evaluating flight state equilibrium at the side point of the pattern
+        
+%         % Wind speed at pattern avg height
+%         outputs.Vw(i,j) = inputs.Vw_ref(i)*((outputs.h_inCycle(i,j)+outputs.pattRadius(i,j)*cos(outputs.pattAngRadius(i)))...
+%                             /inputs.h_ref)^inputs.windShearExp;
+%         
+%         % Air density as a function of height   % Ref: https://en.wikipedia.org/wiki/Density_of_air
+%         M = 0.0289644; % [kg/mol]
+%         R = 8.3144598; % [N·m/(mol·K)]
+%         T = 288.15;    % [Kelvin]
+%         L = 0.0065;    % [Kelvin/m] 
+%         outputs.rho_air(i,j) = inputs.airDensity*(1-L*(outputs.h_inCycle(i,j)+outputs.pattRadius(i,j)*cos(outputs.pattAngRadius(i)))/T)^(inputs.gravity*M/R/L-1); 
+%         
+%         % Intermediate calculation for brevity
+%         outputs.lambda(i,j) = 0.5*outputs.rho_air(i,j)*inputs.WA*outputs.CL(i,j);
+%         outputs.delta(i,j)  = 0.5*outputs.rho_air(i,j)*inputs.WA*outputs.CD(i,j);
+%         
+%         % Centripetal force
+%          outputs.Fc_top(i,j) = outputs.m_eff(i)*outputs.Vc_top(i,j)^2/outputs.pattRadius(i,j);
+%         
+%         % Airspeed
+%         outputs.Va_top(i,j) = sqrt((outputs.W(i)*cos(outputs.pattAngRadius(i))*cos(outputs.avgPattEle(i)))/(outputs.lambda(i,j)*...
+%                                 cos(outputs.rollAngleTop(i,j))*sin(outputs.pitchAngle(i,j))));
+%         
+%          % Resultant Aero force
+%         outputs.Fa_top(i,j) = outputs.Va_top(i,j)^2*sqrt(outputs.lambda(i,j)^2+outputs.delta(i,j)^2);
+%         
+%                               
+%         % Tether force
+%         outputs.T_top(i,j)   = min(outputs.Tmax_act, outputs.Fa_top(i,j)*cos(outputs.rollAngleTop(i,j))*cos(outputs.pitchAngle(i,j)) - ...
+%                outputs.W(i)*cos(outputs.pattAngRadius(i)*sin(outputs.avgPattEle(i))-outputs.Fc_top(i,j)*sin(outputs.pattAngRadius(i))));
+%                  
+%         
+%         % Sink rate
+%         outputs.VSR_top(i,j) = outputs.Va_top(i,j)*outputs.CD(i,j)/outputs.CL(i,j)*cos(outputs.rollAngleTop(i,j));
+% %         outputs.VSR_top2(i,j) = outputs.CD(i,j)/outputs.CL(i,j)^(3/2)*sqrt((outputs.T_top(i,j)+outputs.W(i)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i))...
+% %                 +outputs.Fc_top(i,j)*sin(outputs.avgPattEle(i)-outputs.pattAngRadius(i)))*cos(outputs.rollAngleTop(i,j))/(0.5*outputs.rho_air(i,j)*inputs.WA));
+%            
+%         % Reel-out speed
+%         outputs.VRO_top(i,j) = outputs.Vw(i,j)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.VSR_top(i,j);

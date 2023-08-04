@@ -25,20 +25,42 @@ function [c, ceq] = constraints(i,inputs)
   % If not running second optimisation
   c(1,7:inputs.numDeltaLelems+6) = (outputs.PROeff_mech(i,:) - inputs.F_peakM2Ecyc*inputs.P_ratedElec)/(inputs.F_peakM2Ecyc*inputs.P_ratedElec);
   
-  % Feasibility at bottom point
-%   c(1,inputs.numDeltaLelems+7:2*inputs.numDeltaLelems+6) = (outputs.Fc_bot(i,:).*cos(outputs.pattAngRadius(i)) - outputs.W(i)*cos(outputs.avgPattEle(i)-outputs.pattAngRadius(i)))/(outputs.m_kite*inputs.gravity*10);
+  % Reel-out speed should be less than tether direction component of wind
+  % Top pint
+%  c(1,inputs.numDeltaLelems+7:2*inputs.numDeltaLelems+6) = outputs.VRO_top(i,:) - outputs.Vw(i,:)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i));
   
+  % Bottom pint
+%   c(1,inputs.numDeltaLelems+7:2*inputs.numDeltaLelems+6) = outputs.VRO_top(i,:) - outputs.Vw(i,:)*cos(outputs.avgPattEle(i)-outputs.pattAngRadius(i));
+  
+  % Tangential speed constraint
+%    c(1,2*inputs.numDeltaLelems+7:3*inputs.numDeltaLelems+6) = 0 - outputs.Vc_top(i,:);
+   
+   
   %% Equality constraints
   
-  if inputs.targetPRO_mech ~= 0 % Only run in Second Optimisation to follow capped mean mech. power
-      ceq(1)    = (mean(outputs.PROeff_mech(i,:)) - inputs.targetPRO_mech(i))/inputs.targetPRO_mech(i)/10;
-  else
-      ceq(1)    = 0; % For First Optimisation
-  end
+  ceq(1) = 0;
+  
+  % Force balance condition 
+  
+  % Top point of the pattern
+  %ceq(1:inputs.numDeltaLelems) = outputs.Fa_top(i,:).*sin(outputs.rollAngleTop(i,:))-...
+  %                    (outputs.W(i).*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))+outputs.Fc_top(i,:).*cos(outputs.pattAngRadius(i))); 
+  
+  %Bottom point of the pattern
+ % ceq(1:inputs.numDeltaLelems) = outputs.Fa_top(i,:).*sin(outputs.rollAngleTop(i,:))-...
+%                     (outputs.W(i).*cos(outputs.avgPattEle(i)-outputs.pattAngRadius(i))-outputs.Fc_top(i,:).*cos(outputs.pattAngRadius(i))); 
+  
+                  
+                  
+                  
+%   if inputs.targetPRO_mech ~= 0 % Only run in Second Optimisation to follow capped mean mech. power
+%       ceq(1)    = (mean(outputs.PROeff_mech(i,:)) - inputs.targetPRO_mech(i))/inputs.targetPRO_mech(i)/10;
+%   else
+%       ceq(1)    = 0; % For First Optimisation
+%   end
   
   % Kite tangential speed at top pattern point
-  ceq(1,2:inputs.numDeltaLelems+1) = (outputs.Va_top(i,:).^2 - outputs.Vc_top(i,:).^2 - (outputs.VSR_top(i,:)/outputs.rollAngleTop(i,:)).^2)./50.^2;
-  
+   ceq(1,2:inputs.numDeltaLelems+1) = (outputs.Va_top(i,:).^2 - outputs.Vc_top(i,:).^2 - (outputs.VSR_top(i,:)).^2)./50.^2; %./cos(outputs.rollAngleTop(i,:))
   % Kite tangential speed at bottom pattern point
 %   ceq(1,inputs.numDeltaLelems+2:2*inputs.numDeltaLelems+1) = (outputs.Va_top(i,:).^2 - outputs.Vc_top(i,:).^2 - (outputs.VSR_top(i,:)/outputs.rollAngleTop(i,:)).^2)./50.^2;
 
