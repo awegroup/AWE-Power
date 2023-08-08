@@ -2,7 +2,7 @@
 inputs                = struct();
 
 inputs.mainPlots      = 1; % 1 = yes, 0 = no
-inputs.numDeltaLelems = 5;
+inputs.numDeltaLelems = 4;
 
 inputs.Vw_ref         = 1:1:25; %[m/s]
 inputs.h_ref          = 100; %[m]
@@ -40,7 +40,6 @@ inputs.etaGearbox     = 0.9;
 inputs.etaSto         = 0.9;
 inputs.etaPE          = 0.95; % Power electronics
 
-inputs.targetPRO_mech = 1;
 inputs.gravity        = 9.81;
 inputs.airDensity     = 1.225; %[kg/m^3]  
 

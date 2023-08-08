@@ -28,15 +28,6 @@ function [c, ceq] = constraints(i,inputs)
     
   %% Equality constraints
   
-  ceq(1) = 0;
-
-%   if inputs.targetPRO_mech ~= 0 % Only run in Second Optimisation to follow capped mean mech. power
-%       ceq(1)    = (mean(outputs.PROeff_mech(i,:)) - inputs.targetPRO_mech(i))/inputs.targetPRO_mech(i)/10;
-%   else
-%       ceq(1)    = 0; % For First Optimisation
-%   end
-  
-  % Kite tangential speed at top pattern point
-%    ceq(1,2:inputs.numDeltaLelems+1) = (outputs.Va_top(i,:).^2 - outputs.Vc_top(i,:).^2 - (outputs.VSR_top(i,:)).^2)./50.^2; %./cos(outputs.rollAngleTop(i,:))
+  ceq = 0;
  
 end

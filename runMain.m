@@ -68,24 +68,6 @@ if inputs.mainPlots == 1
     hold off
   end
 
-  % Mechanical reel-out power oscillation and capping
-%   i = [8,13,25];
-%   d.series1 = outputs.PROeff_mech_osci(i(1),:)/10^3;  
-%   d.series2 = outputs.PROeff_mech_osci(i(2),:)/10^3; 
-%   d.series3 = outputs.PROeff_mech_osci(i(3),:)/10^3; 
-%   d.deltaLelems = 0:1:outputs.deltaLelems-1;
-%   figure('units','inch','Position', [4 4 3.5 2.2])
-%   hold on
-%   grid on
-%   box on
-%   plot(d.deltaLelems,d.series1,'linewidth',1.2);
-%   plot(d.deltaLelems,d.series2,'linewidth',1.2);
-%   plot(d.deltaLelems,d.series3,'linewidth',1.2);
-%   ylabel('P_{m,o} (kW)');
-%   legend(strcat(num2str(i(1)),'m/s'),strcat(num2str(i(2)),'m/s'),strcat(num2str(i(3)),'m/s'),'location','southeast');
-%   xlabel('Discretized reel-out length in number of elements');
-%   hold off
-
   % VRO, VRI, tRO, tRI
   figure('units','inch','Position', [3 3 3.5 2.2])
   colororder(newcolors)
