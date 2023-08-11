@@ -5,29 +5,31 @@ function [c, ceq] = constraints(i,inputs)
   %% Inequality constraints
   
   % Min clearance between ground and bottom point of pattern
-  c(1)   = (inputs.minGroundClear - outputs.pattStartGrClr(i))/inputs.minGroundClear;
-  
-  c(2)   = (inputs.minGroundClear - outputs.pattEndGrClr(i))/inputs.minGroundClear;
+  c(1)   = (inputs.minGroundClear - outputs.pattStartGrClr(i))/inputs.minGroundClear/100;
+  c(2)   = (inputs.minGroundClear - outputs.pattEndGrClr(i))/inputs.minGroundClear/100;
   
   % Capping for requested electrical rated power
-  c(3)   = (outputs.P_cycleElec(i) - inputs.P_ratedElec)/inputs.P_ratedElec; 
+  c(3)   = (outputs.P_cycleElec(i) - inputs.P_ratedElec)/inputs.P_ratedElec/1000; 
   
   % Tether length limit
-  c(4) = (outputs.L_teMax(i) - inputs.maxTeLen)/inputs.maxTeLen; 
+  c(4) = (outputs.L_teMax(i) - inputs.maxTeLen)/inputs.maxTeLen/100; 
   
   % Min number of patterns to get into transition 
-  c(5) = (1 - mean(outputs.numOfPatt(i,:)))/3;
+  c(5) = (1 - mean(outputs.numOfPatt(i,:)))/10;
   
   % Max. cycle avg height
-  c(6) = (outputs.H_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight;
+  c(6) = (outputs.H_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight/1000;
   
-  % Peak mech to cycle elec ratio
-  % If not running second optimisation
-  c(1,7:inputs.numDeltaLelems+6) = (outputs.PROeff_mech(i,:) - inputs.F_peakM2Ecyc*inputs.P_ratedElec)/(inputs.F_peakM2Ecyc*inputs.P_ratedElec);
+  % Peak mechanical power limit
+  c(1,7:inputs.numDeltaLelems+6) = (outputs.PROeff_mech(i,:) - inputs.F_peakM2Ecyc*inputs.P_ratedElec)/(inputs.F_peakM2Ecyc*inputs.P_ratedElec*1000);
   
+  % Maximum tether force
+  c(1,7+inputs.numDeltaLelems:2*inputs.numDeltaLelems+6) = (outputs.T_top(i,:) - inputs.Tmax*inputs.F_Tmax*1000)/inputs.Tmax*inputs.F_Tmax*100000;
     
   %% Equality constraints
   
-  ceq = 0;
+  % Kinematic ratio
+  ceq(1:inputs.numDeltaLelems+1) = (outputs.k_result(i,:) - (outputs.CL(i,:)/outputs.CD(i,:)))/100;
+
  
 end

@@ -3,30 +3,32 @@
 
 function [optData,outputs,postProRes,timeseries] = main(inputs)
   
- 
-  
   nx = ones(1,inputs.numDeltaLelems);
-  %         [deltaL, VRI, avgPattEle,  pattAngRadius, startPattRadius, CL,     rollAngleTop,   kiteSpeedTangTop]
-  x0      = [200,    4,   deg2rad(20), deg2rad(12),   40,              1.5*nx, deg2rad(20)*nx, 10*nx];
-  
-  for i=1:length(inputs.Vw_ref)
+  %         [deltaL, VRI, avgPattEle,  pattAngRadius, startPattRadius, CL,     rollAngleTop,   reelOutFactor kinematicRatio]
+  x0      = [200,    4,   deg2rad(20), deg2rad(12),   40,              inputs.CL_maxAirfoil*inputs.F_CLeff*nx, deg2rad(20)*nx, 0.33*nx,100*nx];
+
+  for i=1:length(inputs.vw_ref)
+    
     % Output of previous wind speed as input to next wind speed
-    x_init = x0;  
+    x_init = x0;
     x0     = x_init./x_init;
-      
-    lb     = [100, 2,             deg2rad(3),  deg2rad(3),  30,  inputs.CL0_airfoil*nx,                    deg2rad(5)*nx,   0*nx]./x_init; % 
-    ub     = [600, inputs.maxVRI, deg2rad(80), deg2rad(80), 500, inputs.CL_maxAirfoil*inputs.F_CLeff*nx,   deg2rad(80)*nx, 70*nx]./x_init; % 
+     
+    % Bounds
+    % inputs.CL0_airfoil
+    lb     = [100, 2,             deg2rad(3),  deg2rad(3),  30,  inputs.CL_maxAirfoil*inputs.F_CLeff*nx,  deg2rad(2)*nx,   0.01*nx, 0*nx]./x_init; % 
+    ub     = [600, inputs.maxVRI, deg2rad(80), deg2rad(80), 500, inputs.CL_maxAirfoil*inputs.F_CLeff*nx,   deg2rad(80)*nx, 1*nx, 150*nx]./x_init; % 
     
     options                           = optimoptions('fmincon');
     options.Display                   = 'iter-detailed';
     options.Algorithm                 = 'sqp';
     options.FiniteDifferenceType      = 'central';
-   options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-8 1e-8 1e-12 1e-6*nx 1e-6*nx 1e-6*nx];
+%    options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-8 1e-8 1e-12 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
 %     options.FiniteDifferenceStepSize  = 1e-5.*[1 1 1 1 1 nx nx nx nx];
+%     options.ConstraintTolerance      = 1e-9;
   %  options.OptimalityTolerance       = 1e-9;
   %     options.StepTolerance             = 1e-6;
     options.MaxFunctionEvaluations    = 800*numel(x_init);
-    options.MaxIterations             = 200*numel(x_init);
+    options.MaxIterations             = 300*numel(x_init);
   %   options.FunctionTolerance        = 1e-9;
   %   options.DiffMaxChange            = 1e-1;
   %   options.DiffMinChange            = 0;
@@ -42,9 +44,9 @@ function [optData,outputs,postProRes,timeseries] = main(inputs)
     x0 = x.*x_init;
 
     % Changing initial guess if previous wind speed evaluation is infeasible
-%     if outputs.P_cycleElec(i) <= 0
-%         x0 = [200, 4, deg2rad(20), deg2rad(12), 60,  1.5*nx, deg2rad(20)*nx, 10*nx]; % 
-%     end  
+    if outputs.P_cycleElec(i) <= 0
+        x0 = [200, 4, deg2rad(20), deg2rad(12), 40,  inputs.CL_maxAirfoil*inputs.F_CLeff*nx, deg2rad(20)*nx, 0.33*nx, 100*nx]; % 
+    end  
   end
   disp(exitflag)
   % Store optimisation results data
@@ -53,7 +55,7 @@ function [optData,outputs,postProRes,timeseries] = main(inputs)
   optData(1).lambda   = lambda;
 
   %% Post processing
-  Vw = inputs.Vw_ref; 
+  Vw = inputs.vw_ref; 
 
   %% Cut-in wind speed
   temp1            = Vw(outputs.P_cycleElec > 0);

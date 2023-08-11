@@ -12,7 +12,7 @@ inputSheet_AP3;
 
 %% Main Plots
 if inputs.mainPlots == 1
-  Vw = inputs.Vw_ref; 
+  Vw = inputs.vw_ref; 
   newcolors = [ % 0.25, 0.25, 0.25
     0 0.4470 0.7410
   0.8500 0.3250 0.0980 
@@ -45,7 +45,7 @@ if inputs.mainPlots == 1
 
   
   % Cycle timeseries plots: Pattern averages
-  windSpeeds = [postProRes.ratedWind,25];
+  windSpeeds = [postProRes.ratedWind, 24, 25];
   for i = windSpeeds
     tmax = round(max(postProRes.tCycle(windSpeeds)));
     pmax = 1.1*inputs.F_peakM2Ecyc*max(postProRes.Pcycle_elec(windSpeeds))/10^3;
@@ -450,7 +450,7 @@ end
 % ylabel('Power (kW)');
 % xlim([3 20]);
 % hold off
- 
+%  
 %% Extra
 % Sine wave plot for VRO oscillation
 % t = linspace(270*pi/180,(270+360)*pi/180,1000);  
