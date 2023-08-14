@@ -5,7 +5,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
   
   nx = ones(1,inputs.numDeltaLelems);
   %         [deltaL, VRI, avgPattEle,  pattAngRadius, startPattRadius, CL,      reelOutFactor kinematicRatio]
-  x0      = [200,    4,   deg2rad(20), deg2rad(12),   80,              1.5*nx,  0.33*nx,      50*nx];
+  x0      = [200,    inputs.vk_r_i_max,   deg2rad(20), deg2rad(12),   80,  1.5*nx,  0.33*nx,      120*nx];
 
   for i=1:length(inputs.vw_ref)
     
@@ -15,8 +15,8 @@ function [optData,outputs,processedOutputs] = main(inputs)
      
     % Bounds
     % inputs.CL0_airfoil
-    lb     = [100, 2,             deg2rad(3),  deg2rad(3),  30,  0.5*nx, 0.01*nx, 0*nx]./x_init; % 
-    ub     = [600, inputs.maxVRI, deg2rad(80), deg2rad(80), 200, inputs.CL_maxAirfoil*inputs.F_CLeff*nx, 1*nx, 350*nx]./x_init; % 
+    lb     = [0, 0,             deg2rad(3),  deg2rad(3),  30,  0.5*nx, 0*nx, 0*nx]./x_init; % 
+    ub     = [600, inputs.vk_r_i_max, deg2rad(80), deg2rad(80), 200, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 1*nx, 350*nx]./x_init; % 
     
     options                           = optimoptions('fmincon');
     options.Display                   = 'iter-detailed';
@@ -45,7 +45,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
 
     % Changing initial guess if previous wind speed evaluation is infeasible
     if outputs.P_cycleElec(i) <= 0
-        x0 = [200, 4, deg2rad(20), deg2rad(12), 40,  inputs.CL_maxAirfoil*inputs.F_CLeff*nx, 0.33*nx, 50*nx]; % 
+        x0 = [200, 4, deg2rad(20), deg2rad(12), 40,  inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 0.33*nx, 50*nx]; % 
     end  
   end
   disp(exitflag)
@@ -55,24 +55,24 @@ function [optData,outputs,processedOutputs] = main(inputs)
   optData(1).lambda   = lambda;
 
   %% Post processing
-  Vw = inputs.vw_ref; 
+  vw = inputs.vw_ref; 
 
   %% Cut-in wind speed
-  temp1            = Vw(outputs.P_cycleElec > 1000);
-  temp2            = Vw(mean(outputs.VRO(:,:),2) >= 0);
+  temp1            = vw(outputs.P_cycleElec > 1000);
+  temp2            = vw(mean(outputs.vk_r(:,:),2) >= 0);
   processedOutputs.cutIn = max(temp1(1),temp2(1));
 
   %% Rated wind and power
   temp3 = round(outputs.P_cycleElec./max(outputs.P_cycleElec),2);
-  temp4 = Vw(temp3==1);
+  temp4 = vw(temp3==1);
   processedOutputs.ratedWind  = temp4(1);
   processedOutputs.ratedPower = outputs.P_cycleElec(processedOutputs.ratedWind);
 
   %% System data
-  processedOutputs.D_te         = outputs.D_te;
-  for i=1:length(Vw)
-      if Vw(i)>=processedOutputs.cutIn
-          processedOutputs.Vw(i,:)           = outputs.Vw_top(i,:);
+  processedOutputs.Dia_te         = outputs.Dia_t;
+  for i=1:length(vw)
+      if vw(i)>=processedOutputs.cutIn
+          processedOutputs.Vw(i,:)           = outputs.vw(i,:);
           processedOutputs.PRO1_mech(i)      = outputs.PRO1_mech(i);
           processedOutputs.PRI2_mech(i)      = outputs.PRI2_mech(i); 
           processedOutputs.PROeff_mech(i,:)  = outputs.PROeff_mech(i,:);
@@ -93,33 +93,33 @@ function [optData,outputs,processedOutputs] = main(inputs)
           processedOutputs.tRO(i)            = outputs.tRO(i);
           processedOutputs.tRI(i)            = outputs.tRI(i);
           processedOutputs.tCycle(i)         = outputs.tCycle(i);
-          processedOutputs.TT(i,:)           = outputs.T(i,:);
-          processedOutputs.VRO(i,:)          = outputs.VRO(i,:);
-          processedOutputs.VRI(i)            = outputs.VRI(i);
-          processedOutputs.VRI_app(i,:)      = outputs.VA_RI(i,:);
+          processedOutputs.TT(i,:)           = outputs.Ft(i,:);
+          processedOutputs.VRO(i,:)          = outputs.vk_r(i,:);
+          processedOutputs.VRI(i)            = outputs.vk_r_i(i);
+          processedOutputs.VRI_app(i,:)      = outputs.va_i(i,:);
           processedOutputs.Pcycle_elec(i)    = outputs.P_cycleElec(i);
           processedOutputs.Pcycle_mech(i)    = outputs.P_cycleMech(i);
-          processedOutputs.pattRad(i,:)      = outputs.pattRadius(i,:);
+          processedOutputs.pattRad(i,:)      = outputs.Rp(i,:);
           processedOutputs.H_cycleStart(i)   = outputs.H_cycleStart(i);
           processedOutputs.H_cycleAvg(i)     = outputs.H_cycleAvg(i);
           processedOutputs.L_teMax(i)        = outputs.L_teMax(i);
-          processedOutputs.Vc(i,:)           = outputs.VC(i,:); 
-          processedOutputs.Va(i,:)           = outputs.Va_top(i,:);
-          processedOutputs.avgPattEle(i)     = rad2deg(outputs.avgPattEle(i));
-          processedOutputs.avgRollAngle(i)   = acosd(outputs.Fa_r(i,:)./outputs.Fa_top(i,:));
-          processedOutputs.pattAngRadius(i)  = rad2deg(outputs.pattAngRadius(i));
+          processedOutputs.Vc(i,:)           = outputs.vk_omega(i,:); 
+          processedOutputs.Va(i,:)           = outputs.va(i,:);
+          processedOutputs.avgPattEle(i)     = rad2deg(outputs.beta(i));
+          processedOutputs.avgRollAngle(i)   = acosd(outputs.Fa_r(i,:)./outputs.Fa(i,:));
+          processedOutputs.pattAngRadius(i)  = rad2deg(outputs.gamma(i));
           processedOutputs.CL(i,:)           = outputs.CL(i,:);
           processedOutputs.CD(i,:)           = outputs.CD(i,:);
           processedOutputs.numOfPatt(i,:)    = outputs.numOfPatt(i,:);
-          processedOutputs.reelOutF(i,:)     = outputs.reelOutF(i,:);  
+          processedOutputs.reelOutF(i,:)     = outputs.f(i,:);  
           processedOutputs.dutyCycle(i)      = processedOutputs.tRO(i)/processedOutputs.tCycle(i);
-          processedOutputs.tPatt(i,:)        = 2*pi()*processedOutputs.pattRad(i,:)/outputs.VC(i);
+          processedOutputs.tPatt(i,:)        = 2*pi()*processedOutputs.pattRad(i,:)/outputs.vk_omega(i);
           % Coefficient of power (Cp) as defined for HAWTs
-          outputs.sweptArea(i)         = pi()*((outputs.pattRadius(i)+outputs.wingSpan/2)^2 - (outputs.pattRadius(i)-outputs.wingSpan/2)^2);
-          outputs.Cp_reelOut(i)        = outputs.PRO_mech(i)/(0.5*outputs.rho_air(i)*outputs.sweptArea(i)*Vw(i)^3);
+          outputs.sweptArea(i)         = pi()*((outputs.Rp(i)+outputs.wingSpan/2)^2 - (outputs.Rp(i)-outputs.wingSpan/2)^2);
+          outputs.Cp_reelOut(i)        = outputs.PRO_mech(i)/(0.5*outputs.rho_air(i)*outputs.sweptArea(i)*vw(i)^3);
           % Axial induction factor maximising Cp is a = 0.5 and is independent of reel-out factor
           % Ref paper: The Betz limit applied to Airborne Wind Energy, https://doi.org/10.1016/j.renene.2018.04.034
-          f(i)                         = outputs.reelOutF(i);
+          f(i)                         = outputs.f(i);
           a_ideal                      = 0.5;
           outputs.Cp_max_ifaIsHalf(i)  = (1-f(i))^2*4*a_ideal*(1-a_ideal)*f(i);
           a                            = abs(roots([1 -1 outputs.Cp_reelOut(i)/(4*f(i)*(1-f(i))^2)]));
@@ -129,7 +129,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
   end
 
   %% Cycle power representation for wind speeds in the operational range
-  for i = processedOutputs.cutIn:length(Vw)
+  for i = processedOutputs.cutIn:length(vw)
     [processedOutputs.cyclePowerRep(i)] = createCyclePowerRep(i,processedOutputs); 
   end
   function [cpr] = createCyclePowerRep(ws, system)

@@ -12,7 +12,7 @@ inputSheet_AP3;
 
 %% Main Plots
 if inputs.mainPlots == 1
-  Vw = inputs.vw_ref; 
+  vw = inputs.vw_ref; 
   newcolors = [ % 0.25, 0.25, 0.25
     0 0.4470 0.7410
   0.8500 0.3250 0.0980 
@@ -48,7 +48,7 @@ if inputs.mainPlots == 1
   windSpeeds = [processedOutputs.ratedWind, 24, 25];
   for i = windSpeeds
     tmax = round(max(processedOutputs.tCycle(windSpeeds)));
-    pmax = 1.1*inputs.F_peakM2Ecyc*max(processedOutputs.Pcycle_elec(windSpeeds))/10^3;
+    pmax = 1.1*inputs.peakM2E_F*max(processedOutputs.Pcycle_elec(windSpeeds))/10^3;
     pmin = 1.1*min(-processedOutputs.PRIeff_elec(windSpeeds))/10^3;
 
     figure('units','inch','Position', [15 3 3.5 2.2])
@@ -75,12 +75,12 @@ if inputs.mainPlots == 1
   grid on
   box on
   yyaxis left
-  plot(Vw, mean(processedOutputs.VRO,2),'d:','markersize',3);
-  plot(Vw, processedOutputs.VRI,'^:','markersize',3);
+  plot(vw, mean(processedOutputs.VRO,2),'d:','markersize',3);
+  plot(vw, processedOutputs.VRI,'^:','markersize',3);
   ylabel('Speed (m/s)');
   yyaxis right
-  plot(Vw, processedOutputs.tRO,'o:','markersize',3);
-  plot(Vw, processedOutputs.tRI,'+:','markersize',3);
+  plot(vw, processedOutputs.tRO,'o:','markersize',3);
+  plot(vw, processedOutputs.tRI,'+:','markersize',3);
   ylabel('Time (s)');
   legend('v_{o,avg}','v_{i}','t_{o}','t_{i}','location','northwest');
   xlabel('Wind speed at 100m height (m/s)');
@@ -94,10 +94,10 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(Vw, processedOutputs.H_cycleAvg,'d:','markersize',3);
-  plot(Vw, mean(processedOutputs.pattRad,2),'o:','markersize',3);
-  plot(Vw, processedOutputs.deltaL,'^:','markersize',3);
-  plot(Vw, processedOutputs.L_teMax,'+:','markersize',3);
+  plot(vw, processedOutputs.H_cycleAvg,'d:','markersize',3);
+  plot(vw, mean(processedOutputs.pattRad,2),'o:','markersize',3);
+  plot(vw, processedOutputs.deltaL,'^:','markersize',3);
+  plot(vw, processedOutputs.L_teMax,'+:','markersize',3);
   ylabel('Length (m)');
   legend('H_{p,avg}','R_{p,avg}','Δl','l_{t,max}','location','northwest','Orientation','vertical');
   xlabel('Wind speed at 100m height (m/s)');
@@ -111,12 +111,11 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(Vw, processedOutputs.avgRollAngle,'x:','markersize',4);
-% 'ϕ_{avg}'
-  plot(Vw, processedOutputs.avgPattEle,'^:','markersize',3);
-  plot(Vw, processedOutputs.pattAngRadius,'o:','markersize',3);
+  plot(vw, processedOutputs.avgRollAngle,'x:','markersize',4);
+  plot(vw, processedOutputs.avgPattEle,'^:','markersize',3);
+  plot(vw, processedOutputs.pattAngRadius,'o:','markersize',3);
   ylabel('Angle (deg)');
-  legend('ϕ_{avg}','β_{avg}','Δβ_{avg}','location','northwest','Orientation','vertical');
+  legend('δ_{avg}','β_{avg}','Δβ_{avg}','location','northwest','Orientation','vertical');
   xlabel('Wind speed at 100m height (m/s)');
   xlim([0 25]);
   %ylim([0 160]);
@@ -129,12 +128,12 @@ if inputs.mainPlots == 1
   grid on
   box on
   yyaxis left
-  plot(Vw, mean(processedOutputs.CL,2),'^:','markersize',3);
-  plot(Vw, mean(processedOutputs.CD,2),'+:','markersize',3);
-  plot(Vw, mean(processedOutputs.reelOutF,2),'o:','markersize',3);
+  plot(vw, mean(processedOutputs.CL,2),'^:','markersize',3);
+  plot(vw, mean(processedOutputs.CD,2),'+:','markersize',3);
+  plot(vw, mean(processedOutputs.reelOutF,2),'o:','markersize',3);
   ylabel('(-)');
   yyaxis right
-  plot(Vw, mean(processedOutputs.TT,2)./10^3,'x:','markersize',3);
+  plot(vw, mean(processedOutputs.TT,2)./10^3,'x:','markersize',3);
   ylabel('Tether force (kN)');
   ylim([0 1.1*max(mean(processedOutputs.TT,2))/10^3]);
   legend('C_{L}','C_{D}','f','F_{t}','location','northwest');
@@ -153,9 +152,9 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(Vw, (ERO_mech-ERI_mech)./ERO_mech*100,'o','markersize',3);
-  plot(Vw, (ERO_elec-ERI_elec)./ERO_mech*100,'+','markersize',3);
-  plot(Vw, processedOutputs.dutyCycle*100,'d','markersize',3);
+  plot(vw, (ERO_mech-ERI_mech)./ERO_mech*100,'o','markersize',3);
+  plot(vw, (ERO_elec-ERI_elec)./ERO_mech*100,'+','markersize',3);
+  plot(vw, processedOutputs.dutyCycle*100,'d','markersize',3);
   ylabel('Efficiency (%)');
   ylim([30 100]);
   legend('η_{m,avg}','η_{e,avg}','Duty cycle','location','southeast');
@@ -170,11 +169,11 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(Vw, processedOutputs.PRO_mech./10^3,'-o','linewidth',1,'markersize',2.5);
-  plot(Vw, processedOutputs.PRO_elec./10^3,':o','linewidth',1,'markersize',2.5);
-  plot(Vw, processedOutputs.PRI_mech./10^3,'--','linewidth',1.2);
-  plot(Vw, processedOutputs.PRI_elec./10^3,':','linewidth',1.5);
-  plot(Vw, processedOutputs.Pcycle_elec./10^3,'-','linewidth',1.4);
+  plot(vw, processedOutputs.PRO_mech./10^3,'-o','linewidth',1,'markersize',2.5);
+  plot(vw, processedOutputs.PRO_elec./10^3,':o','linewidth',1,'markersize',2.5);
+  plot(vw, processedOutputs.PRI_mech./10^3,'--','linewidth',1.2);
+  plot(vw, processedOutputs.PRI_elec./10^3,':','linewidth',1.5);
+  plot(vw, processedOutputs.Pcycle_elec./10^3,'-','linewidth',1.4);
   ylabel('Power (kW)');
   %title('Cycle averages');
   legend('P_{m,o,mean}','P_{e,o,mean}','P_{m,i}','P_{e,i}','P_{e,avg}','location','northwest');
@@ -185,10 +184,10 @@ if inputs.mainPlots == 1
 
   % Power curve comparison plot
   % Loyd
-  CL_loyd = inputs.CL_maxAirfoil*inputs.F_CLeff;
+  CL_loyd = inputs.CL_maxAirfoil*inputs.CLeff_F;
   CD_loyd = inputs.CD0 + (CL_loyd-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
-  for i = 1:length(Vw)
-      P_Loyd(i) = (4/27)*(CL_loyd^3/CD_loyd^2)*(1/2)*inputs.airDensity*inputs.WA*(Vw(i)^3);
+  for i = 1:length(vw)
+      P_Loyd(i) = (4/27)*(CL_loyd^3/CD_loyd^2)*(1/2)*inputs.airDensity*inputs.S*(vw(i)^3);
       if P_Loyd(i)>processedOutputs.ratedPower
           P_Loyd(i) = processedOutputs.ratedPower;
       end 
@@ -203,8 +202,8 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(Vw, P_Loyd./10^3,'--','linewidth',1.2);
-  plot(Vw, processedOutputs.Pcycle_elec./10^3,'o-','linewidth',1,'MarkerSize',4);
+  plot(vw, P_Loyd./10^3,'--','linewidth',1.2);
+  plot(vw, processedOutputs.Pcycle_elec./10^3,'o-','linewidth',1,'MarkerSize',4);
   plot(AP3.PC.ws, AP3.PC.power,'k^--','MarkerSize',4);
   ylabel('Power (kW)');
   legend('No effects (Loyd Reel-out)','All effects','6DOF','location','southeast');
@@ -223,27 +222,27 @@ end
 % inputSheet_AP3;
 % inputs.massOverride   = 1;
 % inputs.kiteMass = 4.365695525193600e+02;
-% s(1).WA  = inputs.WA;
-% s(2).WA  = 0.7*s(1).WA;
-% s(3).WA  = 0.85*s(1).WA;
-% s(4).WA  = 1.15*s(1).WA;
-% s(5).WA  = 1.3*s(1).WA;
+% s(1).S  = inputs.S;
+% s(2).S  = 0.7*s(1).S;
+% s(3).S  = 0.85*s(1).S;
+% s(4).S  = 1.15*s(1).S;
+% s(5).S  = 1.3*s(1).S;
 % for i = 1:numel(s)
-%   inputs.WA = s(i).WA;
+%   inputs.S = s(i).S;
 %   [optData,outputs,postProRes,timeseries] = main(inputs);
-%   P(i).WA =  postProRes.Pcycle_elec;
+%   P(i).S =  postProRes.Pcycle_elec;
 % end
 % figSize = [5 5 3.2 2];
 % figure('units','inch','Position', figSize)
 % hold on
 % grid on
 % box on
-% plot(P(2).WA./1e3,'o-','linewidth',1,'MarkerSize',2);
-% plot(P(3).WA./1e3,'o-','linewidth',1,'MarkerSize',2);
-% plot(P(1).WA./1e3,'o-','linewidth',1,'MarkerSize',2);
-% plot(P(4).WA./1e3,'o-','linewidth',1,'MarkerSize',2);
-% plot(P(5).WA./1e3,'o-','linewidth',1,'MarkerSize',2);
-% legend(strcat(num2str(s(2).WA),'m^2'),strcat(num2str(s(3).WA),'m^2'),strcat(num2str(s(1).WA),'m^2'),strcat(num2str(s(4).WA),'m^2'),strcat(num2str(s(5).WA),'m^2'),'location','southeast');
+% plot(P(2).S./1e3,'o-','linewidth',1,'MarkerSize',2);
+% plot(P(3).S./1e3,'o-','linewidth',1,'MarkerSize',2);
+% plot(P(1).S./1e3,'o-','linewidth',1,'MarkerSize',2);
+% plot(P(4).S./1e3,'o-','linewidth',1,'MarkerSize',2);
+% plot(P(5).S./1e3,'o-','linewidth',1,'MarkerSize',2);
+% legend(strcat(num2str(s(2).S),'m^2'),strcat(num2str(s(3).S),'m^2'),strcat(num2str(s(1).S),'m^2'),strcat(num2str(s(4).S),'m^2'),strcat(num2str(s(5).S),'m^2'),'location','southeast');
 % xlabel('Wind speed at 100m height (m/s)');
 % ylabel('Power (kW)');
 % xlim([3 20]);
@@ -369,13 +368,13 @@ end
 % 
 % %% Tether drag cofficient
 % inputSheet_AP3;
-% s(1).TeCd  = inputs.CD_te;
+% s(1).TeCd  = inputs.CD_t;
 % s(2).TeCd  = 0.7*s(1).TeCd;
 % s(3).TeCd  = 0.85*s(1).TeCd;
 % s(4).TeCd  = 1.15*s(1).TeCd;
 % s(5).TeCd  = 1.3*s(1).TeCd;
 % for i = 1:numel(s)
-%   inputs.CD_te  = s(i).TeCd;
+%   inputs.CD_t  = s(i).TeCd;
 %   [optData,outputs,postProRes,timeseries] = main(inputs);
 %   P(i).TeCd =  postProRes.Pcycle_elec;
 % end
@@ -397,13 +396,13 @@ end
 % 
 % %% Generator size
 % inputSheet_AP3;
-% s(1).PbyA  = inputs.F_peakM2Ecyc;
+% s(1).PbyA  = inputs.peakM2E_F;
 % s(2).PbyA  = 0.7*s(1).PbyA;
 % s(3).PbyA  = 0.85*s(1).PbyA;
 % s(4).PbyA  = 1.15*s(1).PbyA;
 % s(5).PbyA  = 1.3*s(1).PbyA;
 % for i = 1:numel(s)
-%   inputs.F_peakM2Ecyc  = s(i).PbyA;
+%   inputs.peakM2E_F  = s(i).PbyA;
 %   [optData,outputs,postProRes,timeseries] = main(inputs);
 %   P(i).PbyA =  postProRes.Pcycle_elec;
 % end
@@ -426,13 +425,13 @@ end
 % 
 % %% Maximum winch speed
 % inputSheet_AP3;
-% s(1).VRI  = inputs.maxVRI;
+% s(1).VRI  = inputs.vk_r_i_max;
 % s(2).VRI  = 0.5*s(1).VRI;
 % s(3).VRI  = 0.75*s(1).VRI;
 % s(4).VRI  = 1.25*s(1).VRI;
 % s(5).VRI  = 1.5*s(1).VRI;
 % for i = 1:numel(s)
-%   inputs.maxVRI  = s(i).VRI;
+%   inputs.vk_r_i_max  = s(i).VRI;
 %   [optData,outputs,postProRes,timeseries] = main(inputs);
 %   P(i).VRI =  postProRes.Pcycle_elec;
 % end
