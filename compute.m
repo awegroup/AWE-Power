@@ -44,8 +44,9 @@ function [inputs] = compute(i,inputs)
      % length element considering top point of the pattern
      for j = 1:outputs.deltaLelems
       
-        % For vector in further sections
+        % To use as vector in evaoluating force equilibrium for each element
         outputs.W(i,j) = outputs.W(i);
+        
         % Effective CD
         outputs.CD_kite(i,j)   = inputs.CD0 + (outputs.CL(i,j)-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
         outputs.CD_tether(i)   = (1/4)*inputs.CD_te*outputs.D_te*outputs.L_teAvg(i)*inputs.F_TeCurve/inputs.WA;
@@ -79,9 +80,6 @@ function [inputs] = compute(i,inputs)
         % Intermediate calculation for brevity
         outputs.CR(i,j)       = sqrt(outputs.CL(i,j)^2+outputs.CD(i,j)^2);
         outputs.halfRhoS(i,j) = 0.5*outputs.rho_air(i,j)*inputs.WA;
-        
-        
-%          No effects: Top point of the pattern
 
         % apparent wind velocity magnitude
         outputs.Va_top(i,j) = outputs.Vw_top(i,j)*(cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.reelOutF(i,j))*...
@@ -91,22 +89,26 @@ function [inputs] = compute(i,inputs)
         
         % tangential kite velocity factor
         outputs.lambda(i,j) = sqrt(cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))^2 + outputs.kRatio(i,j)^2*...
-                                (cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))^2-outputs.reelOutF(i,j))-1);
+                                (cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.reelOutF(i,j))^2-1);
         
         % magnitude of centripetal force
         outputs.Fc(i,j) = outputs.m_eff(i)*(outputs.lambda(i,j)*outputs.Vw_top(i,j))^2/outputs.pattRadius(i,j);
-        
-        outputs.Fc(i,j) = 0;
+%         outputs.Fc(i,j) = 0;
+        % centrifugal force vector
+        outputs.Fc_r(i,j) = +outputs.Fc(i,j)*sin(outputs.pattAngRadius(i));
+        outputs.Fc_p(i,j) = -outputs.Fc(i,j)*cos(outputs.pattAngRadius(i));
+        outputs.Fc_z(i,j) = 0;
         
         % gravitational force vector
-        outputs.Fg_r(i,j) = -outputs.W(i,j)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i))+outputs.Fc(i,j)*sin(outputs.pattAngRadius(i));
-        outputs.Fg_p(i,j) = outputs.W(i,j)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.Fc(i,j)*cos(outputs.pattAngRadius(i));
+        outputs.Fg_r(i,j) = -outputs.W(i,j)*sin(outputs.avgPattEle(i)+outputs.pattAngRadius(i));
+        outputs.Fg_p(i,j) = outputs.W(i,j)*cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i));
         outputs.Fg_z(i,j) = 0;
         
         % aerodynamic force vector
-        outputs.Fa_p(i,j) = -outputs.Fg_p(i,j);
-        outputs.Fa_r(i,j) = sqrt(outputs.Fa_top(i,j)^2-outputs.Fa_p(i,j)^2);
+        outputs.Fa_p(i,j) = -outputs.Fg_p(i,j) -outputs.Fc_p(i,j);
         outputs.Fa_z(i,j) = 0;
+        outputs.Fa_r(i,j) = sqrt(outputs.Fa_top(i,j)^2-outputs.Fa_p(i,j)^2-outputs.Fa_z(i,j)^2);
+        
         
         % apparent wind velocity vector
         outputs.va_r(i,j) = outputs.Vw_top(i,j)*(cos(outputs.avgPattEle(i)+outputs.pattAngRadius(i))-outputs.reelOutF(i,j));
@@ -132,7 +134,7 @@ function [inputs] = compute(i,inputs)
         % lift magnitude
         outputs.L(i,j) = sqrt(outputs.L_r(i,j)^2 + outputs.L_p(i,j)^2 + outputs.L_z(i,j)^2);
         
-        outputs.T_top(i,j) = outputs.Fa_r(i,j) + outputs.Fg_r(i,j);
+        outputs.T_top(i,j) = outputs.Fa_r(i,j) + outputs.Fg_r(i,j) + outputs.Fc_r(i,j);
         
         outputs.VRO_top(i,j) = outputs.reelOutF(i,j)*outputs.Vw_top(i,j);
         

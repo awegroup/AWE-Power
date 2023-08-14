@@ -6,14 +6,14 @@ inputs.numDeltaLelems = 1;
 
 inputs.vw_ref         = 1:1:25; %[m/s]
 inputs.h_ref          = 100; %[m]
-inputs.windShearExp   = 0.143; % 0.143 over land, 0.11 over sea
+inputs.windShearExp   = 0.11; % 0.143 over land, 0.11 over sea
 
 inputs.WA             = 12; % 12
 inputs.AR             = 12;
 inputs.P_ratedElec    = 150*1000; %[W]
 inputs.massOverride   = 0;
 inputs.kiteMass       = 50; %[kg]
-inputs.F_peakM2Ecyc   = 3;
+inputs.F_peakM2Ecyc   = 2.5;
 
 inputs.Tmax              = 42; % 42 %[kN]
 inputs.F_Tmax            = 0.8; % 0.8 for gust margin

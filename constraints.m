@@ -18,18 +18,21 @@ function [c, ceq] = constraints(i,inputs)
   c(5) = (1 - mean(outputs.numOfPatt(i,:)))/10;
   
   % Max. cycle avg height
-  c(6) = (outputs.H_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight/1000;
+%   c(6) = (outputs.H_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight/1000;
   
   % Peak mechanical power limit
   c(1,7:inputs.numDeltaLelems+6) = (outputs.PROeff_mech(i,:) - inputs.F_peakM2Ecyc*inputs.P_ratedElec)/(inputs.F_peakM2Ecyc*inputs.P_ratedElec*1000);
   
   % Maximum tether force
   c(1,7+inputs.numDeltaLelems:2*inputs.numDeltaLelems+6) = (outputs.T_top(i,:) - inputs.Tmax*inputs.F_Tmax*1000)/inputs.Tmax*inputs.F_Tmax*100000;
+  
+  % Kite speed limit
+%   c(1,7+2*inputs.numDeltaLelems:3*inputs.numDeltaLelems+6) = (outputs.VC(i,:) - 40)/1000;
     
   %% Equality constraints
   
   % Kinematic ratio
-  ceq(1:inputs.numDeltaLelems+1) = (outputs.k_result(i,:) - (outputs.CL(i,:)/outputs.CD(i,:)))/100;
+  ceq(1:inputs.numDeltaLelems) = (outputs.k_result(i,:) - (outputs.CL(i,:)/outputs.CD(i,:)))/100;
 
  
 end
