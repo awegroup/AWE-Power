@@ -15,8 +15,10 @@ function [inputs] = compute(i,inputs)
     end
     
     %% Tether length and height calculations based on variable values
+    
     outputs.wingSpan           = sqrt(inputs.AR*inputs.S);     
-    outputs.L_teMin(i)         = outputs.Rp_start(i)/sin(outputs.gamma(i));
+    outputs.Rp_start(i)        = outputs.wingSpan*4; % currently a guesstimate
+%     outputs.L_teMin(i)         = outputs.Rp_start(i)/sin(outputs.gamma(i));
     outputs.pattStartGrClr(i)  = outputs.L_teMin(i)*sin(outputs.beta(i)-outputs.gamma(i));
     outputs.H_cycleStart(i)    = outputs.L_teMin(i)*cos(outputs.gamma(i))*sin(outputs.beta(i));
     outputs.L_teMax(i)         = outputs.L_teMin(i)+outputs.deltaL(i)/cos(outputs.gamma(i)); 
@@ -49,14 +51,24 @@ function [inputs] = compute(i,inputs)
         
         % Defining kite positioning parameters 
         % Top point
-        outputs.theta(i,j) = pi()/2 - (outputs.beta(i)+outputs.gamma(i));
-        outputs.phi(i,j)   = 0;
-        outputs.chi(i,j)   = deg2rad(90);
+%         outputs.theta(i,j) = pi()/2 - (outputs.beta(i)+outputs.gamma(i));
+%         outputs.phi(i,j)   = 0;
+%         outputs.chi(i,j)   = deg2rad(90);
+        
+        % Bottom point
+%         outputs.theta(i,j) = pi()/2 - (outputs.beta(i)-outputs.gamma(i));
+%         outputs.phi(i,j)   = 0;
+%         outputs.chi(i,j)   = deg2rad(270);
+
+        % Representative flight state
+         outputs.theta(i,j) = pi()/2 - (outputs.beta(i));
+         outputs.phi(i,j)   = 0;
+         outputs.chi(i,j)   = deg2rad(90);
 
         % Side point
-%                 outputs.theta(i,j) = pi()/2 - (outputs.beta(i));
-%                 outputs.phi(i,j)   = outputs.gamma(i);
-%                 outputs.chi(i,j)   = 0;
+%         outputs.theta(i,j) = pi()/2 - (outputs.beta(i));
+%         outputs.phi(i,j)   = outputs.gamma(i);
+%         outputs.chi(i,j)   = 2*pi();
         
         % Effective CD
         outputs.CD_k(i,j)   = inputs.CD0 + (outputs.CL(i,j)-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
@@ -78,15 +90,17 @@ function [inputs] = compute(i,inputs)
         end
         
         % Wind speed at top pattern point                          
-        outputs.vw(i,j) = inputs.vw_ref(i)*((outputs.h_inCycle(i,j)+outputs.Rp(i,j)*cos(outputs.beta(i)))...
-                            /inputs.h_ref)^inputs.windShearExp;
+%         outputs.vw(i,j) = inputs.vw_ref(i)*((outputs.h_inCycle(i,j)+outputs.Rp(i,j)*cos(outputs.beta(i)))...
+%                             /inputs.h_ref)^inputs.windShearExp;
+        outputs.vw(i,j) = inputs.vw_ref(i)*((outputs.h_inCycle(i,j))/inputs.h_ref)^inputs.windShearExp;
         
         % Air density as a function of height   % Ref: https://en.wikipedia.org/wiki/Density_of_air
         M = 0.0289644; % [kg/mol]
         R = 8.3144598; % [N·m/(mol·K)]
         T = 288.15;    % [Kelvin]
         L = 0.0065;    % [Kelvin/m] 
-        outputs.rho_air(i,j) = inputs.airDensity*(1-L*(outputs.h_inCycle(i,j)+outputs.Rp(i,j)*cos(outputs.beta(i)))/T)^(inputs.gravity*M/R/L-1); 
+%         outputs.rho_air(i,j) = inputs.airDensity*(1-L*(outputs.h_inCycle(i,j)+outputs.Rp(i,j)*cos(outputs.beta(i)))/T)^(inputs.gravity*M/R/L-1);
+        outputs.rho_air(i,j) = inputs.airDensity*(1-L*(outputs.h_inCycle(i,j))/T)^(inputs.gravity*M/R/L-1);
         
         % Intermediate calculation for brevity
         outputs.CR(i,j)       = sqrt(outputs.CL(i,j)^2+outputs.CD(i,j)^2);
@@ -98,23 +112,27 @@ function [inputs] = compute(i,inputs)
         % aerodynamic force magnitude
         outputs.Fa(i,j) = outputs.halfRhoS(i,j)*outputs.CR(i,j)*outputs.va(i,j)^2;
         
-        
         % tangential kite velocity factor
-        outputs.lambda(i,j) = cos(outputs.theta(i,j))*cos(outputs.phi(i,j))*cos(outputs.chi(i,j))-sin(outputs.phi(i,j))*sin(outputs.chi(i,j))+...
-                            sqrt(cos(outputs.theta(i,j))^2*cos(outputs.phi(i,j))^2*cos(outputs.chi(i,j))^2-2*cos(outputs.theta(i,j))*cos(outputs.phi(i,j))...
-                            *cos(outputs.chi(i,j))*sin(outputs.phi(i,j))*sin(outputs.chi(i,j))+sin(outputs.phi(i,j))^2*sin(outputs.chi(i,j))^2+...
-                            cos(outputs.phi(i,j))^2*sin(outputs.theta(i,j))^2-1+outputs.kRatio(i,j)^2*(sin(outputs.theta(i,j))*cos(outputs.phi(i,j))-outputs.f(i,j))^2);         
-        
+        a = cos(outputs.theta(i,j))*cos(outputs.phi(i,j))*cos(outputs.chi(i,j))-sin(outputs.phi(i,j))*sin(outputs.chi(i,j));
+        b = sin(outputs.theta(i,j))*cos(outputs.phi(i,j));
+        outputs.lambda(i,j) = a + sqrt(a^2 + b^2 - 1 + outputs.kRatio(i,j)^2 *(b - outputs.f(i,j))^2);
+                          
         % Circumferential velocity
         outputs.vk_omega(i,j)   = outputs.lambda(i,j)*outputs.vw(i,j);  
         
         % magnitude of centripetal force
         outputs.Fc(i,j) = outputs.m_eff(i)*outputs.vk_omega(i,j)^2/outputs.Rp(i,j);
-%         outputs.Fc(i,j) = 0;
-        % centrifugal force vector
+        outputs.Fc(i,j) = 0;
+
+        % centrifugal force vector: Top point
         outputs.Fc_r(i,j)     = +outputs.Fc(i,j)*sin(outputs.gamma(i));
         outputs.Fc_theta(i,j) = -outputs.Fc(i,j)*cos(outputs.gamma(i));
         outputs.Fc_phi(i,j)   = 0;
+        
+         % centrifugal force vector: Bottom point
+%         outputs.Fc_r(i,j)     = +outputs.Fc(i,j)*sin(outputs.gamma(i));
+%         outputs.Fc_theta(i,j) = +outputs.Fc(i,j)*cos(outputs.gamma(i));
+%         outputs.Fc_phi(i,j)   = 0;
         
         % gravitational force vector
         outputs.Fg_r(i,j)     = -outputs.W(i,j)*cos(outputs.theta(i,j));
@@ -127,11 +145,29 @@ function [inputs] = compute(i,inputs)
         outputs.Fa_phi(i,j) = 0;
         outputs.Fa_r(i,j) = sqrt(outputs.Fa(i,j)^2-outputs.Fa_theta(i,j)^2-outputs.Fa_phi(i,j)^2);
         
+%         outputs.alpha(i,j)     = atan(outputs.Fa_theta(i,j)/outputs.Fa_r(i,j));
+        outputs.rollAngle(i,j) = atan(outputs.Fa_theta(i,j)/outputs.Fa_r(i,j));
+        
+%         outputs.alphaOpt(i,j) = (inputs.CL_maxAirfoil*inputs.CLeff_F - inputs.CL0_airfoil)/(2*pi());
+%         outputs.CL_new(i,j)   = inputs.CL0_airfoil + 2*pi()*(outputs.alphaOpt(i,j) - (-outputs.alpha(i,j)));
+        
+        % wind velocity vector
+        outputs.vw_r(i,j)     = outputs.vw(i,j)*sin(outputs.theta(i,j))*cos(outputs.phi(i,j));
+        outputs.vw_theta(i,j) = outputs.vw(i,j)*cos(outputs.theta(i,j))*cos(outputs.phi(i,j));
+        outputs.vw_phi(i,j)   = outputs.vw(i,j)*(-sin(outputs.phi(i,j)));
+        
+        % kite velocity vector
+%         outputs.vk_r(i,j)     = outputs.vw(i,j)*sin(outputs.theta(i,j));
+%         outputs.vk_theta(i,j) = outputs.vw(i,j)*cos(outputs.theta(i,j))*cos(outputs.phi(i,j));
+%         outputs.vk_phi(i,j)   = outputs.vw(i,j)*(-sin(outputs.phi(i,j)));
         
         % apparent wind velocity vector
-        outputs.va_r(i,j)     = outputs.vw(i,j)*(sin(outputs.theta(i,j))-outputs.f(i,j));
+        outputs.va_r(i,j)     = outputs.vw(i,j)*(sin(outputs.theta(i,j))*cos(outputs.phi(i,j))-outputs.f(i,j));
         outputs.va_theta(i,j) = outputs.vw(i,j)*(cos(outputs.theta(i,j))*cos(outputs.phi(i,j))-outputs.lambda(i,j)*cos(outputs.chi(i,j)));
         outputs.va_phi(i,j)   = outputs.vw(i,j)*(-sin(outputs.phi(i,j))-outputs.lambda(i,j)*sin(outputs.chi(i,j)));
+        
+        outputs.va_tau(i,j)   = sqrt(outputs.va_theta(i,j)^2 + outputs.va_phi(i,j)^2);
+        outputs.k_calc(i,j)   = outputs.va_tau(i,j)/outputs.va_r(i,j);
         
         % dot product F_a*v_a;
         outputs.F_dot_v(i,j) = (outputs.Fa_r(i,j)*outputs.va_r(i,j) + outputs.Fa_theta(i,j)*outputs.va_theta(i,j) + outputs.Fa_phi(i,j)*outputs.va_phi(i,j));
@@ -170,7 +206,7 @@ function [inputs] = compute(i,inputs)
         outputs.PROeff_elec(i,j) = outputs.PROeff_mech(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE;
 
         % Effective mechanical reel-in power
-        outputs.va_i(i,j)       = sqrt(outputs.vw(i,j)^2 +outputs.vk_r_i(i)^2 +2*outputs.vw(i,j)*outputs.vk_r_i(i)*cos(outputs.beta(i)));
+        outputs.va_i(i,j)       = sqrt(outputs.vw(i,j)^2 +outputs.vk_r_i(i)^2 + 2*outputs.vw(i,j)*outputs.vk_r_i(i)*cos(outputs.beta(i)));
         outputs.CL_i(i,j)       = 2*outputs.W(i)/(outputs.rho_air(i,j)*outputs.va_i(i,j)^2*inputs.S);
         outputs.CD_i(i,j)       = inputs.CD0+(outputs.CL_i(i,j)- inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e) + outputs.CD_t(i);
         outputs.PRIeff_mech(i,j) = 0.5*outputs.rho_air(i,j)*outputs.CD_i(i,j)*inputs.S*outputs.va_i(i,j)^3;

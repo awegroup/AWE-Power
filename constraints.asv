@@ -27,18 +27,17 @@ function [c, ceq] = constraints(i,inputs)
   c(1,7+inputs.numDeltaLelems:2*inputs.numDeltaLelems+6) = (outputs.Ft(i,:) - inputs.Ft_max*inputs.Ft_max_SF*1000)/inputs.Ft_max*inputs.Ft_max_SF*100000;
   
   % Kite speed limit
-%   c(1,7+2*inputs.numDeltaLelems:3*inputs.numDeltaLelems+6) = (outputs.vk_omega(i,:) - 40)/1000;
+%   c(1,7+2*inputs.numDeltaLelems:3*inputs.numDeltaLelems+6) = (outputs.vk_omega(i,:) - 50)/1000;
 
   % CL limit due to wing pitch
 %   c(1,7+3*inputs.numDeltaLelems:4*inputs.numDeltaLelems+6) = (outputs.CL(i,:) - outputs.CL_new(i,:))/100;
     
   %% Equality constraints
   
-  % Geometry consistency maintaining the ground clearance
-  ceq(1,1) = (outputs.L_teMin(i) - outputs.Rp_start(i)/sin(outputs.gamma(i)))/1000;
+   ceq(1,1) = (outputs.L_teMin(i) - outputs.Rp_start(i)/sin(outputs.gamma(i)))/1000;
   
   % Kinematic ratio
-  ceq(1,2:1+inputs.numDeltaLelems) = (outputs.k_result(i,:) - (outputs.CL(i,:)/outputs.CD(i,:)))/100;
+  ceq(1:1+inputs.numDeltaLelems) = (outputs.k_result(i,:) - (outputs.CL(i,:)/outputs.CD(i,:)))/100;
 
  
 end

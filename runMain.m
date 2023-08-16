@@ -45,7 +45,7 @@ if inputs.mainPlots == 1
 
   
   % Cycle timeseries plots: Pattern averages
-  windSpeeds = [processedOutputs.ratedWind, 24, 25];
+  windSpeeds = [processedOutputs.ratedWind, 25];
   for i = windSpeeds
     tmax = round(max(processedOutputs.tCycle(windSpeeds)));
     pmax = 1.1*inputs.peakM2E_F*max(processedOutputs.Pcycle_elec(windSpeeds))/10^3;
@@ -111,7 +111,7 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(vw, processedOutputs.avgRollAngle,'x:','markersize',4);
+  plot(vw, mean(processedOutputs.rollAngle,2),'x:','markersize',4);
   plot(vw, processedOutputs.avgPattEle,'^:','markersize',3);
   plot(vw, processedOutputs.pattAngRadius,'o:','markersize',3);
   ylabel('Angle (deg)');

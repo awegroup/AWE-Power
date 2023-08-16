@@ -2,11 +2,11 @@
 inputs                = struct();
 
 inputs.mainPlots      = 1; % 1 = yes, 0 = no
-inputs.numDeltaLelems = 1;
+inputs.numDeltaLelems = 5;
 
 inputs.vw_ref         = 1:1:25; %[m/s]
 inputs.h_ref          = 100; %[m]
-inputs.windShearExp   = 0.11; % 0.143 over land, 0.11 over sea
+inputs.windShearExp   = 0.143; % 0.143 over land, 0.11 over sea
 
 inputs.S              = 12; % 12
 inputs.AR             = 12;
