@@ -115,34 +115,31 @@ if inputs.mainPlots == 1
   plot(vw, processedOutputs.avgPattEle,'^:','markersize',3);
   plot(vw, processedOutputs.pattAngRadius,'o:','markersize',3);
   ylabel('Angle (deg)');
-  legend('δ_{avg}','β_{avg}','Δβ_{avg}','location','northwest','Orientation','vertical');
+  legend('Ψ_{avg}','β_{avg}','Δβ_{avg}','location','northwest','Orientation','vertical');
   xlabel('Wind speed at 100m height (m/s)');
   xlim([0 25]);
   %ylim([0 160]);
   hold off
 
-  % Dimension less nos: CL,CD,reel-out factor
+  % All forces 
   figure('units','inch','Position', [7 6 3.5 2.2])
   colororder(newcolors)
   hold on
   grid on
   box on
-  yyaxis left
-  plot(vw, mean(processedOutputs.CL,2),'^:','markersize',3);
-  plot(vw, mean(processedOutputs.CD,2),'+:','markersize',3);
-  plot(vw, mean(processedOutputs.reelOutF,2),'o:','markersize',3);
-  ylabel('(-)');
-  yyaxis right
-  plot(vw, mean(processedOutputs.TT,2)./10^3,'x:','markersize',3);
-  ylabel('Tether force (kN)');
-  ylim([0 1.1*max(mean(processedOutputs.TT,2))/10^3]);
-  legend('C_{L}','C_{D}','f','F_{t}','location','northwest');
+  plot(vw, mean(processedOutputs.Fa,2)./10^3,'-o','linewidth',1,'markersize',2.5);
+  plot(vw, mean(processedOutputs.Ft,2)./10^3,':o','linewidth',1,'markersize',2.5);
+  plot(vw, mean(processedOutputs.Fc,2)./10^3,'--x','linewidth',1,'markersize',3.5);
+  plot(vw, processedOutputs.W/10^3,':x','linewidth',1,'markersize',3.5);
+  ylabel('Force (kN)');
+  ylim([0 1.1*max(mean(processedOutputs.Ft,2))/10^3]);
+  legend('F_{a}','F_{t}','F_{c}','W','location','northwest');
   xlabel('Wind speed at 100m height (m/s)');
   xlim([0 25]);
   %ylim([0 160]);
   hold off
 
-  % Cycle efficiencies
+  % Non-dim factors
   ERO_elec = sum(processedOutputs.PROeff_elec.*processedOutputs.tROeff,2)' + processedOutputs.PRO1_elec.*processedOutputs.t1;
   ERI_elec = sum(processedOutputs.PRIeff_elec.*processedOutputs.tRIeff,2)' + processedOutputs.PRI2_elec.*processedOutputs.t2;
   ERO_mech = sum(processedOutputs.PROeff_mech.*processedOutputs.tROeff,2)' + processedOutputs.PRO1_mech.*processedOutputs.t1;
@@ -152,12 +149,13 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(vw, (ERO_mech-ERI_mech)./ERO_mech*100,'o','markersize',3);
-  plot(vw, (ERO_elec-ERI_elec)./ERO_mech*100,'+','markersize',3);
-  plot(vw, processedOutputs.dutyCycle*100,'d','markersize',3);
-  ylabel('Efficiency (%)');
-  ylim([30 100]);
-  legend('η_{m,avg}','η_{e,avg}','Duty cycle','location','southeast');
+  plot(vw, (ERO_mech-ERI_mech)./ERO_mech,'o','markersize',3);
+  plot(vw, (ERO_elec-ERI_elec)./ERO_mech,'+','markersize',3);
+  plot(vw, processedOutputs.dutyCycle,'d','markersize',3);
+  plot(vw, mean(processedOutputs.reelOutF,2),'x','markersize',3);
+  ylabel('(-)');
+  % ylim([30 100]);
+  legend('η_{m,avg}','η_{e,avg}','D','f','location','southeast');
   xlabel('Wind speed at 100m height (m/s)');
   xlim([0 25]);
   hold off

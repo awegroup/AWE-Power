@@ -14,26 +14,17 @@ function [inputs] = compute(i,inputs)
       outputs.m_k(i) = 10*(a*inputs.S^2 +b*inputs.S-k1)*(c1*(inputs.AR/AR_ref)^2-d1*(inputs.AR/AR_ref)+k2); 
     end
     
-    %% Tether length and height calculations based on variable values
-    
+    %% Constants
     outputs.wingSpan           = sqrt(inputs.AR*inputs.S);     
-    outputs.Rp_start(i)        = outputs.wingSpan*4; % currently a guesstimate
-%     outputs.L_teMin(i)         = outputs.Rp_start(i)/sin(outputs.gamma(i));
-    outputs.pattStartGrClr(i)  = outputs.L_teMin(i)*sin(outputs.beta(i)-outputs.gamma(i));
-    outputs.H_cycleStart(i)    = outputs.L_teMin(i)*cos(outputs.gamma(i))*sin(outputs.beta(i));
-    outputs.L_teMax(i)         = outputs.L_teMin(i)+outputs.deltaL(i)/cos(outputs.gamma(i)); 
-    outputs.pattEndGrClr(i)    = outputs.L_teMax(i)*sin(outputs.beta(i)-outputs.gamma(i));
-    outputs.L_teAvg(i)         = (outputs.L_teMax(i)+outputs.L_teMin(i))/2; %[m]
-    outputs.H_cycleAvg(i)      = outputs.L_teAvg(i)*cos(outputs.gamma(i))*sin(outputs.beta(i));
-    outputs.H_cycleEnd(i)      = outputs.L_teMax(i)*cos(outputs.gamma(i))*sin(outputs.beta(i));
-    outputs.Dia_t              = sqrt(inputs.Ft_max*1000/inputs.Te_matStrength*4/pi()); %[m] safety factor could be added (say *1.1)
-    
-    %% Effective mass (Kite + tether)
-    outputs.m_t(i)  = inputs.Te_matDensity*pi()/4*outputs.Dia_t^2*outputs.L_teAvg(i)*inputs.TeSag_F; % Could add (say 0.85) as safety factor on material density
-    outputs.m_eff(i) = outputs.m_k(i)+sin(outputs.beta(i))*outputs.m_t(i);
-
-    %% W
-    outputs.W(i)     = outputs.m_eff(i)*inputs.gravity;
+    outputs.l_t_min(i)         = outputs.Rp_start(i)/sin(outputs.gamma(i));
+    outputs.pattStartGrClr(i)  = outputs.l_t_min(i)*sin(outputs.beta(i)-outputs.gamma(i));
+    outputs.h_cycleStart(i)    = outputs.l_t_min(i)*cos(outputs.gamma(i))*sin(outputs.beta(i));
+    outputs.l_t_max(i)         = outputs.l_t_min(i)+outputs.deltaL(i)/cos(outputs.gamma(i)); 
+    outputs.pattEndGrClr(i)    = outputs.l_t_max(i)*sin(outputs.beta(i)-outputs.gamma(i));
+    outputs.l_t_avg(i)         = (outputs.l_t_max(i)+outputs.l_t_min(i))/2; %[m]
+    outputs.h_cycleAvg(i)      = outputs.l_t_avg(i)*cos(outputs.gamma(i))*sin(outputs.beta(i));
+    outputs.h_cycleEnd(i)      = outputs.l_t_max(i)*cos(outputs.gamma(i))*sin(outputs.beta(i));
+    outputs.d_t                = sqrt(inputs.Ft_max*1000/inputs.Te_matStrength*4/pi()); %[m] safety factor could be added (say *1.1)
     
     %% Cycle avg. mech reel-out power considering vertical wind shear
      
@@ -42,66 +33,81 @@ function [inputs] = compute(i,inputs)
      outputs.deltaLelems   = inputs.numDeltaLelems; 
      outputs.elemDeltaL(i) = outputs.deltaL(i)/outputs.deltaLelems;
   
-     % Assigning and evaluating a single flight state equilibrium for each
-     % length element considering top point of the pattern
+     % Assigning and evaluating a single flight state equilibrium for each length element 
      for j = 1:outputs.deltaLelems
-      
-        % To use as vector in evaoluating force equilibrium for each element
-        outputs.W(i,j) = outputs.W(i);
         
         % Defining kite positioning parameters 
-        % Top point
-%         outputs.theta(i,j) = pi()/2 - (outputs.beta(i)+outputs.gamma(i));
-%         outputs.phi(i,j)   = 0;
-%         outputs.chi(i,j)   = deg2rad(90);
-        
-        % Bottom point
-%         outputs.theta(i,j) = pi()/2 - (outputs.beta(i)-outputs.gamma(i));
-%         outputs.phi(i,j)   = 0;
-%         outputs.chi(i,j)   = deg2rad(270);
 
-        % Representative flight state
-         outputs.theta(i,j) = pi()/2 - (outputs.beta(i));
-         outputs.phi(i,j)   = 0;
-         outputs.chi(i,j)   = deg2rad(90);
+        if j == 1
+          outputs.l_t_inCycle(i,j) = outputs.l_t_min(i) + outputs.elemDeltaL(i)/2/cos(outputs.gamma(i));
+        else
+          outputs.l_t_inCycle(i,j) = outputs.l_t_inCycle(i,j-1) + outputs.elemDeltaL(i)/cos(outputs.gamma(i));
+        end
 
-        % Side point
-%         outputs.theta(i,j) = pi()/2 - (outputs.beta(i));
-%         outputs.phi(i,j)   = outputs.gamma(i);
-%         outputs.chi(i,j)   = 2*pi();
+        % Pattern ground clearance
+        outputs.pattGrClr(i,j) = outputs.l_t_inCycle(i,j)*sin(outputs.beta(i)-outputs.gamma(i));
+
+        % Effective mass lumped at kite (Kite + tether)
+        if inputs.FgToggle == 0
+            outputs.m_t(i,j) = 0;
+            outputs.m_k(i)   = 0;
+        else
+            outputs.m_t(i,j)  = inputs.Te_matDensity*pi()/4*outputs.d_t^2*outputs.l_t_inCycle(i,j); % Could add (say 0.85) as safety factor on material density
+        end
+        outputs.m_eff(i,j) = outputs.m_k(i)+sin(outputs.beta(i))*outputs.m_t(i,j);
+
+        if inputs.evalPoint      == 0
+            % Bottom point
+            outputs.theta(i,j) = pi()/2 - (outputs.beta(i)-outputs.gamma(i));
+            outputs.phi(i,j)   = 0;
+            outputs.chi(i,j)   = deg2rad(270);
+        elseif inputs.evalPoint      == 1
+            % Top point
+            outputs.theta(i,j) = pi()/2 - (outputs.beta(i)+outputs.gamma(i));
+            outputs.phi(i,j)   = 0;
+            outputs.chi(i,j)   = deg2rad(90);
+        else 
+            % Representative flight state
+             outputs.theta(i,j) = pi()/2 - (outputs.beta(i));
+             outputs.phi(i,j)   = 0;
+             outputs.chi(i,j)   = deg2rad(90);
+        end
         
         % Effective CD
+        outputs.CL(i,j)     = inputs.CL_maxAirfoil*inputs.CLeff_F;
         outputs.CD_k(i,j)   = inputs.CD0 + (outputs.CL(i,j)-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
-        outputs.CD_t(i)     = (1/4)*inputs.CD_t*outputs.Dia_t*outputs.L_teAvg(i)*inputs.TeSag_F/inputs.S;
-        outputs.CD(i,j)     = outputs.CD_k(i,j) + outputs.CD_t(i);
+        outputs.CD_t(i,j)   = (1/4)*inputs.CD_t*outputs.d_t*outputs.l_t_inCycle(i,j)/inputs.S;
+        outputs.CD(i,j)     = outputs.CD_k(i,j) + outputs.CD_t(i,j);
 
+        %% Increasing radius
         % Pattern average height
         if j == 1
-          outputs.h_inCycle(i,j) = outputs.H_cycleStart(i) + outputs.elemDeltaL(i)/2*sin(outputs.beta(i));
+          outputs.h_inCycle(i,j) = outputs.h_cycleStart(i) + outputs.elemDeltaL(i)/2*sin(outputs.beta(i));
         else
           outputs.h_inCycle(i,j) = outputs.h_inCycle(i,j-1) + outputs.elemDeltaL(i)*sin(outputs.beta(i));
         end
-        
+
         % Pattern radius at point of interest on deltaL
         if j == 1
-          outputs.Rp(i,j) = (outputs.Rp_start(i) + (outputs.elemDeltaL(i)*tan(outputs.gamma(i)) + outputs.Rp_start(i)))/2;
+          outputs.Rp(i,j) = outputs.Rp_start(i) + outputs.elemDeltaL(i)/2*tan(outputs.gamma(i));
         else
-          outputs.Rp(i,j) = (outputs.Rp(i,j-1) + (j*outputs.elemDeltaL(i)*tan(outputs.gamma(i)) + outputs.Rp_start(i)))/2;
+          outputs.Rp(i,j) = outputs.Rp(i,j-1) + outputs.elemDeltaL(i)*tan(outputs.gamma(i));
         end
         
-        % Wind speed at top pattern point                          
-%         outputs.vw(i,j) = inputs.vw_ref(i)*((outputs.h_inCycle(i,j)+outputs.Rp(i,j)*cos(outputs.beta(i)))...
-%                             /inputs.h_ref)^inputs.windShearExp;
-        outputs.vw(i,j) = inputs.vw_ref(i)*((outputs.h_inCycle(i,j))/inputs.h_ref)^inputs.windShearExp;
+        % Wind speed at evaluation point                       
+        outputs.vw(i,j) = inputs.vw_ref(i)*((outputs.h_inCycle(i,j)-outputs.Rp(i,j)*cos(outputs.beta(i)))...
+                            /inputs.h_ref)^inputs.windShearExp;
+        % outputs.vw(i,j) = inputs.vw_ref(i)*((outputs.h_inCycle(i,j))/inputs.h_ref)^inputs.windShearExp;
         
         % Air density as a function of height   % Ref: https://en.wikipedia.org/wiki/Density_of_air
-        M = 0.0289644; % [kg/mol]
-        R = 8.3144598; % [N·m/(mol·K)]
-        T = 288.15;    % [Kelvin]
-        L = 0.0065;    % [Kelvin/m] 
-%         outputs.rho_air(i,j) = inputs.airDensity*(1-L*(outputs.h_inCycle(i,j)+outputs.Rp(i,j)*cos(outputs.beta(i)))/T)^(inputs.gravity*M/R/L-1);
-        outputs.rho_air(i,j) = inputs.airDensity*(1-L*(outputs.h_inCycle(i,j))/T)^(inputs.gravity*M/R/L-1);
-        
+        % M = 0.0289644; % [kg/mol]
+        % R = 8.3144598; % [N·m/(mol·K)]
+        % T = 288.15;    % [Kelvin]
+        % L = 0.0065;    % [Kelvin/m] 
+        % outputs.rho_air(i,j) = inputs.airDensity*(1-L*(outputs.h_inCycle(i,j)-outputs.Rp(i,j)*cos(outputs.beta(i)))/T)^(inputs.gravity*M/R/L-1);
+        % outputs.rho_air(i,j) = inputs.airDensity*(1-L*(outputs.h_inCycle(i,j))/T)^(inputs.gravity*M/R/L-1);
+        outputs.rho_air(i,j)   = inputs.airDensity;
+
         % Intermediate calculation for brevity
         outputs.CR(i,j)       = sqrt(outputs.CL(i,j)^2+outputs.CD(i,j)^2);
         outputs.halfRhoS(i,j) = 0.5*outputs.rho_air(i,j)*inputs.S;
@@ -121,22 +127,28 @@ function [inputs] = compute(i,inputs)
         outputs.vk_omega(i,j)   = outputs.lambda(i,j)*outputs.vw(i,j);  
         
         % magnitude of centripetal force
-        outputs.Fc(i,j) = outputs.m_eff(i)*outputs.vk_omega(i,j)^2/outputs.Rp(i,j);
-        outputs.Fc(i,j) = 0;
+        if inputs.FcToggle == 0
+            outputs.Fc(i,j) = 0;
+        else
+            outputs.Fc(i,j) = outputs.m_eff(i)*outputs.vk_omega(i,j)^2/outputs.Rp(i,j);
+        end
 
+        if inputs.evalPoint == 0
+          % centrifugal force vector: Bottom point
+          outputs.Fc_r(i,j)     = +outputs.Fc(i,j)*sin(outputs.gamma(i));
+          outputs.Fc_theta(i,j) = +outputs.Fc(i,j)*cos(outputs.gamma(i));
+          outputs.Fc_phi(i,j)   = 0;
+        else
         % centrifugal force vector: Top point
-        outputs.Fc_r(i,j)     = +outputs.Fc(i,j)*sin(outputs.gamma(i));
-        outputs.Fc_theta(i,j) = -outputs.Fc(i,j)*cos(outputs.gamma(i));
-        outputs.Fc_phi(i,j)   = 0;
-        
-         % centrifugal force vector: Bottom point
-%         outputs.Fc_r(i,j)     = +outputs.Fc(i,j)*sin(outputs.gamma(i));
-%         outputs.Fc_theta(i,j) = +outputs.Fc(i,j)*cos(outputs.gamma(i));
-%         outputs.Fc_phi(i,j)   = 0;
-        
-        % gravitational force vector
-        outputs.Fg_r(i,j)     = -outputs.W(i,j)*cos(outputs.theta(i,j));
-        outputs.Fg_theta(i,j) = outputs.W(i,j)*sin(outputs.theta(i,j));
+           outputs.Fc_r(i,j)     = +outputs.Fc(i,j)*sin(outputs.gamma(i));
+           outputs.Fc_theta(i,j) = -outputs.Fc(i,j)*cos(outputs.gamma(i));
+           outputs.Fc_phi(i,j)   = 0;
+        end
+     
+        % gravitational force vector (kite + tether)
+        outputs.W(i,j)        = outputs.m_eff(i,j)*inputs.gravity;
+        outputs.Fg_r(i,j)     = -outputs.W(i)*cos(outputs.theta(i,j));
+        outputs.Fg_theta(i,j) = outputs.W(i)*sin(outputs.theta(i,j));
         outputs.Fg_phi(i,j)   = 0;
         
         
@@ -145,29 +157,19 @@ function [inputs] = compute(i,inputs)
         outputs.Fa_phi(i,j) = 0;
         outputs.Fa_r(i,j) = sqrt(outputs.Fa(i,j)^2-outputs.Fa_theta(i,j)^2-outputs.Fa_phi(i,j)^2);
         
-%         outputs.alpha(i,j)     = atan(outputs.Fa_theta(i,j)/outputs.Fa_r(i,j));
+        % Roll angle
         outputs.rollAngle(i,j) = atan(outputs.Fa_theta(i,j)/outputs.Fa_r(i,j));
         
-%         outputs.alphaOpt(i,j) = (inputs.CL_maxAirfoil*inputs.CLeff_F - inputs.CL0_airfoil)/(2*pi());
-%         outputs.CL_new(i,j)   = inputs.CL0_airfoil + 2*pi()*(outputs.alphaOpt(i,j) - (-outputs.alpha(i,j)));
         
         % wind velocity vector
         outputs.vw_r(i,j)     = outputs.vw(i,j)*sin(outputs.theta(i,j))*cos(outputs.phi(i,j));
         outputs.vw_theta(i,j) = outputs.vw(i,j)*cos(outputs.theta(i,j))*cos(outputs.phi(i,j));
         outputs.vw_phi(i,j)   = outputs.vw(i,j)*(-sin(outputs.phi(i,j)));
         
-        % kite velocity vector
-%         outputs.vk_r(i,j)     = outputs.vw(i,j)*sin(outputs.theta(i,j));
-%         outputs.vk_theta(i,j) = outputs.vw(i,j)*cos(outputs.theta(i,j))*cos(outputs.phi(i,j));
-%         outputs.vk_phi(i,j)   = outputs.vw(i,j)*(-sin(outputs.phi(i,j)));
-        
         % apparent wind velocity vector
         outputs.va_r(i,j)     = outputs.vw(i,j)*(sin(outputs.theta(i,j))*cos(outputs.phi(i,j))-outputs.f(i,j));
         outputs.va_theta(i,j) = outputs.vw(i,j)*(cos(outputs.theta(i,j))*cos(outputs.phi(i,j))-outputs.lambda(i,j)*cos(outputs.chi(i,j)));
         outputs.va_phi(i,j)   = outputs.vw(i,j)*(-sin(outputs.phi(i,j))-outputs.lambda(i,j)*sin(outputs.chi(i,j)));
-        
-        outputs.va_tau(i,j)   = sqrt(outputs.va_theta(i,j)^2 + outputs.va_phi(i,j)^2);
-        outputs.k_calc(i,j)   = outputs.va_tau(i,j)/outputs.va_r(i,j);
         
         % dot product F_a*v_a;
         outputs.F_dot_v(i,j) = (outputs.Fa_r(i,j)*outputs.va_r(i,j) + outputs.Fa_theta(i,j)*outputs.va_theta(i,j) + outputs.Fa_phi(i,j)*outputs.va_phi(i,j));
@@ -188,15 +190,26 @@ function [inputs] = compute(i,inputs)
         % lift magnitude
         outputs.L(i,j) = sqrt(outputs.L_r(i,j)^2 + outputs.L_theta(i,j)^2 + outputs.L_phi(i,j)^2);
         
+        % Straight-tether force 
         outputs.Ft(i,j) = outputs.Fa_r(i,j) + outputs.Fg_r(i,j) + outputs.Fc_r(i,j);
-        
+
+        % Loss in Ft due to tether sag
+        outputs.Ft_k_theta(i,j) = -(1/2)*sin(outputs.theta(i,j))*outputs.m_t(i,j)*inputs.gravity;
+        outputs.Ft_k_r(i,j)     = sqrt(outputs.Ft(i,j)^2 - outputs.Ft_k_theta(i,j)^2);
+        outputs.Ft_k_phi(i,j)   = 0; 
+
+        % Tether force at the drum
+        outputs.Ft_drum(i,j) = sqrt((sqrt(outputs.Ft_k_r(i,j)^2 - outputs.Ft_k_theta(i,j)^2) - ...
+                                cos(outputs.theta(i,j))*outputs.m_t(i)*inputs.gravity)^2 + outputs.Ft_k_theta(i,j)^2);
+
+        % reel-out speed
         outputs.vk_r(i,j) = outputs.f(i,j)*outputs.vw(i,j);
         
         % lift-to-drag ratio that follows from the chosen kinematic ratio
         outputs.k_result(i,j) = sqrt(((outputs.Fa(i,j)*outputs.va(i,j))/outputs.F_dot_v(i,j))^2-1);
           
         % Effective mechanical reel-out power
-        outputs.PROeff_mech(i,j) = outputs.Ft(i,j)*outputs.vk_r(i,j); %[W]
+        outputs.PROeff_mech(i,j) = outputs.Ft_drum(i,j)*outputs.vk_r(i,j); %[W]        
        
         % Effective electrical reel-out power
         % Generator efficiency. As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
@@ -272,8 +285,8 @@ function [inputs] = compute(i,inputs)
       outputs.tPatt(i,:)     = 2*pi()*outputs.Rp(i,:)./outputs.vk_omega(i,:);
       outputs.numOfPatt(i,:) = outputs.tRO(i)./outputs.tPatt(i,:);
 
-      %% Electrical cycle power
-      if outputs.vk_r(i,:)<0
+      % Electrical cycle power
+      if outputs.vk_r(i,:)<=0
         outputs.P_cycleElec(i) = 0;
       else
        outputs.P_cycleElec(i) = (sum(outputs.tROeff(i,:).*outputs.PROeff_elec(i,:)) + outputs.t1(i)*outputs.PRO1_elec(i) - ...

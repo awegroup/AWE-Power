@@ -4,34 +4,26 @@ function [optData,outputs,processedOutputs] = main(inputs)
   nx = ones(1,inputs.numDeltaLelems);
   
   %% Optimise operation for every wind speed at bottom point
-  %%         [deltaL, VRI,                 avgPattEle,  pattAngRadius, startPattRadius, CL,      reelOutFactor kinematicRatio]
+  %%        [deltaL, VRI,                 avgPattEle,  pattAngRadius,  startPattRadius,            reelOutFactor, kinematicRatio]
   % All free
-  x0      = [200,    inputs.vk_r_i_max,   deg2rad(20), deg2rad(5),   100,              1.5*nx,  0.33*nx,      100*nx];
+  x0      = [200,    inputs.vk_r_i_max,   deg2rad(20), deg2rad(5),     40, 0.33*nx,       80*nx];
   
   % Fixed beta, gamma, Rp_start
-%   x0      = [300,    20,   deg2rad(25), deg2rad(8),   40,              inputs.CL_maxAirfoil*inputs.CLeff_F*nx,  0.33*nx,      100*nx];
+%   x0      = [300,    20,   deg2rad(25), deg2rad(8),   40,               0.33*nx,      100*nx];
   
-  
-  
-  %%
   for i=1:length(inputs.vw_ref)
-    
     % Output of previous wind speed as input to next wind speed
-    x_init = x0;
+    x_init = abs(x0);
     x0     = x_init./x_init;
      
-    %% Bounds
-    
+    % Bounds
     % All free
-    lb     = [50,   1,                 deg2rad(1),  deg2rad(1),  70, 0.5*nx,                                 0.1*nx, 0*nx]./x_init; % 
-    ub     = [600, inputs.vk_r_i_max, deg2rad(90), deg2rad(40), 500, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 1*nx, 150*nx]./x_init; % 
-    
+    lb     = [50,   1,                 deg2rad(1),  deg2rad(1),  sqrt(inputs.AR*inputs.S)*2,  0.01*nx, 1*nx]./x_init; % 
+    ub     = [600, inputs.vk_r_i_max, deg2rad(90), deg2rad(40), 60,  1*nx, 250*nx]./x_init; % 
     % Fixed beta, gamma, Rp_start
-%     lb     = [300, 20,  deg2rad(25),  deg2rad(8),  40, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 0.1*nx, 0*nx]./x_init; % 
-%     ub     = [300, 20,  deg2rad(25),  deg2rad(8),  40, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 1*nx, 200*nx]./x_init; % 
+%     lb     = [300, 20,  deg2rad(25),  deg2rad(8),  40,  0.1*nx, 0*nx]./x_init; % 
+%     ub     = [300, 20,  deg2rad(25),  deg2rad(8),  40,  1*nx, 200*nx]./x_init; % 
     
-    
-    %%
     options                           = optimoptions('fmincon');
     options.Display                   = 'iter-detailed';
     options.Algorithm                 = 'sqp';
@@ -56,14 +48,15 @@ function [optData,outputs,processedOutputs] = main(inputs)
     % Storing final results
     [~,inputs,outputs] = objective(x,x_init,i,inputs);
     x0 = x.*x_init;
-
+%     x_bot(i).x0 = x0;
     % Changing initial guess if previous wind speed evaluation is infeasible
     if outputs.P_cycleElec(i) <= 0
+    
         % All free
-        x0 = [200, 4, deg2rad(20), deg2rad(12), 40,  inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 0.33*nx, 80*nx]; % 
+        x0 = [200, 4, deg2rad(20), deg2rad(12), 50,  0.33*nx, 100*nx]; % 
         
         % Fixed beta, gamma, Rp_start
-%         x0      = [300,    20,   deg2rad(25), deg2rad(8),   40,              inputs.CL_maxAirfoil*inputs.CLeff_F*nx,  0.33*nx,      100*nx];
+%         x0      = [300,    20,   deg2rad(25), deg2rad(8),   40,               0.33*nx,      100*nx];
     end  
   end
   disp(exitflag)
@@ -71,16 +64,67 @@ function [optData,outputs,processedOutputs] = main(inputs)
   optData(1).optHist  = optHist;
   optData(1).exitflag = exitflag;
   optData(1).lambda   = lambda;
-  
-  
+   
+  %% Second optimisation
+%   inputs.PRO_track = outputs.PROeff_mech;
+%   outputs2 = outputs;
+%   clearvars -global
+%   
+%   inputs.secondOpt      = 1;
+%  
+%   x2       = [200,    inputs.vk_r_i_max,   deg2rad(20), deg2rad(5), 50, 1.5*nx,  0.33*nx, 120*nx];
+%   for i=1:length(inputs.vw_ref)
+%     x0     = [x_bot(i).x0(1), x_bot(i).x0(2), x_bot(i).x0(3), x_bot(i).x0(4), x_bot(i).x0(5), x2(6:inputs.numDeltaLelems+6-1), x2(1*inputs.numDeltaLelems+6:2*inputs.numDeltaLelems+6-1), x2(2*inputs.numDeltaLelems+6:3*inputs.numDeltaLelems+6-1)];
+%     % Output of previous wind speed as input to next wind speed
+%     x_init = x0;
+%     x0     = x_init./x_init;
+%      
+%     % Bounds
+%     lb     = [x_bot(i).x0(1), x_bot(i).x0(2), x_bot(i).x0(3), x_bot(i).x0(4), x_bot(i).x0(5), 0.5*nx,                                 0.1*nx, 1*nx]./x_init; % 
+%     ub     = [x_bot(i).x0(1), x_bot(i).x0(2), x_bot(i).x0(3), x_bot(i).x0(4), x_bot(i).x0(5), inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 1*nx, 150*nx]./x_init; % 
+%     
+%     options                           = optimoptions('fmincon');
+%     options.Display                   = 'iter-detailed';
+%     options.Algorithm                 = 'sqp';
+%     options.FiniteDifferenceType      = 'central';
+% %    options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-8 1e-8 1e-12 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
+% %     options.FiniteDifferenceStepSize  = 1e-5.*[1 1 1 1 1 nx nx nx nx];
+% %     options.ConstraintTolerance      = 1e-9;
+%   %  options.OptimalityTolerance       = 1e-9;
+%   %     options.StepTolerance             = 1e-6;
+%     options.MaxFunctionEvaluations    = 3000*numel(x_init);
+%     options.MaxIterations             = 300*numel(x_init);
+%   %   options.FunctionTolerance        = 1e-9;
+%   %   options.DiffMaxChange            = 1e-1;
+%   %   options.DiffMinChange            = 0;
+%   %   options.OutputFcn                = @O_outfun;
+%   %    options.PlotFcns                 = {@optimplotfval, @optimplotx, @optimplotfirstorderopt,...
+%   %                                @optimplotconstrviolation, @optimplotfunccount, @optimplotstepsize};
+%     con = @(x) constraints(i,inputs);
+% 
+%     [x,~,exitflag(i),optHist(i),lambda(i)] = fmincon(@(x) objective(x,x_init,i,inputs),x0,[],[],[],[],lb,ub,con,options);
+% 
+%     % Storing final results
+%     [~,inputs,outputs] = objective(x,x_init,i,inputs);
+%     x2 = x.*x_init;
+% 
+%     % Changing initial guess if previous wind speed evaluation is infeasible
+%     if outputs.P_cycleElec(i) <= 0
+%         x2 = [200,    inputs.vk_r_i_max,   deg2rad(20), deg2rad(5), 50,1.5*nx,  0.33*nx, 1200*nx]; %    
+%     end  
+%   end
+%   disp(exitflag)
+%   % Store optimisation results data
+%   optData(2).optHist  = optHist;
+%   optData(2).exitflag = exitflag;
+%   optData(2).lambda   = lambda;
 
   %% Post processing
   vw = inputs.vw_ref; 
 
   %% Cut-in wind speed
-  temp1            = vw(outputs.P_cycleElec > 1000);
-  temp2            = vw(mean(outputs.vk_r(:,:),2) >= 0);
-  processedOutputs.cutIn = max(temp1(1),temp2(1));
+  temp1            = vw(outputs.P_cycleElec > 2000);
+  processedOutputs.cutIn = max(temp1(1));
 
   %% Rated wind and power
   temp3 = round(outputs.P_cycleElec./max(outputs.P_cycleElec),2);
@@ -89,7 +133,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
   processedOutputs.ratedPower = outputs.P_cycleElec(processedOutputs.ratedWind);
 
   %% System data
-  processedOutputs.Dia_te         = outputs.Dia_t;
+  processedOutputs.Dia_te         = outputs.d_t;
    for i=1:length(vw)
       if vw(i)>=processedOutputs.cutIn
           processedOutputs.Vw(i,:)           = outputs.vw(i,:);
@@ -113,16 +157,19 @@ function [optData,outputs,processedOutputs] = main(inputs)
           processedOutputs.tRO(i)            = outputs.tRO(i);
           processedOutputs.tRI(i)            = outputs.tRI(i);
           processedOutputs.tCycle(i)         = outputs.tCycle(i);
-          processedOutputs.TT(i,:)           = outputs.Ft(i,:);
+          processedOutputs.Ft(i,:)           = outputs.Ft(i,:);
+          processedOutputs.Fa(i,:)           = outputs.Fa(i,:);
+          processedOutputs.Fc(i,:)           = outputs.Fc(i,:);
+          processedOutputs.W(i)              = outputs.W(i);
           processedOutputs.VRO(i,:)          = outputs.vk_r(i,:);
           processedOutputs.VRI(i)            = outputs.vk_r_i(i);
           processedOutputs.VRI_app(i,:)      = outputs.va_i(i,:);
           processedOutputs.Pcycle_elec(i)    = outputs.P_cycleElec(i);
           processedOutputs.Pcycle_mech(i)    = outputs.P_cycleMech(i);
           processedOutputs.pattRad(i,:)      = outputs.Rp(i,:);
-          processedOutputs.H_cycleStart(i)   = outputs.H_cycleStart(i);
-          processedOutputs.H_cycleAvg(i)     = outputs.H_cycleAvg(i);
-          processedOutputs.L_teMax(i)        = outputs.L_teMax(i);
+          processedOutputs.H_cycleStart(i)   = outputs.h_cycleStart(i);
+          processedOutputs.H_cycleAvg(i)     = outputs.h_cycleAvg(i);
+          processedOutputs.L_teMax(i)        = outputs.l_t_max(i);
           processedOutputs.Vc(i,:)           = outputs.vk_omega(i,:); 
           processedOutputs.Va(i,:)           = outputs.va(i,:);
           processedOutputs.avgPattEle(i)     = rad2deg(outputs.beta(i));

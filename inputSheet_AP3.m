@@ -2,7 +2,11 @@
 inputs                = struct();
 
 inputs.mainPlots      = 1; % 1 = yes, 0 = no
-inputs.numDeltaLelems = 5;
+inputs.numDeltaLelems = 3;
+
+inputs.evalPoint      = 0; % 0 = Bottom, 1 = Top, 2 = Representative point for without CF 
+inputs.FcToggle       = 1; % 0 = No, 1 = Yes
+inputs.FgToggle       = 1; % 0 = No, 1 = Yes
 
 inputs.vw_ref         = 1:1:25; %[m/s]
 inputs.h_ref          = 100; %[m]
@@ -18,9 +22,8 @@ inputs.peakM2E_F      = 2.5;
 inputs.Ft_max            = 42; % 42 %[kN]
 inputs.Ft_max_SF         = 0.8; % 0.8 for gust margin
 inputs.maxTeLen          = 1000; %[m]
-inputs.TeSag_F           = 1; %1.05?
 inputs.maxHeight         = 800; %[m]
-inputs.minGroundClear    = 80; %80? % [m]
+inputs.minGroundClear    = 50; %80? % [m]
 inputs.Te_matStrength    = 7e8;
 inputs.Te_matDensity     = 980; %[kg/m^3] 
 
@@ -31,7 +34,6 @@ inputs.e              = 0.6; %0.6
 inputs.CD0            = 0.056;
 inputs.CD_t           = 1.2; %1.1
 
-% inputs.maxVRI         = 30;
 inputs.vk_r_i_max       = 30;
 inputs.winchAcc_max     = 20;
 
@@ -43,6 +45,8 @@ inputs.etaPE          = 0.95; % Power electronics
 
 inputs.gravity        = 9.81;
 inputs.airDensity     = 1.225; %[kg/m^3]  
+
+
 
 %%
 % z = linspace(10,500,100);

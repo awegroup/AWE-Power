@@ -12,13 +12,13 @@ function [c, ceq] = constraints(i,inputs)
   c(3)   = (outputs.P_cycleElec(i) - inputs.P_ratedElec)/inputs.P_ratedElec/1000; 
   
   % Tether length limit
-  c(4) = (outputs.L_teMax(i) - inputs.maxTeLen)/inputs.maxTeLen/100; 
+  c(4) = (outputs.l_t_max(i) - inputs.maxTeLen)/inputs.maxTeLen/100; 
   
   % Min number of patterns to get into transition 
   c(5) = (1 - mean(outputs.numOfPatt(i,:)))/10;
   
   % Max. cycle avg height
-  c(6) = (outputs.H_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight/1000;
+  c(6) = (outputs.h_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight/1000;
   
   % Peak mechanical power limit
   c(1,7:inputs.numDeltaLelems+6) = (outputs.PROeff_mech(i,:) - inputs.peakM2E_F*inputs.P_ratedElec)/(inputs.peakM2E_F*inputs.P_ratedElec*1000);
@@ -29,16 +29,11 @@ function [c, ceq] = constraints(i,inputs)
   % Kite speed limit
 %   c(1,7+2*inputs.numDeltaLelems:3*inputs.numDeltaLelems+6) = (outputs.vk_omega(i,:) - 40)/1000;
 
-  % CL limit due to wing pitch
-%   c(1,7+3*inputs.numDeltaLelems:4*inputs.numDeltaLelems+6) = (outputs.CL(i,:) - outputs.CL_new(i,:))/100;
     
   %% Equality constraints
   
-  % Geometry consistency maintaining the ground clearance
-  ceq(1,1) = (outputs.L_teMin(i) - outputs.Rp_start(i)/sin(outputs.gamma(i)))/1000;
-  
   % Kinematic ratio
-  ceq(1,2:1+inputs.numDeltaLelems) = (outputs.k_result(i,:) - (outputs.CL(i,:)/outputs.CD(i,:)))/100;
+  ceq(1,1:inputs.numDeltaLelems) = (outputs.k_result(i,:) - (outputs.CL(i,:)/outputs.CD(i,:)))/100;
 
  
 end
