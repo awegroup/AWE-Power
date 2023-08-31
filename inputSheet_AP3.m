@@ -1,16 +1,17 @@
-% Inputs sheet: Performance model framework
+% Inputs sheet
 inputs                = struct();
 
-inputs.mainPlots      = 1; % 1 = yes, 0 = no
-inputs.numDeltaLelems = 3;
+inputs.mainPlots      = 1; % 0 = No, 1 = Yes
+inputs.numDeltaLelems = 1;
+inputs.runSensitivity = 0; % 0 = No, 1 = Yes 
 
-inputs.evalPoint      = 0; % 0 = Bottom, 1 = Top, 2 = Representative point for without CF 
-inputs.FcToggle       = 1; % 0 = No, 1 = Yes
+inputs.evalPoint      = 0; % 0 = Center, 1 = Top, 2 = Side left, 3 = Bottom, 4 = Side right
+inputs.FcToggle       = 0; % 0 = No, 1 = Yes
 inputs.FgToggle       = 1; % 0 = No, 1 = Yes
 
 inputs.vw_ref         = 1:1:25; %[m/s]
 inputs.h_ref          = 100; %[m]
-inputs.windShearExp   = 0.143; % 0.143 over land, 0.11 over sea
+inputs.windShearExp   = 0; % 0.143 over land, 0.11 over sea
 
 inputs.S              = 12; % 12
 inputs.AR             = 12;
@@ -45,43 +46,3 @@ inputs.etaPE          = 0.95; % Power electronics
 
 inputs.gravity        = 9.81;
 inputs.airDensity     = 1.225; %[kg/m^3]  
-
-
-
-%%
-% z = linspace(10,500,100);
-% 
-% % Define the wind shear exponent for the power law
-% alpha = 0.05;
-% 
-% % Define the wind speed at 10 m height
-% u_10 = 10;
-% 
-% % Define the roughness length
-% z_0 = 0.0003;
-% 
-% % Create an empty array for the wind speed
-% u = zeros(size(z));
-% 
-% % Use the log law for heights up to 60 m
-% ind = z<=60;
-% u(ind) = u_10 .* log(z(ind) ./ z_0) ./ log(10/z_0);
-% 
-% u_60   = u_10 * log(60/ z_0) / log(10/z_0);
-% 
-% % Use the power law for heights above 60 m
-% ind = z>60;
-% u(ind) = u_60 .* (z(ind)./60).^alpha;
-
-% % Plot the wind shear profile
-% plot(u,z)
-% xlabel('Wind Speed (m/s)')
-% ylabel('Height (m)')
-
-%%
-
-
-
-
-
-
