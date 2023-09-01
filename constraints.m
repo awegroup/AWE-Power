@@ -42,4 +42,6 @@ function [c, ceq] = constraints(i,inputs)
   ceq(1,1:inputs.numDeltaLelems) = (outputs.G_result(i,:) - (outputs.CL(i,:)/outputs.CD(i,:)))/100;
 
  
+
+ 
 end

@@ -138,27 +138,6 @@ function [inputs] = compute(i,inputs)
         % Aerodynamic force magnitude
         outputs.Fa(i,j) = outputs.halfRhoS(i,j)*outputs.CR(i,j)*outputs.va(i,j)^2;
         
-        % % Tangential kite velocity factor
-        % if inputs.evalPoint == 2
-        %   a = cos(outputs.theta(i,j))*cos(outputs.phi(i,j))*cos(outputs.chi(i,j))-sin(outputs.phi(i,j))*sin(outputs.chi(i,j));
-        %   b = sin(outputs.theta(i,j))*cos(outputs.phi(i,j));
-        %   outputs.lambda(i,j) = a + sqrt(a^2 + b^2 - 1 + outputs.kRatio(i,j)^2*(b - outputs.f(i,j))^2);
-        %   % Tangential kite velocity
-        %   outputs.vk_tau(i,j)     = outputs.lambda(i,j)*outputs.vw(i,j);
-        % 
-        %  outputs.vk_tau2(i,j) = - outputs.vw_theta(i,j) + sqrt((outputs.vw_r(i,j)-outputs.vk_r(i,j))^2*outputs.kRatio(i,j)^2 - outputs.vw_phi(i,j)^2);
-        %  outputs.lambda2(i,j) = outputs.vk_tau2(i,j)/outputs.vw(i,j);
-        % elseif inputs.evalPoint == 4
-        %     outputs.vk_tau(i,j) = - outputs.vw_theta(i,j) + sqrt((outputs.vw_r(i,j)-outputs.vk_r(i,j))^2*outputs.kRatio(i,j)^2 - outputs.vw_phi(i,j)^2);
-        %     outputs.lambda(i,j) = outputs.vk_tau(i,j)/outputs.vw(i,j);
-        % else
-        %   a = cos(outputs.theta(i,j))*cos(outputs.phi(i,j))*cos(outputs.chi(i,j))-sin(outputs.phi(i,j))*sin(outputs.chi(i,j));
-        %   b = sin(outputs.theta(i,j))*cos(outputs.phi(i,j));
-        %   outputs.lambda(i,j) = a + sqrt(a^2 + b^2 - 1 + outputs.kRatio(i,j)^2*(b - outputs.f(i,j))^2);
-        %   % Tangential kite velocity
-        %   outputs.vk_tau(i,j)     = outputs.lambda(i,j)*outputs.vw(i,j); 
-        % end
-
         a = cos(outputs.theta(i,j))*cos(outputs.phi(i,j))*cos(outputs.chi(i,j))-sin(outputs.phi(i,j))*sin(outputs.chi(i,j));
         b = sin(outputs.theta(i,j))*cos(outputs.phi(i,j));
         outputs.lambda(i,j) = a + sqrt(a^2 + b^2 - 1 + outputs.kRatio(i,j)^2*(b - outputs.f(i,j))^2);
@@ -167,10 +146,7 @@ function [inputs] = compute(i,inputs)
         
         outputs.vk_theta(i,j) = outputs.vk_tau(i,j)*cos(outputs.chi(i,j));
         outputs.vk_phi(i,j)   = outputs.vk_tau(i,j)*sin(outputs.chi(i,j));
-        
-            
-        
-
+       
         % Circumferential velocity (responsible for Centrifugal Force)
         if inputs.evalPoint == 0 || inputs.evalPoint == 1 || inputs.evalPoint == 3
             % Center/Top/Bottom points

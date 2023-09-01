@@ -4,38 +4,29 @@ function [optData,outputs,processedOutputs] = main(inputs)
   %% Optimise operation for every wind speed
   %%        [deltaL, VRI,               avgPattEle,  pattAngRadius, startPattRadius, reelOutSpeed, kinematicRatio]
   % All free
-    x0     = [200,    inputs.vk_r_i_max, deg2rad(30), deg2rad(15),    50,              0.2*nx,       300*nx];
-%     LB     = [50,   1,                 deg2rad(1),  deg2rad(1),  sqrt(inputs.AR*inputs.S)*2,  0.1*nx, 1*nx]; % 
-%     UB     = [600,  inputs.vk_r_i_max, deg2rad(90), deg2rad(80), 80,                          25*nx,    350*nx]; % 
-%     x_init = UB;
+    x0     = [200,    inputs.vk_r_i_max, deg2rad(30), deg2rad(5),    50,              0.2*nx,     80*nx];
   
   % Fixed
   % x0     = [250,    20,   deg2rad(30), deg2rad(10),   50, 4*nx, 80*nx];
-%   LB     = [250,    20,   deg2rad(30), deg2rad(10),   80, 4*nx, 1*nx];   % 
-%   UB     = [250,    20,   deg2rad(30), deg2rad(10),   80, 4*nx, 250*nx]; % 
   % x_init = [250,    20,   deg2rad(30), deg2rad(10),   80, 4*nx, 80*nx];
 
   
   for i=1:length(inputs.vw_ref)
-    
-      % To use UB as norm vector
-%     x0 = x0./x_init;
-%     lb = LB./x_init;
-%     ub = UB./x_init;
-    
+   
 %    Output of previous wind speed as input to next wind speed
-    x_init = abs(x0);
+    x_init = x0;
     x0     = x_init./x_init;
-    
     % Bounds
     % All free
-    lb     = [50,   1,                 deg2rad(1),  deg2rad(10),  sqrt(inputs.AR*inputs.S)*2,  0.1*nx,   1*nx]./x_init; % 
-    ub     = [600,  inputs.vk_r_i_max, deg2rad(90), deg2rad(40), 80,                          25*nx,    350*nx]./x_init; % 
-    
+    lb     = [50,   1,                 deg2rad(1),  deg2rad(1),  50,  0.1*nx,   1*nx]./x_init; % 
+    ub     = [600,  inputs.vk_r_i_max, deg2rad(90), deg2rad(60), 100,                          25*nx,    300*nx]./x_init; % 
+
+    % x0 = x0./x_init;
     % Fixed
     % lb     = [250,    20,   deg2rad(30), deg2rad(10),   50, 4*nx, 1*nx]./x_init;   % 
     % ub     = [250,    20,   deg2rad(30), deg2rad(10),   50, 4*nx, 250*nx]./x_init; % 
-    
+
+
     options                           = optimoptions('fmincon');
     options.Display                   = 'iter-detailed';
     options.Algorithm                 = 'sqp';
@@ -55,16 +46,24 @@ function [optData,outputs,processedOutputs] = main(inputs)
   %                                @optimplotconstrviolation, @optimplotfunccount, @optimplotstepsize};
     con = @(x) constraints(i,inputs);
 
-    [x,~,exitflag(i),optHist(i),lambda(i)] = fmincon(@(x) objective(x,x_init,i,inputs),x0,[],[],[],[],lb,ub,con,options);
+    Objective = @(x) objective(x,x_init,i,inputs);
+
+  % % Multistart options
+  % ms_opts = MultiStart('UseParallel',true);
+  % problem = createOptimProblem('fmincon', 'objective', Objective, 'x0', x0, 'lb', lb, 'ub', ub, 'nonlcon', con, 'options', options);
+  % ms = GlobalSearch(ms_opts);
+  % [x,~] = run(ms, problem);
+
+    [x,~,exitflag(i),optHist(i),lambda(i)] = fmincon(Objective,x0,[],[],[],[],lb,ub,con,options);
 
     % Storing final results
     [~,inputs,outputs] = objective(x,x_init,i,inputs);
     x0 = x.*x_init;
-    
+
     % Changing initial guess if previous wind speed evaluation is infeasible
     if outputs.P_cycleElec(i) <= 0    
         % All free
-        x0 = [200, inputs.vk_r_i_max, deg2rad(30), deg2rad(15),    80,             0.2*nx,       300*nx];        
+        x0 = [200, inputs.vk_r_i_max, deg2rad(30), deg2rad(5),    50,             0.2*nx,       80*nx];        
         % Fixed 
         % x0      = [250,    20,   deg2rad(30), deg2rad(10),   50,               4*nx,      80*nx];
     end  

@@ -24,46 +24,51 @@ if inputs.mainPlots == 1
   
 %%
 
-% lambda.NoEle = [6.84, 6.84, 6.84, 6.84];
-% lambda.Ele   = [4.89, 6.18, 6.44, 5.20];
-% lambda.G     = [4.76, 6.99, 6.39, 4.06];
-% lambda.CF    = [0, 0, 0, 0];
-% 
-% zeta.NoEle = [20.67, 20.67, 20.67, 20.67];
-% zeta.Ele   = [10.75, 14.30, 18.36, 14.30];
-% zeta.G     = [10, 18.4, 17.98, 9.07];
-% zeta.CF    = [0, 0, 0, 0];
-% 
-% figure()
-% hold on
-% box on
-% grid on
-% % yyaxis left
-% plot(lambda.NoEle,'d-.','markersize',5,'linewidth',1);
-% plot(lambda.Ele,'^-.','markersize',5,'linewidth',1);
-% plot(lambda.G,'o-.','markersize',5,'linewidth',1);
-% % plot(lambda.CF,'s-.','markersize',8,'linewidth',1);
-% legend('No Elevation', 'Elevation', 'E+G','E+G+CF'); 
-% ylabel('λ(-)');
-% xticks([1,2,3,4]);
-% xticklabels({'Top','Side Left','Bottom','Side Right'});
-% legend('No Elevation', 'Elevation', 'E+G','E+G+CF'); 
-% hold off
-% 
-% figure()
-% hold on
-% box on
-% grid on
-% % yyaxis right
-% plot(zeta.NoEle,'d-.','markersize',5,'linewidth',1);
-% plot(zeta.Ele,'^-.','markersize',5,'linewidth',1);
-% plot(zeta.G,'o-.','markersize',5,'linewidth',1);
-% % plot(zeta.CF,'s-.','markersize',8,'linewidth',1);
-% ylabel('ζ(-)');
-% xticks([1,2,3,4]);
-% xticklabels({'Top','Side Left','Bottom','Side Right'});
-% legend('No Elevation', 'Elevation', 'E+G','E+G+CF'); 
-% hold off
+lambda.NoEle = [6.98,6.84, 6.84, 6.84, 6.84];
+lambda.Ele   = [5.79,4.89, 6.18, 6.44, 5.20];
+lambda.G     = [5.71,4.76, 6.99, 6.39, 4.06];
+% lambda.CF    = [6.68, 6.26, 4.83, 5.39];
+% lambda.All   = [6.63, 7.06, 4.67, 4.31];
+
+zeta.NoEle = [21.48,20.67, 20.67, 20.67, 20.67];
+zeta.Ele   = [14.88,10.75, 14.30, 18.36, 14.30];
+zeta.G     = [14.32,10, 18.4, 17.98, 9.07];
+% zeta.CF    = [19.59, 14.31, 10.4,15.31];
+% zeta.All    = [19.23, 18.39, 9.5,10.16];
+
+figure()
+hold on
+box on
+grid on
+% yyaxis left
+plot(lambda.NoEle,'d-','markersize',5,'linewidth',1);
+plot(lambda.Ele,'^-','markersize',5,'linewidth',1);
+plot(lambda.G,'o-','markersize',5,'linewidth',1);
+% plot(lambda.CF,'s-.','markersize',8,'linewidth',1);
+% plot(lambda.All,'<-.','markersize',8,'linewidth',1);
+legend('No Elevation', 'Elevation', 'E+G'); 
+ylabel('λ(-)');
+xticks([1,2,3,4,5]);
+xticklabels({'Center (Flying left)', 'Top (Flying left)','Side (Flying down)','Bottom (Flying right)','Side(Flying up)'});
+title('S = 12 m^2, mk = 436 kg, vw = 20m/s, Δl = 250 m, vi = 20 m/s, β = 30 deg, γ = 10 deg, Rp_strt = 50 m, vk_r = 4m/s');
+hold off
+
+figure()
+hold on
+box on
+grid on
+% yyaxis right
+plot(zeta.NoEle,'d-','markersize',5,'linewidth',1);
+plot(zeta.Ele,'^-','markersize',5,'linewidth',1);
+plot(zeta.G,'o-','markersize',5,'linewidth',1);
+% plot(zeta.CF,'s-.','markersize',8,'linewidth',1);
+% plot(zeta.All,'<-.','markersize',8,'linewidth',1);
+legend('No Elevation', 'Elevation', 'E+G'); 
+ylabel('ζ(-)');
+xticks([1,2,3,4,5]);
+xticklabels({'Center (Flying left)','Top (Flying left)','Side (Flying down)','Bottom (Flying right)','Side(Flying up)'});
+title('S = 12 m^2, mk = 436 kg, vw = 20m/s, Δl = 250 m, vi = 20 m/s, β = 30 deg, γ = 10 deg, Rp_strt = 50 m, vk_r = 4m/s');
+hold off
 
 %%
   % Wind profile
