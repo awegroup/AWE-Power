@@ -12,13 +12,13 @@ function [c, ceq] = constraints(i,inputs)
   c(3)   = (outputs.P_cycleElec(i) - inputs.P_ratedElec)/inputs.P_ratedElec/1000; 
 
   % Tether length limit
-  % c(4) = (outputs.l_t_max(i) - inputs.maxTeLen)/inputs.maxTeLen/100; 
+  c(4) = (outputs.l_t_max(i) - inputs.maxTeLen)/inputs.maxTeLen/100; 
 
   % Min number of patterns to get into transition 
   c(5) = (1 - mean(outputs.numOfPatt(i,:)))/10;
 
   % Max. cycle avg height
-  % c(6) = (outputs.h_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight/1000;
+  c(6) = (outputs.h_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight/1000;
 
   % Peak mechanical power limit
   c(1,7:inputs.numDeltaLelems+6) = (outputs.PROeff_mech(i,:) - inputs.peakM2E_F*inputs.P_ratedElec)/(inputs.peakM2E_F*inputs.P_ratedElec*1000);
@@ -31,6 +31,9 @@ function [c, ceq] = constraints(i,inputs)
 
   % Tangential velocity factor cannot be negative
   c(1,7+3*inputs.numDeltaLelems:4*inputs.numDeltaLelems+6) = (0 - outputs.lambda(i,:))/1000;
+
+  % Tether force during reel-in 
+  c(1,7+4*inputs.numDeltaLelems:5*inputs.numDeltaLelems+6) = (0 - outputs.Ft_drum_i(i,:))/10000;
   
 % %   Kite speed limit
 %   c(1,7+3*inputs.numDeltaLelems:4*inputs.numDeltaLelems+6) = (outputs.vk_omega(i,:) - 40)/1000;
@@ -39,8 +42,9 @@ function [c, ceq] = constraints(i,inputs)
   %% Equality constraints
   
   % Kinematic ratio
-  ceq(1,1:inputs.numDeltaLelems) = (outputs.G_result(i,:) - (outputs.CL(i,:)/outputs.CD(i,:)))/100;
+  ceq(1,0*inputs.numDeltaLelems+1:1*inputs.numDeltaLelems) = (outputs.G_result(i,:) - (outputs.CL(i,:)/outputs.CD(i,:)))/100;
 
+  ceq(1,1*inputs.numDeltaLelems+1:2*inputs.numDeltaLelems) = (outputs.G_result_i(i,:) - (outputs.CL_i(i,:)/outputs.CD_i(i,:)))/100;
  
 
  

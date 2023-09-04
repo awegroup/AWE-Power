@@ -2,9 +2,9 @@ function [optData,outputs,processedOutputs] = main(inputs)
   nx = ones(1,inputs.numDeltaLelems);
   
   %% Optimise operation for every wind speed
-  %%        [deltaL, VRI,               avgPattEle,  pattAngRadius, startPattRadius, reelOutSpeed, kinematicRatio]
+  %%        [deltaL,  avgPattEle,  pattAngRadius, startPattRadius, VRI,   CL_i,                 reelOutSpeed, kinematicRatio]
   % All free
-    x0     = [200,    inputs.vk_r_i_max, deg2rad(30), deg2rad(5),    50,              0.2*nx,     80*nx];
+    x0     = [200,    deg2rad(30), deg2rad(5),    50,              30*nx, 0.65*nx, 0.2*nx,     200*nx];
   
   % Fixed
   % x0     = [250,    20,   deg2rad(30), deg2rad(10),   50, 4*nx, 80*nx];
@@ -18,8 +18,8 @@ function [optData,outputs,processedOutputs] = main(inputs)
     x0     = x_init./x_init;
     % Bounds
     % All free
-    lb     = [50,   1,                 deg2rad(1),  deg2rad(1),  50,  0.1*nx,   1*nx]./x_init; % 
-    ub     = [600,  inputs.vk_r_i_max, deg2rad(90), deg2rad(60), 100,                          25*nx,    300*nx]./x_init; % 
+    lb     = [50,   deg2rad(1),  deg2rad(1),  50,  1*nx,                0*nx,  0.1*nx,   1*nx]./x_init; % 
+    ub     = [600,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.CL_maxAirfoil*nx, 25*nx,   300*nx]./x_init; % 
 
     % x0 = x0./x_init;
     % Fixed
@@ -63,7 +63,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
     % Changing initial guess if previous wind speed evaluation is infeasible
     if outputs.P_cycleElec(i) <= 0    
         % All free
-        x0 = [200, inputs.vk_r_i_max, deg2rad(30), deg2rad(5),    50,             0.2*nx,       80*nx];        
+        x0 = [200,    deg2rad(30), deg2rad(5),    50, 30, 0.65*nx, 0.2*nx, 200*nx];        
         % Fixed 
         % x0      = [250,    20,   deg2rad(30), deg2rad(10),   50,               4*nx,      80*nx];
     end  

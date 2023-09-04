@@ -212,26 +212,17 @@ function [inputs] = compute(i,inputs)
         
         % Apparent wind velocity vector
         outputs.va_r(i,j)     = outputs.vw(i,j)*(sin(outputs.theta(i,j))*cos(outputs.phi(i,j))-outputs.f(i,j));
-        % if inputs.evalPoint == 4
-        %   outputs.va_theta(i,j) = outputs.vw(i,j)*(cos(outputs.theta(i,j))*cos(outputs.phi(i,j))+outputs.lambda(i,j)*cos(outputs.chi(i,j)));
-        % else
-          outputs.va_theta(i,j) = outputs.vw(i,j)*(cos(outputs.theta(i,j))*cos(outputs.phi(i,j))-outputs.lambda(i,j)*cos(outputs.chi(i,j)));
-        % end
+        outputs.va_theta(i,j) = outputs.vw(i,j)*(cos(outputs.theta(i,j))*cos(outputs.phi(i,j))-outputs.lambda(i,j)*cos(outputs.chi(i,j)));
         outputs.va_phi(i,j)   = outputs.vw(i,j)*(-sin(outputs.phi(i,j))-outputs.lambda(i,j)*sin(outputs.chi(i,j)));
 
        
         % Dot product F_a*v_a;
-%         outputs.F_dot_v(i,j) = abs(outputs.Fa_r(i,j)*outputs.va_r(i,j)) + abs(outputs.Fa_theta(i,j)*outputs.va_theta(i,j)) + abs(outputs.Fa_phi(i,j)*outputs.va_phi(i,j));
         outputs.F_dot_v(i,j) = outputs.Fa_r(i,j)*outputs.va_r(i,j) + outputs.Fa_theta(i,j)*outputs.va_theta(i,j) + outputs.Fa_phi(i,j)*outputs.va_phi(i,j);
         
         % Drag vector from dot product
         outputs.D_r(i,j)     = (outputs.F_dot_v(i,j)/outputs.va(i,j)^2)*outputs.va_r(i,j);
         outputs.D_theta(i,j) = (outputs.F_dot_v(i,j)/outputs.va(i,j)^2)*outputs.va_theta(i,j);
         outputs.D_phi(i,j)   = (outputs.F_dot_v(i,j)/outputs.va(i,j)^2)*outputs.va_phi(i,j);
-        
-%         outputs.D_r(i,j)     = abs((outputs.F_dot_v(i,j)/outputs.va(i,j)^2)*outputs.va_r(i,j));
-%         outputs.D_theta(i,j) = abs((outputs.F_dot_v(i,j)/outputs.va(i,j)^2)*outputs.va_theta(i,j));
-%         outputs.D_phi(i,j)   = abs((outputs.F_dot_v(i,j)/outputs.va(i,j)^2)*outputs.va_phi(i,j));
         
         % Lift vector
         outputs.L_r(i,j)     = outputs.Fa_r(i,j) - outputs.D_r(i,j);
@@ -274,12 +265,96 @@ function [inputs] = compute(i,inputs)
                                         inputs.etaGen.param(3)*(outputs.vk_r(i,j)/inputs.etaGen.v_max)+inputs.etaGen.param(4))^sign(1);
         outputs.PROeff_elec(i,j) = outputs.PROeff_mech(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE;
 
-        % Effective mechanical reel-in power
-        outputs.va_i(i,j)       = sqrt(outputs.vw(i,j)^2 +outputs.vk_r_i(i)^2 + 2*outputs.vw(i,j)*outputs.vk_r_i(i)*cos(outputs.beta(i)+outputs.gamma(i)));
-        outputs.CL_i(i,j)       = 2*outputs.W(i)/(outputs.rho_air(i,j)*outputs.va_i(i,j)^2*inputs.S);
-        outputs.CD_i(i,j)       = inputs.CD0+(outputs.CL_i(i,j)- inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e) + outputs.CD_t(i,j);
-        outputs.PRIeff_mech(i,j) = 0.5*outputs.rho_air(i,j)*outputs.CD_i(i,j)*inputs.S*outputs.va_i(i,j)^3;
+        %% Retraction phase: Theory of L=W
+        % outputs.va_i_1(i,j)       = sqrt(outputs.vw(i,j)^2 +outputs.vk_r_i(i,j)^2 + 2*outputs.vw(i,j)*outputs.vk_r_i(i,j)*cos(outputs.beta(i)+outputs.gamma(i)));
+        % outputs.CL_i(i,j)       = 2*outputs.W(i)/(outputs.rho_air(i,j)*outputs.va_i_1(i,j)^2*inputs.S);
+        % outputs.CD_i(i,j)       = inputs.CD0+(outputs.CL_i(i,j)- inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e) + outputs.CD_t(i,j);
+        % outputs.PRIeff_mech_1(i,j) = 0.5*outputs.rho_air(i,j)*outputs.CD_i(i,j)*inputs.S*outputs.va_i_1(i,j)^3;
 
+        %% Retraction Phase: Full Force balance 
+        
+        % Position in spherical coordinates
+        outputs.theta_i(i,j) = pi()/2 - (outputs.beta(i)+outputs.gamma(i));
+        outputs.phi_i(i,j)   = 0;
+     
+
+      % Wind velocity vector
+        outputs.vw_r_i(i,j)     = outputs.vw(i,j)*sin(outputs.theta_i(i,j))*cos(outputs.phi_i(i,j));
+        outputs.vw_theta_i(i,j) = outputs.vw(i,j)*cos(outputs.theta_i(i,j))*cos(outputs.phi_i(i,j));
+        outputs.vw_phi_i(i,j)   = -outputs.vw(i,j)*sin(outputs.phi_i(i,j)); % 
+
+        % Reel-in factor
+        outputs.f_i(i,j) = outputs.vk_r_i(i,j)/outputs.vw(i,j);
+        
+        % Apparent speed vector
+        outputs.va_r_i(i,j)     = outputs.vw_r_i(i,j) - (-outputs.vk_r_i(i,j)); % Reel-in speed direction is in the negative radial direction)
+        outputs.va_theta_i(i,j) = outputs.vw_theta_i(i,j) - 0;
+        outputs.va_phi_i(i,j)   = outputs.vw_phi_i(i,j) - 0;
+
+        % Apparent wind velocity magnitude
+        outputs.va_i(i,j) = outputs.va_r_i(i,j)*sqrt(outputs.va_theta_i(i,j)^2/outputs.va_r_i(i,j)^2 + 1); % Wind has component only in r and theta directions
+
+        % Aerodynamic force magnitude
+        outputs.CD_i(i,j)       = inputs.CD0+(outputs.CL_i(i,j)- inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e) + outputs.CD_t(i,j);
+        outputs.Fa_i(i,j)       = outputs.halfRhoS(i,j)*sqrt(outputs.CL_i(i,j)^2+outputs.CD_i(i,j)^2)*outputs.va_i(i,j)^2;
+
+        % Gravitational force vector (kite + tether)
+        if inputs.FgToggle == 0
+            outputs.W(i,j) = 0;
+        else
+            outputs.W(i,j)        = outputs.m_eff(i,j)*inputs.gravity;
+        end
+        outputs.Fg_r_i(i,j)       = -outputs.W(i)*cos(outputs.theta_i(i,j));
+        outputs.Fg_theta_i(i,j)   = outputs.W(i)*sin(outputs.theta_i(i,j));
+        outputs.Fg_phi_i(i,j)     = 0;
+
+        % Aerodynamic force vector
+        outputs.Fa_theta_i(i,j) = -outputs.Fg_theta_i(i,j);
+        outputs.Fa_phi_i(i,j)   = -outputs.Fg_phi_i(i,j);
+        outputs.Fa_r_i(i,j)     = sqrt(outputs.Fa_i(i,j)^2-outputs.Fa_theta_i(i,j)^2-outputs.Fa_phi_i(i,j)^2);
+
+        % Dot product F_a*v_a;
+        outputs.F_dot_v_i(i,j) = outputs.Fa_r_i(i,j)*outputs.va_r_i(i,j) + outputs.Fa_theta_i(i,j)*outputs.va_theta_i(i,j) + outputs.Fa_phi_i(i,j)*outputs.va_phi_i(i,j);
+        
+        % Drag vector from dot product
+        outputs.D_r_i(i,j)     = (outputs.F_dot_v_i(i,j)/outputs.va_i(i,j)^2)*outputs.va_r_i(i,j);
+        outputs.D_theta_i(i,j) = (outputs.F_dot_v_i(i,j)/outputs.va_i(i,j)^2)*outputs.va_theta_i(i,j);
+        outputs.D_phi_i(i,j)   = (outputs.F_dot_v_i(i,j)/outputs.va_i(i,j)^2)*outputs.va_phi_i(i,j);
+        
+        % Lift vector
+        outputs.L_r_i(i,j)     = outputs.Fa_r_i(i,j) - outputs.D_r_i(i,j);
+        outputs.L_theta_i(i,j) = outputs.Fa_theta_i(i,j) - outputs.D_theta_i(i,j);
+        outputs.L_phi_i(i,j)   = outputs.Fa_phi_i(i,j) - outputs.D_phi_i(i,j);
+        
+        % Drag magnitude
+        outputs.D_i(i,j) = sqrt(outputs.D_r_i(i,j)^2 + outputs.D_theta_i(i,j)^2 + outputs.D_phi_i(i,j)^2);
+        
+        % Lift magnitude
+        outputs.L_i(i,j) = sqrt(outputs.L_r_i(i,j)^2 + outputs.L_theta_i(i,j)^2 + outputs.L_phi_i(i,j)^2);
+
+        % Lift-to-drag ratio that follows from the chosen kinematic ratio
+        outputs.G_result_i(i,j) = sqrt(((outputs.Fa_i(i,j)*outputs.va_i(i,j))/outputs.F_dot_v_i(i,j))^2-1);
+
+
+        % Straight-tether force 
+        outputs.Ft_i(i,j) = outputs.Fa_r_i(i,j) + outputs.Fg_r_i(i,j);
+
+        % Loss in Ft due to tether sag
+        if inputs.FgToggle == 0
+            outputs.Ft_drum_i(i,j) = outputs.Ft_i(i,j);
+        else
+            outputs.Ft_k_theta_i(i,j) = -(1/2)*sin(outputs.theta_i(i,j))*outputs.m_t(i,j)*inputs.gravity;
+            outputs.Ft_k_r_i(i,j)     = sqrt(outputs.Ft_i(i,j)^2 - outputs.Ft_k_theta_i(i,j)^2);
+            outputs.Ft_k_phi_i(i,j)   = 0; 
+            % Tether force at the drum
+            outputs.Ft_drum_i(i,j) = sqrt((sqrt(outputs.Ft_k_r_i(i,j)^2 - outputs.Ft_k_theta_i(i,j)^2) - ...
+                                cos(outputs.theta_i(i,j))*outputs.m_t(i)*inputs.gravity)^2 + outputs.Ft_k_theta_i(i,j)^2);   
+        end
+
+        % Effective mechanical reel-out power
+        outputs.PRIeff_mech(i,j) = outputs.Ft_drum_i(i,j)*outputs.vk_r_i(i,j); %[W]  
+
+        %%
         % Generator efficiency during RI: As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
         outputs.genEff_RI(i) = (inputs.etaGen.param(1)*(outputs.vk_r_i(i)/inputs.etaGen.v_max)^3 + ...
                                  inputs.etaGen.param(2)*(outputs.vk_r_i(i)/inputs.etaGen.v_max)^2 + ...
@@ -307,7 +382,7 @@ function [inputs] = compute(i,inputs)
 
       % Reel-in time
         outputs.t2(i)       = outputs.vk_r_i(i)/inputs.winchAcc_max;
-        outputs.tRIeff(i,:) = ones(1,outputs.deltaLelems).*outputs.elemDeltaL(i)/outputs.vk_r_i(i);
+        outputs.tRIeff(i,:) = outputs.elemDeltaL(i)./outputs.vk_r_i(i,:);
         outputs.tRI(i)      = outputs.t2(i) + sum(outputs.tRIeff(i,:));
       
       % Reel-in power duing transition
