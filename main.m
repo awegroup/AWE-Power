@@ -2,10 +2,12 @@ function [optData,outputs,processedOutputs] = main(inputs)
   nx = ones(1,inputs.numDeltaLelems);
   
   %% Optimise operation for every wind speed
-  %%        [deltaL,  avgPattEle,  pattAngRadius, startPattRadius, VRI,   CL_i,                 reelOutSpeed, kinematicRatio]
+  %%        [deltaL,  avgPattEle,  pattAngRadius, startPattRadius, VRI,   CL_i, reelOutSpeed, kinematicRatio]
   % All free
-    x0     = [200,    deg2rad(30), deg2rad(5),    50,              30*nx, 0.65*nx, 0.2*nx,     200*nx];
-  
+    x0     = [200,    deg2rad(30), deg2rad(5),    50,              15*nx, 2*nx, 0.2*nx,       500*nx];
+ 
+    x_init = [800,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 25*nx,   1000*nx];
+ 
   % Fixed
   % x0     = [250,    20,   deg2rad(30), deg2rad(10),   50, 4*nx, 80*nx];
   % x_init = [250,    20,   deg2rad(30), deg2rad(10),   80, 4*nx, 80*nx];
@@ -14,12 +16,15 @@ function [optData,outputs,processedOutputs] = main(inputs)
   for i=1:length(inputs.vw_ref)
    
 %    Output of previous wind speed as input to next wind speed
-    x_init = x0;
-    x0     = x_init./x_init;
+    % x_init = x0;
+    % x0     = x_init./x_init;
+
+    x0     = x0./x_init;
+
     % Bounds
     % All free
-    lb     = [50,   deg2rad(1),  deg2rad(1),  50,  1*nx,                0*nx,  0.1*nx,   1*nx]./x_init; % 
-    ub     = [600,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.CL_maxAirfoil*nx, 25*nx,   300*nx]./x_init; % 
+    lb     = [50,   deg2rad(1),  deg2rad(1),  50,  15*nx,                 0*nx,  0.1*nx,   1*nx]./x_init; % 
+    ub     = [800,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 20*nx,   1000*nx]./x_init; % 
 
     % x0 = x0./x_init;
     % Fixed
@@ -33,7 +38,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
     options.FiniteDifferenceType      = 'central';
 %    options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-8 1e-8 1e-12 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
 %     options.FiniteDifferenceStepSize  = 1e-5.*[1 1 1 1 1 nx nx nx nx];
-%     options.ConstraintTolerance      = 1e-9;
+    % options.ConstraintTolerance      = 1e-4;
   %  options.OptimalityTolerance       = 1e-9;
   %     options.StepTolerance             = 1e-6;
     options.MaxFunctionEvaluations    = 3000*numel(x_init);
@@ -49,10 +54,11 @@ function [optData,outputs,processedOutputs] = main(inputs)
     Objective = @(x) objective(x,x_init,i,inputs);
 
   % % Multistart options
-  % ms_opts = MultiStart('UseParallel',true);
-  % problem = createOptimProblem('fmincon', 'objective', Objective, 'x0', x0, 'lb', lb, 'ub', ub, 'nonlcon', con, 'options', options);
+  % ms_opts = MultiStart('UseParallel',true,'StartPointsToRun', 'random');
   % ms = GlobalSearch(ms_opts);
-  % [x,~] = run(ms, problem);
+  % % ms = MultiStart('UseParallel',true,'StartPoints', 5);
+  % problem = createOptimProblem('fmincon', 'objective', Objective, 'x0', x0, 'lb', lb, 'ub', ub, 'nonlcon', con, 'options', options);
+  % [x,fval,exitflag(i),Output(i)] = run(ms, problem);
 
     [x,~,exitflag(i),optHist(i),lambda(i)] = fmincon(Objective,x0,[],[],[],[],lb,ub,con,options);
 
@@ -63,7 +69,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
     % Changing initial guess if previous wind speed evaluation is infeasible
     if outputs.P_cycleElec(i) <= 0    
         % All free
-        x0 = [200,    deg2rad(30), deg2rad(5),    50, 30, 0.65*nx, 0.2*nx, 200*nx];        
+        x0 = [200,    deg2rad(30), deg2rad(5),    50, 15, 2*nx, 0.1*nx, 500*nx];        
         % Fixed 
         % x0      = [250,    20,   deg2rad(30), deg2rad(10),   50,               4*nx,      80*nx];
     end  

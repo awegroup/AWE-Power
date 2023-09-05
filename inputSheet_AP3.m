@@ -2,7 +2,7 @@
 inputs                = struct();
 
 inputs.mainPlots      = 1; % 0 = No, 1 = Yes
-inputs.numDeltaLelems = 5;
+inputs.numDeltaLelems = 1;
 inputs.runSensitivity = 0; % 0 = No, 1 = Yes 
 
 inputs.evalPoint      = 0; % 0 = Center, 1 = Top, 2 = Side left, 3 = Bottom, 4 = Side right
@@ -18,13 +18,13 @@ inputs.AR             = 12;
 inputs.P_ratedElec    = 150*1000; %[W]
 inputs.massOverride   = 0;
 inputs.kiteMass       = 600; %[kg]
-inputs.peakM2E_F      = 2;
+inputs.peakM2E_F      = 2.5;
 
 inputs.Ft_max            = 42; % 42 %[kN]
 inputs.Ft_max_SF         = 0.8; % 0.8 for gust margin
-inputs.maxTeLen          = 1000; %[m]
+inputs.maxTeLen          = 2000; %[m]
 inputs.maxHeight         = 800; %[m]
-inputs.minGroundClear    = 50; %80? % [m]
+inputs.minGroundClear    = 80; %80? % [m]
 inputs.Te_matStrength    = 7e8;
 inputs.Te_matDensity     = 980; %[kg/m^3] 
 
@@ -35,11 +35,11 @@ inputs.e              = 0.6; %0.6
 inputs.CD0            = 0.056;
 inputs.CD_t           = 1.2; %1.1
 
-inputs.vk_r_i_max       = 30;
+inputs.vk_r_i_max       = 20;
 inputs.winchAcc_max     = 20;
 
 inputs.etaGen.param   = [0.671, -1.4141, 0.9747, 0.7233];
-inputs.etaGen.v_max   = max(inputs.vk_r_i_max,25); % 25 =  Possible maximum reel-out speed
+inputs.etaGen.v_max   = max(inputs.vk_r_i_max,20); % 25 =  Possible maximum winch speed
 inputs.etaGearbox     = 0.9;
 inputs.etaSto         = 0.9;
 inputs.etaPE          = 0.95; % Power electronics

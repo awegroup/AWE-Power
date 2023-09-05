@@ -5,7 +5,7 @@ function [inputs] = compute(i,inputs)
     if inputs.massOverride == 1
       outputs.m_k(i) = inputs.kiteMass;
     else
-      %Vincent Bonnin's simple mass model developed at Ampyx Power. Based on AP3 data and projected data for larger systems (AP4-AP5)      
+      % Vincent Bonnin's simple mass model developed at Ampyx Power. Based on AP3 data and projected data for larger systems (AP4-AP5)      
       a1     = 0.002415;       a2     = 0.0090239;       b1     = 0.17025;       b2     = 3.2493;
       k1     = 5;              c1     = 0.46608;         d1     = 0.65962;       k2     = 1.1935;
       AR_ref = 12;
@@ -47,7 +47,7 @@ function [inputs] = compute(i,inputs)
         outputs.pattGrClr(i,j) = outputs.l_t_inCycle(i,j)*sin(outputs.beta(i)-outputs.gamma(i));
 
         % Effective mass lumped at kite (Kite + tether)
-        outputs.m_t(i,j)  = inputs.Te_matDensity*pi()/4*outputs.d_t^2*outputs.l_t_inCycle(i,j); % Could add (say 0.85) as safety factor on material density
+        outputs.m_t(i,j)  = inputs.Te_matDensity*pi()/4*outputs.d_t^2*outputs.l_t_inCycle(i,j);
         outputs.m_eff(i,j) = outputs.m_k(i)+sin(outputs.beta(i))*outputs.m_t(i,j);
 
         % Magnitudes of Coordinates of the pattern positions in Spherical ref. frame
@@ -99,14 +99,14 @@ function [inputs] = compute(i,inputs)
         end
         
         % Wind speed at evaluation point
-        if inputs.evalPoint == 0
+        if inputs.evalPoint == 3
             % Bottom point
             r = -outputs.Rp(i,j)*cos(outputs.beta(i));
-        elseif inputs.evalPoint == 2
+        elseif inputs.evalPoint == 1
             % Top point
             r = +outputs.Rp(i,j)*cos(outputs.beta(i));
         else
-            % Center point
+            % Side or Center points
             r = 0;
         end
         outputs.vw(i,j) = inputs.vw_ref(i)*((outputs.h_inCycle(i,j) + r)/inputs.h_ref)^inputs.windShearExp;
@@ -116,8 +116,7 @@ function [inputs] = compute(i,inputs)
         R = 8.3144598; % [N·m/(mol·K)]
         T = 288.15;    % [Kelvin]
         L = 0.0065;    % [Kelvin/m] 
-%         outputs.rho_air(i,j) = inputs.airDensity*(1-L*(outputs.h_inCycle(i,j) + r)/T)^(inputs.gravity*M/R/L-1);
-     	outputs.rho_air(i,j) = inputs.airDensity;
+        outputs.rho_air(i,j) = inputs.airDensity*(1-L*(outputs.h_inCycle(i,j) + r)/T)^(inputs.gravity*M/R/L-1);
 
         % Intermediate calculation for brevity
         outputs.CR(i,j)       = sqrt(outputs.CL(i,j)^2+outputs.CD(i,j)^2);
@@ -132,8 +131,8 @@ function [inputs] = compute(i,inputs)
         outputs.f(i,j) = outputs.vk_r(i,j)/outputs.vw(i,j);
 
         % Apparent wind velocity magnitude
-        outputs.va(i,j) = (sin(outputs.theta(i,j))*cos(outputs.phi(i,j))-outputs.f(i,j))*outputs.vw(i,j)*sqrt(1+outputs.kRatio(i,j)^2);
-%         outputs.va(i,j) = (outputs.vw_r(i,j)-outputs.vk_r(i,j))*sqrt(1+outputs.kRatio(i,j)^2);
+        % outputs.va(i,j) = (sin(outputs.theta(i,j))*cos(outputs.phi(i,j))-outputs.f(i,j))*outputs.vw(i,j)*sqrt(1+outputs.kRatio(i,j)^2);
+        outputs.va(i,j) = (outputs.vw_r(i,j)-outputs.vk_r(i,j))*sqrt(1+outputs.kRatio(i,j)^2);
         
         % Aerodynamic force magnitude
         outputs.Fa(i,j) = outputs.halfRhoS(i,j)*outputs.CR(i,j)*outputs.va(i,j)^2;
@@ -265,13 +264,8 @@ function [inputs] = compute(i,inputs)
                                         inputs.etaGen.param(3)*(outputs.vk_r(i,j)/inputs.etaGen.v_max)+inputs.etaGen.param(4))^sign(1);
         outputs.PROeff_elec(i,j) = outputs.PROeff_mech(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE;
 
-        %% Retraction phase: Theory of L=W
-        % outputs.va_i_1(i,j)       = sqrt(outputs.vw(i,j)^2 +outputs.vk_r_i(i,j)^2 + 2*outputs.vw(i,j)*outputs.vk_r_i(i,j)*cos(outputs.beta(i)+outputs.gamma(i)));
-        % outputs.CL_i(i,j)       = 2*outputs.W(i)/(outputs.rho_air(i,j)*outputs.va_i_1(i,j)^2*inputs.S);
-        % outputs.CD_i(i,j)       = inputs.CD0+(outputs.CL_i(i,j)- inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e) + outputs.CD_t(i,j);
-        % outputs.PRIeff_mech_1(i,j) = 0.5*outputs.rho_air(i,j)*outputs.CD_i(i,j)*inputs.S*outputs.va_i_1(i,j)^3;
 
-        %% Retraction Phase: Full Force balance 
+        % Retraction Phase: Full Force balance 
         
         % Position in spherical coordinates
         outputs.theta_i(i,j) = pi()/2 - (outputs.beta(i)+outputs.gamma(i));
@@ -292,7 +286,7 @@ function [inputs] = compute(i,inputs)
         outputs.va_phi_i(i,j)   = outputs.vw_phi_i(i,j) - 0;
 
         % Apparent wind velocity magnitude
-        outputs.va_i(i,j) = outputs.va_r_i(i,j)*sqrt(outputs.va_theta_i(i,j)^2/outputs.va_r_i(i,j)^2 + 1); % Wind has component only in r and theta directions
+        outputs.va_i(i,j) = sqrt(outputs.va_r_i(i,j)^2 + outputs.va_theta_i(i,j)^2); % Wind has components only in r and theta directions
 
         % Aerodynamic force magnitude
         outputs.CD_i(i,j)       = inputs.CD0+(outputs.CL_i(i,j)- inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e) + outputs.CD_t(i,j);
