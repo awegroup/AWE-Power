@@ -2,7 +2,7 @@
 inputs                = struct();
 
 inputs.mainPlots      = 1; % 0 = No, 1 = Yes
-inputs.numDeltaLelems = 1;
+inputs.numDeltaLelems = 5;
 inputs.runSensitivity = 0; % 0 = No, 1 = Yes 
 
 inputs.evalPoint      = 0; % 0 = Center, 1 = Top, 2 = Side left, 3 = Bottom, 4 = Side right
@@ -24,7 +24,7 @@ inputs.Ft_max            = 42; % 42 %[kN]
 inputs.Ft_max_SF         = 0.8; % 0.8 for gust margin
 inputs.maxTeLen          = 2000; %[m]
 inputs.maxHeight         = 800; %[m]
-inputs.minGroundClear    = 80; %80? % [m]
+inputs.minGroundClear    = 100; %80? % [m]
 inputs.Te_matStrength    = 7e8;
 inputs.Te_matDensity     = 980; %[kg/m^3] 
 

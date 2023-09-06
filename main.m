@@ -2,43 +2,38 @@ function [optData,outputs,processedOutputs] = main(inputs)
   nx = ones(1,inputs.numDeltaLelems);
   
   %% Optimise operation for every wind speed
-  %%        [deltaL,  avgPattEle,  pattAngRadius, startPattRadius, VRI,   CL_i, reelOutSpeed, kinematicRatio]
+  %%        [deltaL,  avgPattEle,  pattAngRadius, startPattRadius, VRI,   CL_ri,  reelOutSpeed, CL_ro,                                       kinematicRatio]
   % All free
-    x0     = [200,    deg2rad(30), deg2rad(5),    50,              15*nx, 2*nx, 0.2*nx,       500*nx];
- 
-    x_init = [800,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 25*nx,   1000*nx];
+    x0     = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 0.5*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      80*nx];
+    x_init = [800,  deg2rad(90), deg2rad(60),     100, inputs.vk_r_i_max*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 25*nx, 2*nx,  800*nx];
  
   % Fixed
-  % x0     = [250,    20,   deg2rad(30), deg2rad(10),   50, 4*nx, 80*nx];
-  % x_init = [250,    20,   deg2rad(30), deg2rad(10),   80, 4*nx, 80*nx];
+  % x0     = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 4*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      80*nx];
+  % x_init = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 4*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      600*nx];
 
   
   for i=1:length(inputs.vw_ref)
    
 %    Output of previous wind speed as input to next wind speed
-    % x_init = x0;
-    % x0     = x_init./x_init;
-
     x0     = x0./x_init;
 
     % Bounds
     % All free
-    lb     = [50,   deg2rad(1),  deg2rad(1),  50,  15*nx,                 0*nx,  0.1*nx,   1*nx]./x_init; % 
-    ub     = [800,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 20*nx,   1000*nx]./x_init; % 
+    lb     = [50,   deg2rad(1),  deg2rad(1),  50,  0*nx,                0*nx,                                   0*nx, 0*nx,                                   1*nx]./x_init; % 
+    ub     = [800,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 20*nx,   inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 800*nx]./x_init; % 
 
-    % x0 = x0./x_init;
     % Fixed
-    % lb     = [250,    20,   deg2rad(30), deg2rad(10),   50, 4*nx, 1*nx]./x_init;   % 
-    % ub     = [250,    20,   deg2rad(30), deg2rad(10),   50, 4*nx, 250*nx]./x_init; % 
+    % lb     = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 0*nx, 4*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      1*nx]./x_init;   % 
+    % ub     = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 4*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      600*nx]./x_init; % 
 
 
     options                           = optimoptions('fmincon');
     options.Display                   = 'iter-detailed';
     options.Algorithm                 = 'sqp';
-    options.FiniteDifferenceType      = 'central';
-%    options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-8 1e-8 1e-12 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
-%     options.FiniteDifferenceStepSize  = 1e-5.*[1 1 1 1 1 nx nx nx nx];
-    % options.ConstraintTolerance      = 1e-4;
+    options.FiniteDifferenceType      = 'forward';
+   % options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-12 1e-12 1e-6*nx 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
+    % options.FiniteDifferenceStepSize  = 1e-12.*[1 1 1 1 nx nx nx nx];
+    options.ConstraintTolerance      = 1e-5;
   %  options.OptimalityTolerance       = 1e-9;
   %     options.StepTolerance             = 1e-6;
     options.MaxFunctionEvaluations    = 3000*numel(x_init);
@@ -69,9 +64,9 @@ function [optData,outputs,processedOutputs] = main(inputs)
     % Changing initial guess if previous wind speed evaluation is infeasible
     if outputs.P_cycleElec(i) <= 0    
         % All free
-        x0 = [200,    deg2rad(30), deg2rad(5),    50, 15, 2*nx, 0.1*nx, 500*nx];        
+        x0 = [200,    deg2rad(30), deg2rad(5),    50, 20*nx, 1.5*nx, 0.5*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 80*nx];        
         % Fixed 
-        % x0      = [250,    20,   deg2rad(30), deg2rad(10),   50,               4*nx,      80*nx];
+        % x0      = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 4*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      80*nx];
     end  
   end
   disp(exitflag)
@@ -85,15 +80,20 @@ function [optData,outputs,processedOutputs] = main(inputs)
 
   %% Cut-in wind speed
   temp1                  = vw(outputs.P_cycleElec > 0);
-  temp2                  = vw(outputs.vk_r(:,1) > 0.3); % min speed control limit of DT
+  temp2                  = vw(mean((outputs.G_result - outputs.G),2) < 0.001); % min speed control limit of DT
   processedOutputs.cutIn = max(temp1(1),temp2(1));
-%  processedOutputs.cutIn = max(temp1(1));
+ % processedOutputs.cutIn = max(temp1(1));
+ 
 
   %% Rated wind and power
   temp3                       = round(outputs.P_cycleElec./max(outputs.P_cycleElec),2);
   temp4                       = vw(temp3==1);
   processedOutputs.ratedWind  = temp4(1);
   processedOutputs.ratedPower = outputs.P_cycleElec(vw==temp4(1));
+
+  %% Cut-out wind speed
+  processedOutputs.cutOut   = 25;
+  processedOutputs.Vw_100m  = vw(mean(outputs.vw,2)<=processedOutputs.cutOut);
 
   %% System data
   processedOutputs.Dia_te = outputs.d_t;
@@ -160,7 +160,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
   end
 
   %% Cycle power representation for wind speeds in the operational range
-  for i = processedOutputs.cutIn:vw(end)
+  for i = processedOutputs.cutIn:processedOutputs.cutOut
     [processedOutputs.cyclePowerRep(i)] = createCyclePowerRep(i,processedOutputs); 
   end
   function [cpr] = createCyclePowerRep(ws, system)

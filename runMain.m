@@ -12,7 +12,10 @@ inputSheet_AP3;
 
 %% Main Plots
 if inputs.mainPlots == 1
-  vw = inputs.vw_ref; 
+  
+  vw = inputs.vw_ref;
+  x_axis_limit = [0 processedOutputs.Vw_100m(end)];
+
   newcolors = [ % 0.25, 0.25, 0.25
     0 0.4470 0.7410
   0.8500 0.3250 0.0980 
@@ -24,15 +27,17 @@ if inputs.mainPlots == 1
   
 %%
 
-% lambda.NoEle = [6.98,6.84, 6.84, 6.84, 6.84];
-% lambda.Ele   = [5.79,4.89, 6.18, 6.44, 5.20];
-% lambda.G     = [5.71,4.76, 6.99, 6.39, 4.06];
+% lambda.NoEle    = [5.94, 5.94, 5.94, 5.94];
+% lambda.NoEle_CF = [6.08, 6.08, 6.08, 6.08];
+% % lambda.Ele   = [5.79,4.89, 6.18, 6.44, 5.20];
+% % lambda.G     = [5.71,4.76, 6.99, 6.39, 4.06];
 % % lambda.CF    = [6.68, 6.26, 4.83, 5.39];
 % % lambda.All   = [6.63, 7.06, 4.67, 4.31];
 % 
-% zeta.NoEle = [21.48,20.67, 20.67, 20.67, 20.67];
-% zeta.Ele   = [14.88,10.75, 14.30, 18.36, 14.30];
-% zeta.G     = [14.32,10, 18.4, 17.98, 9.07];
+% zeta.NoEle    = [15.66, 15.66, 15.66, 15.66];
+% zeta.NoEle_CF = [16.58, 16.59, 16.59, 16.59];
+% % zeta.Ele   = [14.88,10.75, 14.30, 18.36, 14.30];
+% % zeta.G     = [14.32,10, 18.4, 17.98, 9.07];
 % % zeta.CF    = [19.59, 14.31, 10.4,15.31];
 % % zeta.All    = [19.23, 18.39, 9.5,10.16];
 % 
@@ -42,14 +47,14 @@ if inputs.mainPlots == 1
 % grid on
 % % yyaxis left
 % plot(lambda.NoEle,'d-','markersize',5,'linewidth',1);
-% plot(lambda.Ele,'^-','markersize',5,'linewidth',1);
-% plot(lambda.G,'o-','markersize',5,'linewidth',1);
+% plot(lambda.NoEle_CF,'^-','markersize',5,'linewidth',1);
+% % plot(lambda.G,'o-','markersize',5,'linewidth',1);
 % % plot(lambda.CF,'s-.','markersize',8,'linewidth',1);
 % % plot(lambda.All,'<-.','markersize',8,'linewidth',1);
-% legend('No Elevation', 'Elevation', 'E+G'); 
+% legend('No Elevation', 'No Elevation + CF'); 
 % ylabel('λ(-)');
-% xticks([1,2,3,4,5]);
-% xticklabels({'Center (Flying left)', 'Top (Flying left)','Side (Flying down)','Bottom (Flying right)','Side(Flying up)'});
+% xticks([1,2,3,4]);
+% xticklabels({'Top (Flying left)','Side (Flying down)','Bottom (Flying right)','Side(Flying up)'});
 % title('S = 12 m^2, mk = 436 kg, vw = 20m/s, Δl = 250 m, vi = 20 m/s, β = 30 deg, γ = 10 deg, Rp_strt = 50 m, vk_r = 4m/s');
 % hold off
 % 
@@ -59,14 +64,14 @@ if inputs.mainPlots == 1
 % grid on
 % % yyaxis right
 % plot(zeta.NoEle,'d-','markersize',5,'linewidth',1);
-% plot(zeta.Ele,'^-','markersize',5,'linewidth',1);
-% plot(zeta.G,'o-','markersize',5,'linewidth',1);
+% plot(zeta.NoEle_CF,'^-','markersize',5,'linewidth',1);
+% % plot(zeta.G,'o-','markersize',5,'linewidth',1);
 % % plot(zeta.CF,'s-.','markersize',8,'linewidth',1);
 % % plot(zeta.All,'<-.','markersize',8,'linewidth',1);
-% legend('No Elevation', 'Elevation', 'E+G'); 
+% legend('No Elevation', 'No Elevation +CF'); 
 % ylabel('ζ(-)');
-% xticks([1,2,3,4,5]);
-% xticklabels({'Center (Flying left)','Top (Flying left)','Side (Flying down)','Bottom (Flying right)','Side(Flying up)'});
+% xticks([1,2,3,4]);
+% xticklabels({'Top (Flying left)','Side (Flying down)','Bottom (Flying right)','Side(Flying up)'});
 % title('S = 12 m^2, mk = 436 kg, vw = 20m/s, Δl = 250 m, vi = 20 m/s, β = 30 deg, γ = 10 deg, Rp_strt = 50 m, vk_r = 4m/s');
 % hold off
 
@@ -93,7 +98,7 @@ if inputs.mainPlots == 1
 
   
   % Cycle timeseries plots: Pattern averages
-  windSpeeds = [8,15,20];
+  windSpeeds = [20];
   for i = windSpeeds
 %     tmax = round(max(processedOutputs.tCycle(windSpeeds)));
 %     pmax = 1.1*inputs.peakM2E_F*max(processedOutputs.Pcycle_elec(windSpeeds))/10^3;
@@ -132,7 +137,7 @@ if inputs.mainPlots == 1
   ylabel('Time (s)');
   legend('v_{o,avg}','v_{i}','t_{o}','t_{i}','location','northwest');
   xlabel('Wind speed at 100m height (m/s)');
-  xlim([0 25]);
+  xlim(x_axis_limit);
   %ylim([0 160]);
   hold off
 
@@ -149,7 +154,7 @@ if inputs.mainPlots == 1
   ylabel('Length (m)');
   legend('H_{p,avg}','R_{p,avg}','Δl','l_{t,max}','location','northwest','Orientation','vertical');
   xlabel('Wind speed at 100m height (m/s)');
-  xlim([0 25]);
+  xlim(x_axis_limit);
   %ylim([0 160]);
   hold off
 
@@ -165,7 +170,7 @@ if inputs.mainPlots == 1
   ylabel('Angle (deg)');
   legend('Ψ_{avg}','β_{avg}','Δβ_{avg}','location','northwest','Orientation','vertical');
   xlabel('Wind speed at 100m height (m/s)');
-  xlim([0 25]);
+  xlim(x_axis_limit);
   %ylim([0 160]);
   hold off
 
@@ -183,7 +188,7 @@ if inputs.mainPlots == 1
   ylim([0 1.1*max(mean(processedOutputs.Ft,2))/10^3]);
   legend('F_{a}','F_{t}','F_{c}','W','location','northwest');
   xlabel('Wind speed at 100m height (m/s)');
-  xlim([0 25]);
+  xlim(x_axis_limit);
   %ylim([0 160]);
   hold off
 
@@ -205,7 +210,7 @@ if inputs.mainPlots == 1
   % ylim([30 100]);
   legend('η_{m,avg}','η_{e,avg}','D','f','location','southeast');
   xlabel('Wind speed at 100m height (m/s)');
-  xlim([0 25]);
+  xlim(x_axis_limit);
   hold off
 
   % Power plots
@@ -224,7 +229,7 @@ if inputs.mainPlots == 1
   %title('Cycle averages');
   legend('P_{m,o,mean}','P_{e,o,mean}','P_{m,i}','P_{e,i}','P_{e,avg}','location','northwest');
   xlabel('Wind speed at 100m height (m/s)');
-  xlim([0 25]);
+  xlim(x_axis_limit);
   hold off
 
 
@@ -255,7 +260,7 @@ if inputs.mainPlots == 1
   legend('No effects (Loyd Reel-out)','All effects','6DOF','location','southeast');
   % legend('Loyd - Ideal','Model results','location','southeast');
   xlabel('Wind speed at 100m height (m/s)');
-  xlim([0 25]);
+  xlim(x_axis_limit);
   hold off
   
 end

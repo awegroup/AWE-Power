@@ -79,10 +79,12 @@ function [inputs] = compute(i,inputs)
         end
         
         % Effective CD
-        outputs.CL(i,j)     = inputs.CL_maxAirfoil*inputs.CLeff_F;
+        % outputs.CL(i,j)     = inputs.CL_maxAirfoil*inputs.CLeff_F;
         outputs.CD_k(i,j)   = inputs.CD0 + (outputs.CL(i,j)-inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e);
         outputs.CD_t(i,j)   = (1/4)*inputs.CD_t*outputs.d_t*outputs.l_t_inCycle(i,j)/inputs.S;
         outputs.CD(i,j)     = outputs.CD_k(i,j) + outputs.CD_t(i,j);
+
+        outputs.G(i,j)      = outputs.CL(i,j)/outputs.CD(i,j);
 
         % Average pattern height at point of interest on deltaL
         if j == 1
@@ -265,7 +267,7 @@ function [inputs] = compute(i,inputs)
         outputs.PROeff_elec(i,j) = outputs.PROeff_mech(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE;
 
 
-        % Retraction Phase: Full Force balance 
+        %% Retraction Phase: Full Force balance 
         
         % Position in spherical coordinates
         outputs.theta_i(i,j) = pi()/2 - (outputs.beta(i)+outputs.gamma(i));
@@ -290,6 +292,7 @@ function [inputs] = compute(i,inputs)
 
         % Aerodynamic force magnitude
         outputs.CD_i(i,j)       = inputs.CD0+(outputs.CL_i(i,j)- inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e) + outputs.CD_t(i,j);
+        outputs.G_i(i,j)        = outputs.CL_i(i,j)/outputs.CD_i(i,j);
         outputs.Fa_i(i,j)       = outputs.halfRhoS(i,j)*sqrt(outputs.CL_i(i,j)^2+outputs.CD_i(i,j)^2)*outputs.va_i(i,j)^2;
 
         % Gravitational force vector (kite + tether)
