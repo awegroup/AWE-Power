@@ -9,7 +9,7 @@ function [c, ceq] = constraints(i,inputs)
   c(2)   = (inputs.minGroundClear - outputs.pattEndGrClr(i))/10000;
 
   % Capping for requested electrical rated power
-  c(3)   = (outputs.P_cycleElec(i) - inputs.P_ratedElec)/inputs.P_ratedElec/10000; 
+  c(3)   = (outputs.P_e_avg(i) - inputs.P_ratedElec)/inputs.P_ratedElec/10000; 
 
   % Tether length limit
   c(4) = (outputs.l_t_max(i) - inputs.maxTeLen)/inputs.maxTeLen/1000; 
@@ -21,7 +21,7 @@ function [c, ceq] = constraints(i,inputs)
   c(6) = (outputs.h_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight/1000;
 
   % Peak mechanical power limit
-  c(1,7:inputs.numDeltaLelems+6) = (outputs.PROeff_mech(i,:) - inputs.peakM2E_F*inputs.P_ratedElec)/(inputs.peakM2E_F*inputs.P_ratedElec)/1000;
+  c(1,7:inputs.numDeltaLelems+6) = (outputs.P_m_o_eff(i,:) - inputs.peakM2E_F*inputs.P_ratedElec)/(inputs.peakM2E_F*inputs.P_ratedElec)/1000;
 
   % Maximum tether force
   c(1,7+inputs.numDeltaLelems:2*inputs.numDeltaLelems+6) = (outputs.Ft(i,:) - inputs.Ft_max*inputs.Ft_max_SF*1000)/(inputs.Ft_max*inputs.Ft_max_SF*1000)/1000;
@@ -34,6 +34,9 @@ function [c, ceq] = constraints(i,inputs)
 
   % Tether force during reel-in cannot be negative
   c(1,7+4*inputs.numDeltaLelems:5*inputs.numDeltaLelems+6) = (0 - outputs.Ft_drum_i(i,:))/(inputs.Ft_max*inputs.Ft_max_SF*1000)/1000;
+
+  % Forced smoothness
+  % c(1,7+5*inputs.numDeltaLelems:6*inputs.numDeltaLelems+6) = 0 - all(diff(outputs.vk_r(i,:)) <= 0);
 
     
   %% Equality constraints

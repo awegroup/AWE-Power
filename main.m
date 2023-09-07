@@ -62,7 +62,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
     x0 = x.*x_init;
 
     % Changing initial guess if previous wind speed evaluation is infeasible
-    if outputs.P_cycleElec(i) <= 0    
+    if outputs.P_e_avg(i) <= 0    
         % All free
         x0 = [200,    deg2rad(30), deg2rad(5),    50, 20*nx, 1.5*nx, 0.5*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 80*nx];        
         % Fixed 
@@ -79,75 +79,78 @@ function [optData,outputs,processedOutputs] = main(inputs)
   vw = inputs.vw_ref; 
 
   %% Cut-in wind speed
-  temp1                  = vw(outputs.P_cycleElec > 0);
-  temp2                  = vw(mean((outputs.G_result - outputs.G),2) < 0.001); % min speed control limit of DT
-  processedOutputs.cutIn = max(temp1(1),temp2(1));
+  temp1                  = vw(outputs.P_e_avg > 0);
+  temp2                  = vw(mean((outputs.G_result - outputs.G),2) < 0.001); % Glide ratio constraint violation acceptance
+  processedOutputs.cutIn = max(temp1(1),temp2(1)); % At Reference height
  % processedOutputs.cutIn = max(temp1(1));
  
 
   %% Rated wind and power
-  temp3                       = round(outputs.P_cycleElec./max(outputs.P_cycleElec),2);
+  temp3                       = round(outputs.P_e_avg./max(outputs.P_e_avg),2);
   temp4                       = vw(temp3==1);
-  processedOutputs.ratedWind  = temp4(1);
-  processedOutputs.ratedPower = outputs.P_cycleElec(vw==temp4(1));
+  processedOutputs.ratedWind  = temp4(1); % At Reference height 
+  processedOutputs.ratedPower = outputs.P_e_avg(vw==temp4(1));
 
   %% Cut-out wind speed
-  processedOutputs.cutOut   = 25;
-  processedOutputs.Vw_100m  = vw(mean(outputs.vw,2)<=processedOutputs.cutOut);
+  processedOutputs.cutOut   = 25; % At operational height
+  processedOutputs.vw_100m_operRange = vw(mean(outputs.vw,2)<=processedOutputs.cutOut);
 
   %% System data
   processedOutputs.Dia_te = outputs.d_t;
    for i=1:length(vw)
       if vw(i)>=processedOutputs.cutIn
-          processedOutputs.Vw(i,:)           = outputs.vw(i,:);
-          processedOutputs.PRO1_mech(i)      = outputs.PRO1_mech(i);
-          processedOutputs.PRI2_mech(i)      = outputs.PRI2_mech(i); 
-          processedOutputs.PROeff_mech(i,:)  = outputs.PROeff_mech(i,:);
-          processedOutputs.PRIeff_mech(i,:)  = outputs.PRIeff_mech(i,:);  
-          processedOutputs.PRO1_elec(i)      = outputs.PRO1_elec(i);
-          processedOutputs.PRI2_elec(i)      = outputs.PRI2_elec(i); 
-          processedOutputs.PROeff_elec(i,:)  = outputs.PROeff_elec(i,:);
-          processedOutputs.PRIeff_elec(i,:)  = outputs.PRIeff_elec(i,:);
-          processedOutputs.PRO_mech(i)       = outputs.PRO_mech(i);
-          processedOutputs.PRI_mech(i)       = outputs.PRI_mech(i);
-          processedOutputs.PRO_elec(i)       = outputs.PRO_elec(i);
-          processedOutputs.PRI_elec(i)       = outputs.PRI_elec(i);
+          processedOutputs.vw(i,:)           = outputs.vw(i,:);
+          processedOutputs.P1_m_o(i)         = outputs.P1_m_o(i);
+          processedOutputs.P2_m_i(i)         = outputs.P2_m_i(i); 
+          processedOutputs.P_m_o_eff(i,:)    = outputs.P_m_o_eff(i,:);
+          processedOutputs.P_m_i_eff(i,:)    = outputs.P_m_i_eff(i,:);  
+          processedOutputs.P1_e_o(i)         = outputs.P1_e_o(i);
+          processedOutputs.P2_e_i(i)         = outputs.P2_e_i(i); 
+          processedOutputs.P_e_o_eff(i,:)    = outputs.P_e_o_eff(i,:);
+          processedOutputs.P_e_i_eff(i,:)    = outputs.P_e_i_eff(i,:);
+          processedOutputs.P_m_o(i)          = outputs.P_m_o(i);
+          processedOutputs.P_m_i(i)          = outputs.P_m_i(i);
+          processedOutputs.P_e_o(i)          = outputs.P_e_o(i);
+          processedOutputs.P_e_i(i)          = outputs.P_e_i(i);
           processedOutputs.deltaL(i)         = outputs.deltaL(i);
           processedOutputs.t1(i)             = outputs.t1(i);
           processedOutputs.t2(i)             = outputs.t2(i);
-          processedOutputs.tROeff(i,:)       = outputs.tROeff(i,:);
-          processedOutputs.tRIeff(i,:)       = outputs.tRIeff(i,:);
-          processedOutputs.tRO(i)            = outputs.tRO(i);
-          processedOutputs.tRI(i)            = outputs.tRI(i);
+          processedOutputs.to_eff(i,:)       = outputs.to_eff(i,:);
+          processedOutputs.ti_eff(i,:)       = outputs.ti_eff(i,:);
+          processedOutputs.to(i)             = outputs.to(i);
+          processedOutputs.ti(i)             = outputs.ti(i);
           processedOutputs.tCycle(i)         = outputs.tCycle(i);
           processedOutputs.Ft(i,:)           = outputs.Ft(i,:);
+          processedOutputs.Ft_drum(i,:)      = outputs.Ft_drum(i,:);
           processedOutputs.Fa(i,:)           = outputs.Fa(i,:);
           processedOutputs.Fc(i,:)           = outputs.Fc(i,:);
           processedOutputs.W(i)              = outputs.W(i);
-          processedOutputs.VRO(i,:)          = outputs.vk_r(i,:);
-          processedOutputs.VRI(i)            = outputs.vk_r_i(i);
-          processedOutputs.VRI_app(i,:)      = outputs.va_i(i,:);
-          processedOutputs.Pcycle_elec(i)    = outputs.P_cycleElec(i);
-          processedOutputs.Pcycle_mech(i)    = outputs.P_cycleMech(i);
-          processedOutputs.pattRad(i,:)      = outputs.Rp(i,:);
-          processedOutputs.H_cycleStart(i)   = outputs.h_cycleStart(i);
-          processedOutputs.H_cycleAvg(i)     = outputs.h_cycleAvg(i);
-          processedOutputs.L_teMax(i)        = outputs.l_t_max(i);
-          processedOutputs.Vc(i,:)           = outputs.vk_omega(i,:); 
-          processedOutputs.Va(i,:)           = outputs.va(i,:);
-          processedOutputs.avgPattEle(i)     = rad2deg(outputs.beta(i));
+          processedOutputs.vo(i,:)           = outputs.vk_r(i,:);
+          processedOutputs.vi(i,:)           = outputs.vk_r_i(i,:);
+          processedOutputs.P_e_avg(i)        = outputs.P_e_avg(i);
+          processedOutputs.P_m_avg(i)        = outputs.P_m_avg(i);
+          processedOutputs.Rp(i,:)           = outputs.Rp(i,:);
+          processedOutputs.h_cycleStart(i)   = outputs.h_cycleStart(i);
+          processedOutputs.h_cycleAvg(i)     = outputs.h_cycleAvg(i);
+          processedOutputs.l_t_max(i)        = outputs.l_t_max(i);
+          processedOutputs.vk_omega(i,:)     = outputs.vk_omega(i,:); 
+          processedOutputs.va(i,:)           = outputs.va(i,:);
+          processedOutputs.beta(i)           = rad2deg(outputs.beta(i));
           processedOutputs.rollAngle(i,:)    = rad2deg(-outputs.rollAngle(i,:));
-          processedOutputs.pattAngRadius(i)  = rad2deg(outputs.gamma(i));
+          processedOutputs.gamma(i)          = rad2deg(outputs.gamma(i));
           processedOutputs.CL(i,:)           = outputs.CL(i,:);
           processedOutputs.CD(i,:)           = outputs.CD(i,:);
+          processedOutputs.CL_i(i,:)         = outputs.CL_i(i,:);
+          processedOutputs.CD_i(i,:)         = outputs.CD_i(i,:);
           processedOutputs.numOfPatt(i,:)    = outputs.numOfPatt(i,:);
-          processedOutputs.reelOutF(i,:)     = outputs.f(i,:);  
-          processedOutputs.dutyCycle(i)      = processedOutputs.tRO(i)/processedOutputs.tCycle(i);
-          processedOutputs.tPatt(i,:)        = 2*pi()*processedOutputs.pattRad(i,:)/outputs.vk_omega(i);
+          processedOutputs.f(i,:)            = outputs.f(i,:); 
+          processedOutputs.f_i(i,:)          = outputs.f_i(i,:); 
+          processedOutputs.dutyCycle(i)      = processedOutputs.to(i)/processedOutputs.tCycle(i);
+          processedOutputs.tPatt(i,:)        = 2*pi()*processedOutputs.Rp(i,:)/processedOutputs.vk_omega(i);
           
           % Coefficient of power (Cp) as defined for HAWTs
 %           outputs.sweptArea(i)         = pi()*((outputs.Rp(i)+outputs.b/2)^2 - (outputs.Rp(i)-outputs.b/2)^2);
-%           outputs.Cp_reelOut(i)        = outputs.PRO_mech(i)/(0.5*outputs.rho_air(i)*outputs.sweptArea(i)*vw(i)^3);
+%           outputs.Cp_reelOut(i)        = outputs.P_m_o(i)/(0.5*outputs.rho_air(i)*outputs.sweptArea(i)*vw(i)^3);
 %           % Axial induction factor maximising Cp is a = 0.5 and is independent of reel-out factor
 %           % Ref paper: The Betz limit applied to Airborne Wind Energy, https://doi.org/10.1016/j.renene.2018.04.034
 %           f(i)                         = outputs.f(i);
@@ -163,25 +166,33 @@ function [optData,outputs,processedOutputs] = main(inputs)
   for i = processedOutputs.cutIn:processedOutputs.cutOut
     [processedOutputs.cyclePowerRep(i)] = createCyclePowerRep(i,processedOutputs); 
   end
-  function [cpr] = createCyclePowerRep(ws, system)
+  function [cyclePowerRep] = createCyclePowerRep(ws, system)
               
-    cpr.ws     = ws;
-    cpr.idx    = find(vw==ws);
-    cpr.t1     = round(system.t1(cpr.idx),2);
-    cpr.tROeff = round(sum(system.tROeff(cpr.idx,:),2),2);
-    cpr.t2     = round(system.t2(cpr.idx),2);
-    cpr.tRIeff = round(sum(system.tRIeff(cpr.idx,:),2),2);
-    cpr.tRO    = cpr.t1 + cpr.tROeff; %[s]
-    cpr.tRI    = cpr.t2 + cpr.tRIeff; %[s]
-    cpr.tCycle = cpr.tRO+cpr.tRI; %[s]
+    cyclePowerRep.ws     = ws;
+    cyclePowerRep.idx    = find(vw==ws);
+    cyclePowerRep.t1     = round(system.t1(cyclePowerRep.idx),2);
+    cyclePowerRep.to_eff = round(sum(system.to_eff(cyclePowerRep.idx,:),2),2);
+    cyclePowerRep.t2     = round(system.t2(cyclePowerRep.idx),2);
+    cyclePowerRep.ti_eff = round(sum(system.ti_eff(cyclePowerRep.idx,:),2),2);
+    cyclePowerRep.to     = cyclePowerRep.t1 + cyclePowerRep.to_eff; %[s]
+    cyclePowerRep.ti     = cyclePowerRep.t2 + cyclePowerRep.ti_eff; %[s]
+    cyclePowerRep.tCycle = cyclePowerRep.to + cyclePowerRep.to; %[s]
     
-    cpr.t_inst = cumsum([0 cpr.t1 system.tROeff(cpr.idx,:) cpr.t1 cpr.t2 system.tRIeff(cpr.idx,:) cpr.t2 0]);
-    
-    cpr.P_e_inst = [0 system.PROeff_elec(cpr.idx,1) system.PROeff_elec(cpr.idx,:) 0 ...
-                -flip(system.PRIeff_elec(cpr.idx,1)) -flip(system.PRIeff_elec(cpr.idx,:)) 0 0]./10^3;
-              
-    cpr.P_m_inst = [0 system.PROeff_mech(cpr.idx,1) system.PROeff_mech(cpr.idx,:) 0 ...
-                -flip(system.PRIeff_mech(cpr.idx,1)) -flip(system.PRIeff_mech(cpr.idx,:)) 0 0]./10^3;
+    % cyclePowerRep.t_inst = cumsum([0 cyclePowerRep.t1 system.to_eff(cyclePowerRep.idx,:) cyclePowerRep.t1 cyclePowerRep.t2 system.ti_eff(cyclePowerRep.idx,:) cyclePowerRep.t2 0]);
+    % 
+    % cyclePowerRep.P_e_inst = [0 system.P_e_o_eff(cyclePowerRep.idx,1) system.P_e_o_eff(cyclePowerRep.idx,:) 0 ...
+    %             -flip(system.P_e_i_eff(cyclePowerRep.idx,1)) -flip(system.P_e_i_eff(cyclePowerRep.idx,:)) 0 0]./10^3;
+    % 
+    % cyclePowerRep.P_m_inst = [0 system.P_m_o_eff(cyclePowerRep.idx,1) system.P_m_o_eff(cyclePowerRep.idx,:) 0 ...
+    %             -flip(system.P_m_i_eff(cyclePowerRep.idx,1)) -flip(system.P_m_i_eff(cyclePowerRep.idx,:)) 0 0]./10^3;
+
+    cyclePowerRep.t_inst = cumsum([0 cyclePowerRep.t1 (cyclePowerRep.to_eff-cyclePowerRep.t1) cyclePowerRep.t1 cyclePowerRep.t2 (cyclePowerRep.ti_eff-cyclePowerRep.t2) cyclePowerRep.t2]);
+
+    cyclePowerRep.P_e_inst = [0 system.P_e_o_eff(cyclePowerRep.idx,1) system.P_e_o_eff(cyclePowerRep.idx,end) 0 ...
+                -system.P_e_i_eff(cyclePowerRep.idx,end) -system.P_e_i_eff(cyclePowerRep.idx,1) 0]./10^3;
+
+    cyclePowerRep.P_m_inst = [0 system.P_m_o_eff(cyclePowerRep.idx,1) system.P_m_o_eff(cyclePowerRep.idx,end) 0 ...
+                -system.P_m_i_eff(cyclePowerRep.idx,end) -system.P_m_i_eff(cyclePowerRep.idx,1) 0]./10^3;
     
   end
   

@@ -119,6 +119,7 @@ function [inputs] = compute(i,inputs)
         T = 288.15;    % [Kelvin]
         L = 0.0065;    % [Kelvin/m] 
         outputs.rho_air(i,j) = inputs.airDensity*(1-L*(outputs.h_inCycle(i,j) + r)/T)^(inputs.gravity*M/R/L-1);
+        % outputs.rho_air(i,j) = inputs.airDensity;
 
         % Intermediate calculation for brevity
         outputs.CR(i,j)       = sqrt(outputs.CL(i,j)^2+outputs.CD(i,j)^2);
@@ -133,12 +134,12 @@ function [inputs] = compute(i,inputs)
         outputs.f(i,j) = outputs.vk_r(i,j)/outputs.vw(i,j);
 
         % Apparent wind velocity magnitude
-        % outputs.va(i,j) = (sin(outputs.theta(i,j))*cos(outputs.phi(i,j))-outputs.f(i,j))*outputs.vw(i,j)*sqrt(1+outputs.kRatio(i,j)^2);
         outputs.va(i,j) = (outputs.vw_r(i,j)-outputs.vk_r(i,j))*sqrt(1+outputs.kRatio(i,j)^2);
         
         % Aerodynamic force magnitude
         outputs.Fa(i,j) = outputs.halfRhoS(i,j)*outputs.CR(i,j)*outputs.va(i,j)^2;
         
+        % Tangential kite velocity factor
         a = cos(outputs.theta(i,j))*cos(outputs.phi(i,j))*cos(outputs.chi(i,j))-sin(outputs.phi(i,j))*sin(outputs.chi(i,j));
         b = sin(outputs.theta(i,j))*cos(outputs.phi(i,j));
         outputs.lambda(i,j) = a + sqrt(a^2 + b^2 - 1 + outputs.kRatio(i,j)^2*(b - outputs.f(i,j))^2);
@@ -216,7 +217,6 @@ function [inputs] = compute(i,inputs)
         outputs.va_theta(i,j) = outputs.vw(i,j)*(cos(outputs.theta(i,j))*cos(outputs.phi(i,j))-outputs.lambda(i,j)*cos(outputs.chi(i,j)));
         outputs.va_phi(i,j)   = outputs.vw(i,j)*(-sin(outputs.phi(i,j))-outputs.lambda(i,j)*sin(outputs.chi(i,j)));
 
-       
         % Dot product F_a*v_a;
         outputs.F_dot_v(i,j) = outputs.Fa_r(i,j)*outputs.va_r(i,j) + outputs.Fa_theta(i,j)*outputs.va_theta(i,j) + outputs.Fa_phi(i,j)*outputs.va_phi(i,j);
         
@@ -255,16 +255,16 @@ function [inputs] = compute(i,inputs)
         outputs.G_result(i,j) = sqrt(((outputs.Fa(i,j)*outputs.va(i,j))/outputs.F_dot_v(i,j))^2-1);
           
         % Effective mechanical reel-out power
-        outputs.PROeff_mech(i,j) = outputs.Ft_drum(i,j)*outputs.vk_r(i,j); %[W]   
+        outputs.P_m_o_eff(i,j) = outputs.Ft_drum(i,j)*outputs.vk_r(i,j); %[W]   
         
-        outputs.zetaMech(i,j)    = outputs.PROeff_mech(i,j)/(outputs.halfRhoS(i,j)*outputs.vw(i,j)^3);
+        outputs.zetaMech(i,j)    = outputs.P_m_o_eff(i,j)/(outputs.halfRhoS(i,j)*outputs.vw(i,j)^3);
        
         % Effective electrical reel-out power
         % Generator efficiency. As a function of RPM/RPM_max, where RPM_max is driven by winch 
-        outputs.genEff_RO(i,j)  = (inputs.etaGen.param(1)*(outputs.vk_r(i,j)/inputs.etaGen.v_max)^3 + ...
+        outputs.etaGen_o(i,j)  = (inputs.etaGen.param(1)*(outputs.vk_r(i,j)/inputs.etaGen.v_max)^3 + ...
                                       inputs.etaGen.param(2)*(outputs.vk_r(i,j)/inputs.etaGen.v_max)^2 + ...
                                         inputs.etaGen.param(3)*(outputs.vk_r(i,j)/inputs.etaGen.v_max)+inputs.etaGen.param(4))^sign(1);
-        outputs.PROeff_elec(i,j) = outputs.PROeff_mech(i,j)*inputs.etaGearbox*outputs.genEff_RO(i,j)*inputs.etaPE;
+        outputs.P_e_o_eff(i,j) = outputs.P_m_o_eff(i,j)*inputs.etaGearbox*outputs.etaGen_o(i,j)*inputs.etaPE;
 
 
         %% Retraction Phase: Full Force balance 
@@ -332,7 +332,6 @@ function [inputs] = compute(i,inputs)
         % Lift-to-drag ratio that follows from the chosen kinematic ratio
         outputs.G_result_i(i,j) = sqrt(((outputs.Fa_i(i,j)*outputs.va_i(i,j))/outputs.F_dot_v_i(i,j))^2-1);
 
-
         % Straight-tether force 
         outputs.Ft_i(i,j) = outputs.Fa_r_i(i,j) + outputs.Fg_r_i(i,j);
 
@@ -349,16 +348,16 @@ function [inputs] = compute(i,inputs)
         end
 
         % Effective mechanical reel-out power
-        outputs.PRIeff_mech(i,j) = outputs.Ft_drum_i(i,j)*outputs.vk_r_i(i,j); %[W]  
+        outputs.P_m_i_eff(i,j) = outputs.Ft_drum_i(i,j)*outputs.vk_r_i(i,j); %[W]  
 
         %%
         % Generator efficiency during RI: As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
-        outputs.genEff_RI(i) = (inputs.etaGen.param(1)*(outputs.vk_r_i(i)/inputs.etaGen.v_max)^3 + ...
+        outputs.etaGen_i(i) = (inputs.etaGen.param(1)*(outputs.vk_r_i(i)/inputs.etaGen.v_max)^3 + ...
                                  inputs.etaGen.param(2)*(outputs.vk_r_i(i)/inputs.etaGen.v_max)^2 + ...
                                   inputs.etaGen.param(3)*(outputs.vk_r_i(i)/inputs.etaGen.v_max)+inputs.etaGen.param(4))^sign(1);
         
         % Effective electrical reel-in power
-        outputs.PRIeff_elec(i,j) = outputs.PRIeff_mech(i,j)/inputs.etaGearbox/inputs.etaSto/outputs.genEff_RI(i)/inputs.etaPE;
+        outputs.P_e_i_eff(i,j) = outputs.P_m_i_eff(i,j)/inputs.etaGearbox/inputs.etaSto/outputs.etaGen_i(i)/inputs.etaPE;
 
      end
          
@@ -366,43 +365,43 @@ function [inputs] = compute(i,inputs)
      
     % Reel-out time
       outputs.t1(i)       = outputs.vk_r(i,1)/inputs.winchAcc_max;
-      outputs.tROeff(i,:) = outputs.elemDeltaL(i)./outputs.vk_r(i,:);
-      outputs.tRO(i)      = outputs.t1(i) + sum(outputs.tROeff(i,:));
+      outputs.to_eff(i,:) = outputs.elemDeltaL(i)./outputs.vk_r(i,:);
+      outputs.to(i)      = outputs.t1(i) + sum(outputs.to_eff(i,:));
      
       % Reel-out power during transition
-      outputs.PRO1_mech(i) = outputs.PROeff_mech(i,1)/2;
-      outputs.PRO1_elec(i) = outputs.PROeff_elec(i,1)/2;
+      outputs.P1_m_o(i) = outputs.P_m_o_eff(i,1)/2;
+      outputs.P1_e_o(i) = outputs.P_e_o_eff(i,1)/2;
 
       % Reel-out power 
-        outputs.PRO_mech(i) = (sum(outputs.PROeff_mech(i,:).*outputs.tROeff(i,:)) + outputs.PRO1_mech(i)*outputs.t1(i))/outputs.tRO(i);
-        outputs.PRO_elec(i) = (sum(outputs.PROeff_elec(i,:).*outputs.tROeff(i,:)) + outputs.PRO1_elec(i)*outputs.t1(i))/outputs.tRO(i);
+        outputs.P_m_o(i) = (sum(outputs.P_m_o_eff(i,:).*outputs.to_eff(i,:)) + outputs.P1_m_o(i)*outputs.t1(i))/outputs.to(i);
+        outputs.P_e_o(i) = (sum(outputs.P_e_o_eff(i,:).*outputs.to_eff(i,:)) + outputs.P1_e_o(i)*outputs.t1(i))/outputs.to(i);
 
       % Reel-in time
         outputs.t2(i)       = outputs.vk_r_i(i)/inputs.winchAcc_max;
-        outputs.tRIeff(i,:) = outputs.elemDeltaL(i)./outputs.vk_r_i(i,:);
-        outputs.tRI(i)      = outputs.t2(i) + sum(outputs.tRIeff(i,:));
+        outputs.ti_eff(i,:) = outputs.elemDeltaL(i)./outputs.vk_r_i(i,:);
+        outputs.ti(i)      = outputs.t2(i) + sum(outputs.ti_eff(i,:));
       
       % Reel-in power duing transition
-      outputs.PRI2_mech(i)     = outputs.PRIeff_mech(i,1)/2;
-      outputs.PRI2_elec(i)     = outputs.PRIeff_elec(i,1)/2;
+      outputs.P2_m_i(i)     = outputs.P_m_i_eff(i,1)/2;
+      outputs.P2_e_i(i)     = outputs.P_e_i_eff(i,1)/2;
 
       % Reel-in power 
-      outputs.PRI_mech(i) = (sum(outputs.PRIeff_mech(i,:).*outputs.tRIeff(i,:)) + outputs.PRI2_mech(i)*outputs.t2(i))/outputs.tRI(i);
-      outputs.PRI_elec(i) = (sum(outputs.PRIeff_elec(i,:).*outputs.tRIeff(i,:)) + outputs.PRI2_elec(i)*outputs.t2(i))/outputs.tRI(i);
+      outputs.P_m_i(i) = (sum(outputs.P_m_i_eff(i,:).*outputs.ti_eff(i,:)) + outputs.P2_m_i(i)*outputs.t2(i))/outputs.ti(i);
+      outputs.P_e_i(i) = (sum(outputs.P_e_i_eff(i,:).*outputs.ti_eff(i,:)) + outputs.P2_e_i(i)*outputs.t2(i))/outputs.ti(i);
 
       % Cycle time
-      outputs.tCycle(i) = outputs.tRO(i)+outputs.tRI(i);
+      outputs.tCycle(i) = outputs.to(i)+outputs.ti(i);
 
       % Time for one pattern revolution and number of patterns in the cycle
       outputs.tPatt(i,:)     = 2*pi()*outputs.Rp(i,:)./outputs.vk_omega(i,:);
-      outputs.numOfPatt(i,:) = outputs.tRO(i)./outputs.tPatt(i,:);
+      outputs.numOfPatt(i,:) = outputs.to(i)./outputs.tPatt(i,:);
 
       % Electrical cycle power
-       outputs.P_cycleElec(i) = (sum(outputs.tROeff(i,:).*outputs.PROeff_elec(i,:)) + outputs.t1(i)*outputs.PRO1_elec(i) - ...
-                                   sum(outputs.tRIeff(i,:).*outputs.PRIeff_elec(i,:)) -outputs.t2(i)*outputs.PRI2_elec(i))/outputs.tCycle(i);    
+       outputs.P_e_avg(i) = (sum(outputs.to_eff(i,:).*outputs.P_e_o_eff(i,:)) + outputs.t1(i)*outputs.P1_e_o(i) - ...
+                                   sum(outputs.ti_eff(i,:).*outputs.P_e_i_eff(i,:)) -outputs.t2(i)*outputs.P2_e_i(i))/outputs.tCycle(i);    
 
       % Mechanical cycle power - without drivetrain eff
-      outputs.P_cycleMech(i) = (sum(outputs.tROeff(i,:).*outputs.PROeff_mech(i,:)) + outputs.t1(i)*outputs.PRO1_mech(i) - ...
-                                   sum(outputs.tRIeff(i,:).*outputs.PRIeff_mech(i,:)) - outputs.t2(i)*outputs.PRI2_mech(i))/outputs.tCycle(i);
+      outputs.P_m_avg(i) = (sum(outputs.to_eff(i,:).*outputs.P_m_o_eff(i,:)) + outputs.t1(i)*outputs.P1_m_o(i) - ...
+                                   sum(outputs.ti_eff(i,:).*outputs.P_m_i_eff(i,:)) - outputs.t2(i)*outputs.P2_m_i(i))/outputs.tCycle(i);
 
 end      
