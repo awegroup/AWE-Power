@@ -42,10 +42,10 @@ function [c, ceq] = constraints(i,inputs)
   %% Equality constraints
   
   % Glide ratio during reel-out
-  ceq(1,0*inputs.numDeltaLelems+1:1*inputs.numDeltaLelems) = (outputs.G_result(i,:) - outputs.G(i,:))/10000;
+  ceq(1,0*inputs.numDeltaLelems+1:1*inputs.numDeltaLelems) = (outputs.E_result(i,:) - outputs.E(i,:))/10000;
 
   % Glide ratio during reel-in
-  ceq(1,1*inputs.numDeltaLelems+1:2*inputs.numDeltaLelems) = (outputs.G_result_i(i,:) - outputs.G_i(i,:))/10000;
+  ceq(1,1*inputs.numDeltaLelems+1:2*inputs.numDeltaLelems) = (outputs.E_result_i(i,:) - outputs.E_i(i,:))/10000;
  
 
  

@@ -38,10 +38,10 @@ if inputs.mainPlots == 1
   hold on
   box on
   grid on
-  plot(V,z,'linewidth',1.5)
-  plot(V_MegAWES_Cabauw,z_MegAWES,'linewidth',1.5)
-  plot(V_MegAWES_Ijmuiden,z_MegAWES,'linewidth',1.5)
-  legend('α = 0.11','Cabauw,NL','Ijmuiden,NL');
+  plot(V,z,'linewidth',1.2)
+  plot(V_MegAWES_Cabauw,z_MegAWES,'linewidth',1.2)
+  plot(V_MegAWES_Ijmuiden,z_MegAWES,'linewidth',1.2)
+  legend('α = 0.43','Cabauw,NL','Ijmuiden,NL');
   xlim([0.5 1.5])
   xlabel('Wind Speed (-)')
   ylabel('Height (m)')
@@ -51,10 +51,10 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(vw,mean(processedOutputs.vw,2),'linewidth',1);
+  plot(vw,mean(outputs.vw,2),':o','linewidth',1,'markersize',2);
   xlim(x_axis_limit);
   xlabel('v_w at 100m height (m/s)');
-  ylabel('v_{w,avg} during operation (m/s)')
+  ylabel('v_{w,avg} in Cycle (m/s)');
 
   
   % Cycle timeseries plots: Pattern averages
@@ -82,23 +82,81 @@ if inputs.mainPlots == 1
   end
 
   % Plots showing the per element results for rated wind speed
+  ws = processedOutputs.ratedWind;
+  fig = figure();
+  colororder(newcolors)
+  % Lengths
+  subplot(2,2,1)
+  hold on
+  grid on
+  box on
+  plot(processedOutputs.Rp(ws,:),':o','linewidth',1,'markersize',3);
+  plot(processedOutputs.l_t_inCycle(ws,:),':^','linewidth',1,'markersize',3);
+  plot(processedOutputs.h_inCycle(ws,:),':s','linewidth',1,'markersize',5);
+  ylabel('(m)');
+  legend('R_{p}','l_{t,inCycle}','h_{p,inCycle}','location','northwest');
+  hold off
+  % Speeds
+  subplot(2,2,2)
+  hold on
+  grid on
+  box on
+  yyaxis left
+  plot(processedOutputs.lambda(ws,:),':d','linewidth',1,'markersize',3);
+  plot(processedOutputs.f(ws,:),':o','linewidth',1,'markersize',3);
+  plot(processedOutputs.f_i(ws,:),':^','linewidth',1,'markersize',3);
+  ylabel('(-)');
+  yyaxis right
+  plot(processedOutputs.vw(ws,:),':s','linewidth',1,'markersize',5);
+  ylabel('(m/s)');
+  legend('λ','f_o','F_i','v_w','location','northwest');
+  hold off
+  % Glide ratios
+  subplot(2,2,3)
+  hold on
+  grid on
+  box on
+  plot(processedOutputs.E(ws,:),':o','linewidth',1,'markersize',3);
+  plot(processedOutputs.E_i(ws,:),':^','linewidth',1,'markersize',3);
+  % ylim([0 2.5]);
+  ylabel('(-)');
+  legend('E_o','E_i','location','northwest');
+  hold off
+  % Forces
+  subplot(2,2,4)
+  hold on
+  grid on
+  box on
+  plot(processedOutputs.Fa(ws,:),':o','linewidth',1,'markersize',3);
+  plot(processedOutputs.Fa_i(ws,:),':^','linewidth',1,'markersize',3);
+  plot(processedOutputs.Ft_drum(ws,:),':s','linewidth',1,'markersize',5);
+  plot(processedOutputs.Ft_drum_i(ws,:),':d','linewidth',1,'markersize',3);
+  legend('F_{a,o}','F_{a,i}','F_{t,drum,o}','F_{t,drum,i}','location','northwest');
+  ylabel('(kN)');
+  hold off
+  han=axes(fig,'visible','off'); 
+  han.Title.Visible='on';
+  han.XLabel.Visible='on';
+  han.YLabel.Visible='off';
+  ylabel(han,'yourYLabel');
+  xlabel(han,'Discretized reel-out length element positions');
+  title(han,'Wind speed at 100m = 15 m/s');
 
-
-  % Reel-out, Reel-in Speeds and Time
+  % Speeds
   figure('units','inch','Position', [3 3 3.5 2.2])
   colororder(newcolors)
   hold on
   grid on
   box on
   yyaxis left
-  plot(vw, mean(processedOutputs.vo,2),'d:','markersize',3);
-  plot(vw, mean(processedOutputs.vi,2),'^:','markersize',3);
-  ylabel('Speed (m/s)');
+  plot(vw, mean(processedOutputs.lambda,2),':o','linewidth',1,'markersize',3);
+  plot(vw, mean(processedOutputs.f,2),':s','linewidth',1,'markersize',5);
+  plot(vw, mean(processedOutputs.f_i,2),':v','linewidth',1,'markersize',3);
+  ylabel('(-)');
   yyaxis right
-  plot(vw, processedOutputs.to,'o:','markersize',3);
-  plot(vw, processedOutputs.ti,'+:','markersize',3);
-  ylabel('Time (s)');
-  legend('v_{o,avg}','v_{i,avg}','t_{o}','t_{i}','location','northwest');
+  plot(vw, mean(processedOutputs.vw,2),':^','linewidth',1,'markersize',3);
+  ylabel('(m/s)');
+  legend('λ_{avg}','f_{o,avg}','f_{i,avg}','v_{w,avg}','location','northwest');
   xlabel('Wind speed at 100m height (m/s)');
   xlim(x_axis_limit);
   %ylim([0 160]);
@@ -110,10 +168,10 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(vw, processedOutputs.h_cycleAvg,'d:','markersize',3);
-  plot(vw, mean(processedOutputs.Rp,2),'o:','markersize',3);
-  plot(vw, processedOutputs.deltaL,'^:','markersize',3);
-  plot(vw, processedOutputs.l_t_max,'+:','markersize',3);
+  plot(vw, processedOutputs.h_cycleAvg,'d:','linewidth',1,'markersize',3);
+  plot(vw, mean(processedOutputs.Rp,2),'o:','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.deltaL,'^:','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.l_t_max,'s:','linewidth',1,'markersize',5);
   ylabel('Length (m)');
   legend('h_{p,avg}','R_{p,avg}','Δl','l_{t,max}','location','northwest','Orientation','vertical');
   xlabel('Wind speed at 100m height (m/s)');
@@ -127,9 +185,9 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(vw, mean(processedOutputs.rollAngle,2),'x:','markersize',4);
-  plot(vw, processedOutputs.beta,'^:','markersize',3);
-  plot(vw, processedOutputs.gamma,'o:','markersize',3);
+  plot(vw, mean(processedOutputs.rollAngle,2),'s:','linewidth',1,'markersize',5);
+  plot(vw, processedOutputs.beta,'o:','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.gamma,'d:','linewidth',1,'markersize',3);
   ylabel('Angle (deg)');
   legend('Ψ_{avg}','β','γ','location','northwest','Orientation','vertical');
   xlabel('Wind speed at 100m height (m/s)');
@@ -143,13 +201,13 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(vw, mean(processedOutputs.Fa,2)./10^3,'-o','linewidth',1,'markersize',2.5);
-  plot(vw, mean(processedOutputs.Ft,2)./10^3,':o','linewidth',1,'markersize',2.5);
-  plot(vw, mean(processedOutputs.Ft_drum,2)./10^3,'-.o','linewidth',1,'markersize',2.5);
-  % plot(vw, mean(processedOutputs.W,2)./10^3,'--x','linewidth',1,'markersize',3.5);
-  plot(vw, processedOutputs.W/10^3,':x','linewidth',1,'markersize',3.5);
+  plot(vw, mean(processedOutputs.Fa,2)./10^3,':o','linewidth',1,'markersize',3);
+  plot(vw, mean(processedOutputs.Fa_i,2)./10^3,':s','linewidth',1,'markersize',5);
+  plot(vw, mean(processedOutputs.Ft_drum,2)./10^3,':^','linewidth',1,'markersize',3);
+  plot(vw, mean(processedOutputs.Ft_drum_i,2)./10^3,':d','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.W./10^3,'-x','linewidth',1,'markersize',4);
   ylabel('Force (kN)');
-  legend('F_{a}','F_{t}','F_{t,drum}','W','location','northwest');
+  legend('F_{a,o}','F_{a,i}','F_{t,drum,o}','F_{t,drum,i}','W','location','northwest');
   xlabel('Wind speed at 100m height (m/s)');
   xlim(x_axis_limit);
   %ylim([0 160]);
@@ -176,6 +234,25 @@ if inputs.mainPlots == 1
   % xlim(x_axis_limit);
   % hold off
 
+  % Time, num of patterns
+  figure('units','inch','Position', [11 3 3.5 2.2])
+  colororder(newcolors)
+  hold on
+  grid on
+  box on
+  yyaxis left
+  plot(vw, processedOutputs.to,':s','linewidth',1,'markersize',5);
+  plot(vw, processedOutputs.ti,':d','linewidth',1,'markersize',3);
+  plot(vw, mean(processedOutputs.tPatt,2),':o','linewidth',1,'markersize',3);
+  ylabel('(s)');
+  yyaxis right
+  plot(vw, mean(processedOutputs.numOfPatt,2),':^','linewidth',1,'markersize',3);
+  ylabel('(-)');
+  xlabel('Wind speed at 100m height (m/s)');
+  legend('t_{o}','t_{i}','t_{patt,avg}','N_{p}','location','northwest');
+  xlim(x_axis_limit);
+  hold off
+
   % Power plots
   %pastel_b = '[0 0.4470 0.7410]';
   figure('units','inch','Position', [11 6 3.5 2.2])
@@ -183,11 +260,11 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(vw, processedOutputs.P_m_o./10^3,'-o','linewidth',1,'markersize',2.5);
-  plot(vw, processedOutputs.P_e_o./10^3,':o','linewidth',1,'markersize',2.5);
-  plot(vw, processedOutputs.P_m_i./10^3,'--','linewidth',1.2);
-  plot(vw, processedOutputs.P_e_i./10^3,':','linewidth',1.5);
-  plot(vw, processedOutputs.P_e_avg./10^3,'-','linewidth',1.4);
+  plot(vw, processedOutputs.P_m_o./10^3,':o','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.P_e_o./10^3,':s','linewidth',1,'markersize',5);
+  plot(vw, processedOutputs.P_m_i./10^3,':d','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.P_e_i./10^3,':^','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.P_e_avg./10^3,':x','linewidth',1,'markersize',5);
   ylabel('Power (kW)');
   %title('Cycle averages');
   legend('P_{m,o,mean}','P_{e,o,mean}','P_{m,i,mean}','P_{e,i,mean}','P_{e,avg}','location','northwest');
@@ -216,11 +293,11 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(vw, P_Loyd./10^3,'--','linewidth',1.2);
-  plot(vw, processedOutputs.P_e_avg./10^3,'o-','linewidth',1,'MarkerSize',4);
-  plot(AP3.PC.ws, AP3.PC.power,'k^--','MarkerSize',4);
+  plot(vw, P_Loyd./10^3,'-','linewidth',1.2);
+  plot(vw, processedOutputs.P_e_avg./10^3,':s','linewidth',1,'MarkerSize',5);
+  plot(AP3.PC.ws, AP3.PC.power,':^k','linewidth',0.5,'MarkerSize',3);
   ylabel('Power (kW)');
-  legend('No effects (Loyd Reel-out)','All effects','6DOF','location','southeast');
+  legend('Loyd Reel-out','QSM','6-DOF','location','southeast');
   % legend('Loyd - Ideal','Model results','location','southeast');
   xlabel('Wind speed at 100m height (m/s)');
   xlim(x_axis_limit);

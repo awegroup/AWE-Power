@@ -84,7 +84,7 @@ function [inputs] = compute(i,inputs)
         outputs.CD_t(i,j)   = (1/4)*inputs.CD_t*outputs.d_t*outputs.l_t_inCycle(i,j)/inputs.S;
         outputs.CD(i,j)     = outputs.CD_k(i,j) + outputs.CD_t(i,j);
 
-        outputs.G(i,j)      = outputs.CL(i,j)/outputs.CD(i,j);
+        outputs.E(i,j)      = outputs.CL(i,j)/outputs.CD(i,j);
 
         % Average pattern height at point of interest on deltaL
         if j == 1
@@ -252,7 +252,7 @@ function [inputs] = compute(i,inputs)
         end
         
         % Lift-to-drag ratio that follows from the chosen kinematic ratio
-        outputs.G_result(i,j) = sqrt(((outputs.Fa(i,j)*outputs.va(i,j))/outputs.F_dot_v(i,j))^2-1);
+        outputs.E_result(i,j) = sqrt(((outputs.Fa(i,j)*outputs.va(i,j))/outputs.F_dot_v(i,j))^2-1);
           
         % Effective mechanical reel-out power
         outputs.P_m_o_eff(i,j) = outputs.Ft_drum(i,j)*outputs.vk_r(i,j); %[W]   
@@ -292,7 +292,7 @@ function [inputs] = compute(i,inputs)
 
         % Aerodynamic force magnitude
         outputs.CD_i(i,j)       = inputs.CD0+(outputs.CL_i(i,j)- inputs.CL0_airfoil)^2/(pi()*inputs.AR*inputs.e) + outputs.CD_t(i,j);
-        outputs.G_i(i,j)        = outputs.CL_i(i,j)/outputs.CD_i(i,j);
+        outputs.E_i(i,j)        = outputs.CL_i(i,j)/outputs.CD_i(i,j);
         outputs.Fa_i(i,j)       = outputs.halfRhoS(i,j)*sqrt(outputs.CL_i(i,j)^2+outputs.CD_i(i,j)^2)*outputs.va_i(i,j)^2;
 
         % Gravitational force vector (kite + tether)
@@ -330,7 +330,7 @@ function [inputs] = compute(i,inputs)
         outputs.L_i(i,j) = sqrt(outputs.L_r_i(i,j)^2 + outputs.L_theta_i(i,j)^2 + outputs.L_phi_i(i,j)^2);
 
         % Lift-to-drag ratio that follows from the chosen kinematic ratio
-        outputs.G_result_i(i,j) = sqrt(((outputs.Fa_i(i,j)*outputs.va_i(i,j))/outputs.F_dot_v_i(i,j))^2-1);
+        outputs.E_result_i(i,j) = sqrt(((outputs.Fa_i(i,j)*outputs.va_i(i,j))/outputs.F_dot_v_i(i,j))^2-1);
 
         % Straight-tether force 
         outputs.Ft_i(i,j) = outputs.Fa_r_i(i,j) + outputs.Fg_r_i(i,j);

@@ -80,7 +80,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
 
   %% Cut-in wind speed
   temp1                  = vw(outputs.P_e_avg > 0);
-  temp2                  = vw(mean((outputs.G_result - outputs.G),2) < 0.001); % Glide ratio constraint violation acceptance
+  temp2                  = vw(mean((outputs.E_result - outputs.E),2) < 0.001); % Glide ratio constraint violation acceptance
   processedOutputs.cutIn = max(temp1(1),temp2(1)); % At Reference height
  % processedOutputs.cutIn = max(temp1(1));
  
@@ -122,10 +122,13 @@ function [optData,outputs,processedOutputs] = main(inputs)
           processedOutputs.tCycle(i)         = outputs.tCycle(i);
           processedOutputs.Ft(i,:)           = outputs.Ft(i,:);
           processedOutputs.Ft_drum(i,:)      = outputs.Ft_drum(i,:);
+          processedOutputs.Ft_drum_i(i,:)    = outputs.Ft_drum_i(i,:);
           processedOutputs.Fa(i,:)           = outputs.Fa(i,:);
+          processedOutputs.Fa_i(i,:)         = outputs.Fa_i(i,:);
           processedOutputs.Fc(i,:)           = outputs.Fc(i,:);
           processedOutputs.W(i)              = outputs.W(i);
           processedOutputs.vo(i,:)           = outputs.vk_r(i,:);
+          processedOutputs.vk_tau(i,:)       = outputs.vk_tau(i,:);
           processedOutputs.vi(i,:)           = outputs.vk_r_i(i,:);
           processedOutputs.P_e_avg(i)        = outputs.P_e_avg(i);
           processedOutputs.P_m_avg(i)        = outputs.P_m_avg(i);
@@ -133,6 +136,8 @@ function [optData,outputs,processedOutputs] = main(inputs)
           processedOutputs.h_cycleStart(i)   = outputs.h_cycleStart(i);
           processedOutputs.h_cycleAvg(i)     = outputs.h_cycleAvg(i);
           processedOutputs.l_t_max(i)        = outputs.l_t_max(i);
+          processedOutputs.l_t_inCycle(i,:)  = outputs.l_t_inCycle(i,:);
+          processedOutputs.h_inCycle(i,:)    = outputs.h_inCycle(i,:);
           processedOutputs.vk_omega(i,:)     = outputs.vk_omega(i,:); 
           processedOutputs.va(i,:)           = outputs.va(i,:);
           processedOutputs.beta(i)           = rad2deg(outputs.beta(i));
@@ -142,11 +147,14 @@ function [optData,outputs,processedOutputs] = main(inputs)
           processedOutputs.CD(i,:)           = outputs.CD(i,:);
           processedOutputs.CL_i(i,:)         = outputs.CL_i(i,:);
           processedOutputs.CD_i(i,:)         = outputs.CD_i(i,:);
+          processedOutputs.E(i,:)            = outputs.E(i,:);
+          processedOutputs.E_i(i,:)          = outputs.E_i(i,:);
           processedOutputs.numOfPatt(i,:)    = outputs.numOfPatt(i,:);
+          processedOutputs.lambda(i,:)       = outputs.lambda(i,:); 
           processedOutputs.f(i,:)            = outputs.f(i,:); 
           processedOutputs.f_i(i,:)          = outputs.f_i(i,:); 
+          processedOutputs.tPatt(i,:)        = outputs.tPatt(i,:);
           processedOutputs.dutyCycle(i)      = processedOutputs.to(i)/processedOutputs.tCycle(i);
-          processedOutputs.tPatt(i,:)        = 2*pi()*processedOutputs.Rp(i,:)/processedOutputs.vk_omega(i);
           
           % Coefficient of power (Cp) as defined for HAWTs
 %           outputs.sweptArea(i)         = pi()*((outputs.Rp(i)+outputs.b/2)^2 - (outputs.Rp(i)-outputs.b/2)^2);
