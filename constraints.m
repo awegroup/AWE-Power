@@ -4,7 +4,7 @@ function [c, ceq] = constraints(i,inputs)
    
   %% Inequality constraints
   
-  % Min clearance between ground and bottom point of pattern
+  % % Min clearance between ground and bottom point of pattern
   c(1)   = (inputs.minGroundClear - outputs.pattStartGrClr(i))/10000;
   c(2)   = (inputs.minGroundClear - outputs.pattEndGrClr(i))/10000;
 
@@ -36,7 +36,7 @@ function [c, ceq] = constraints(i,inputs)
   c(1,7+4*inputs.numDeltaLelems:5*inputs.numDeltaLelems+6) = (0 - outputs.Ft_drum_i(i,:))/(inputs.Ft_max*inputs.Ft_max_SF*1000)/1000;
 
   % Forced smoothness
-  % c(1,7+5*inputs.numDeltaLelems:6*inputs.numDeltaLelems+6) = 0 - all(diff(outputs.vk_r(i,:)) <= 0);
+  c(1,7+5*inputs.numDeltaLelems:6*inputs.numDeltaLelems+6) = 0 - all(diff(outputs.vk_r(i,:)) <= 0);
 
     
   %% Equality constraints
@@ -46,7 +46,5 @@ function [c, ceq] = constraints(i,inputs)
 
   % Glide ratio during reel-in
   ceq(1,1*inputs.numDeltaLelems+1:2*inputs.numDeltaLelems) = (outputs.E_result_i(i,:) - outputs.E_i(i,:))/10000;
- 
-
  
 end

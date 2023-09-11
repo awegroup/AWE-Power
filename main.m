@@ -4,12 +4,12 @@ function [optData,outputs,processedOutputs] = main(inputs)
   %% Optimise operation for every wind speed
   %%        [deltaL,  avgPattEle,  pattAngRadius, startPattRadius, VRI,   CL_ri,  reelOutSpeed, CL_ro,                                       kinematicRatio]
   % All free
-    x0     = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 0.5*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      80*nx];
-    x_init = [800,  deg2rad(90), deg2rad(60),     100, inputs.vk_r_i_max*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 25*nx, 2*nx,  800*nx];
+    x0     = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 0.5*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      120*nx];
+    x_init = [500,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 20*nx,   inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 500*nx];
  
   % Fixed
-  % x0     = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 4*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      80*nx];
-  % x_init = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 4*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      600*nx];
+  % x0     = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 2*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      300*nx];
+  % x_init = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 2*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,     120*nx];
 
   
   for i=1:length(inputs.vw_ref)
@@ -20,11 +20,11 @@ function [optData,outputs,processedOutputs] = main(inputs)
     % Bounds
     % All free
     lb     = [50,   deg2rad(1),  deg2rad(1),  50,  0*nx,                0*nx,                                   0*nx, 0*nx,                                   1*nx]./x_init; % 
-    ub     = [800,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 20*nx,   inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 800*nx]./x_init; % 
+    ub     = [500,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 20*nx,   inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 500*nx]./x_init; % 
 
     % Fixed
-    % lb     = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 0*nx, 4*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      1*nx]./x_init;   % 
-    % ub     = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 4*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      600*nx]./x_init; % 
+    % lb     = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, 0*nx, 2*nx,      0*nx,      1*nx]./x_init;   % 
+    % ub     = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 2*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      600*nx]./x_init; % 
 
 
     options                           = optimoptions('fmincon');
@@ -64,9 +64,9 @@ function [optData,outputs,processedOutputs] = main(inputs)
     % Changing initial guess if previous wind speed evaluation is infeasible
     if outputs.P_e_avg(i) <= 0    
         % All free
-        x0 = [200,    deg2rad(30), deg2rad(5),    50, 20*nx, 1.5*nx, 0.5*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 80*nx];        
+        x0 = [200,    deg2rad(30), deg2rad(5),    50, 20*nx, 1.5*nx, 0.5*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 120*nx];        
         % Fixed 
-        % x0      = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 4*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      80*nx];
+        % x0      = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 2*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      300*nx];
     end  
   end
   disp(exitflag)
