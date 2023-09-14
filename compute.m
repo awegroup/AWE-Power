@@ -80,7 +80,7 @@ function [inputs] = compute(i,inputs)
         
         % Effective CD
         outputs.CD_k(i,j)   = inputs.Cd0 + (outputs.CL(i,j)-inputs.Cl0_airfoil)^2/(pi()*inputs.AR*inputs.e);
-        outputs.CD_t(i,j)   = (1/4)*inputs.Cd_t*outputs.d_t*outputs.l_t_inCycle(i,j)/inputs.S;
+        outputs.CD_t(i,j)   = (1/4)*inputs.Cd_c*outputs.d_t*outputs.l_t_inCycle(i,j)/inputs.S;
         outputs.CD(i,j)     = outputs.CD_k(i,j) + outputs.CD_t(i,j);
 
         outputs.E(i,j)      = outputs.CL(i,j)/outputs.CD(i,j);
@@ -246,8 +246,7 @@ function [inputs] = compute(i,inputs)
             outputs.Ft_k_r(i,j)     = sqrt(outputs.Ft(i,j)^2 - outputs.Ft_k_theta(i,j)^2);
             outputs.Ft_k_phi(i,j)   = 0; 
             % Tether force at the drum
-            outputs.Ft_drum(i,j) = sqrt((sqrt(outputs.Ft_k_r(i,j)^2 - outputs.Ft_k_theta(i,j)^2) - ...
-                                cos(outputs.theta(i,j))*outputs.m_t(i)*inputs.gravity)^2 + outputs.Ft_k_theta(i,j)^2);   
+            outputs.Ft_drum(i,j) = sqrt((outputs.Ft_k_r(i,j) - cos(outputs.theta(i,j))*outputs.m_t(i)*inputs.gravity)^2 + outputs.Ft_k_theta(i,j)^2);
         end
         
         % Lift-to-drag ratio that follows from the chosen kinematic ratio
@@ -343,8 +342,7 @@ function [inputs] = compute(i,inputs)
             outputs.Ft_k_r_i(i,j)     = sqrt(outputs.Ft_i(i,j)^2 - outputs.Ft_k_theta_i(i,j)^2);
             outputs.Ft_k_phi_i(i,j)   = 0; 
             % Tether force at the drum
-            outputs.Ft_drum_i(i,j) = sqrt((sqrt(outputs.Ft_k_r_i(i,j)^2 - outputs.Ft_k_theta_i(i,j)^2) - ...
-                                cos(outputs.theta_i(i,j))*outputs.m_t(i)*inputs.gravity)^2 + outputs.Ft_k_theta_i(i,j)^2);   
+            outputs.Ft_drum_i(i,j) = sqrt((outputs.Ft_k_r_i(i,j) - cos(outputs.theta_i(i,j))*outputs.m_t(i)*inputs.gravity)^2 + outputs.Ft_k_theta_i(i,j)^2);
         end
 
         % Effective mechanical reel-out power
@@ -364,7 +362,7 @@ function [inputs] = compute(i,inputs)
     %% Cycle calculation
      
     % Reel-out time
-      outputs.t1(i)       = outputs.vk_r(i,1)/inputs.winchAcc_max;
+      outputs.t1(i)       = outputs.vk_r(i,1)/inputs.a_d_max;
       outputs.to_eff(i,:) = outputs.elemDeltaL(i)./outputs.vk_r(i,:);
       outputs.to(i)      = outputs.t1(i) + sum(outputs.to_eff(i,:));
      
@@ -377,7 +375,7 @@ function [inputs] = compute(i,inputs)
         outputs.P_e_o(i) = (sum(outputs.P_e_o_eff(i,:).*outputs.to_eff(i,:)) + outputs.P1_e_o(i)*outputs.t1(i))/outputs.to(i);
 
       % Reel-in time
-        outputs.t2(i)       = outputs.vk_r_i(i)/inputs.winchAcc_max;
+        outputs.t2(i)       = outputs.vk_r_i(i)/inputs.a_d_max;
         outputs.ti_eff(i,:) = outputs.elemDeltaL(i)./outputs.vk_r_i(i,:);
         outputs.ti(i)      = outputs.t2(i) + sum(outputs.ti_eff(i,:));
       

@@ -27,18 +27,18 @@ inputs.minGroundClear    = 80; %80? % [m]
 inputs.Te_matStrength    = 7e8;
 inputs.Te_matDensity     = 980; %[kg/m^3] 
 
-inputs.Cl_maxAirfoil  = 2.7; % 2.7
-inputs.Cl_eff_F        = 0.8; % 0.8
+inputs.Cl_maxAirfoil  = 2.5; % 2.7
+inputs.Cl_eff_F       = 0.8; % 0.8
 inputs.Cl0_airfoil    = 0.65;
 inputs.e              = 0.6; %0.6
 inputs.Cd0            = 0.056;
-inputs.Cd_t           = 1.2; %1.1
+inputs.Cd_c           = 1.2; %1.1
 
-inputs.vk_r_i_max       = 20;
-inputs.winchAcc_max     = 20;
+inputs.v_d_max       = 20;
+inputs.a_d_max       = 20;
 
 inputs.etaGen.param   = [0.671, -1.4141, 0.9747, 0.7233];
-inputs.etaGen.v_max   = max(inputs.vk_r_i_max,20); % 25 =  Possible maximum winch speed
+inputs.etaGen.v_max   = inputs.v_d_max; % Or can enter a value from supplier
 inputs.etaGearbox     = 0.9;
 inputs.etaSto         = 0.9;
 inputs.etaPE          = 0.95; % Power electronics

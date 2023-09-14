@@ -35,9 +35,6 @@ function [c, ceq] = constraints(i,inputs)
   % Tether force during reel-in cannot be negative
   c(1,7+4*inputs.numDeltaLelems:5*inputs.numDeltaLelems+6) = (0 - outputs.Ft_drum_i(i,:))/(inputs.Ft_max*inputs.Ft_max_SF*1000)/1000;
 
-  % Forced smoothness
-  % c(1,7+5*inputs.numDeltaLelems:6*inputs.numDeltaLelems+6) = 0 - all(diff(outputs.vk_r(i,:)) <= 0);
-
     
   %% Equality constraints
   
