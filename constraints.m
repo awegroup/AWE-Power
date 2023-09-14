@@ -18,7 +18,7 @@ function [c, ceq] = constraints(i,inputs)
   c(5) = (1 - mean(outputs.numOfPatt(i,:)))/1000;
 
   % Max. cycle avg height
-  c(6) = (outputs.h_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight/1000;
+  c(6) = (outputs.h_cycleEnd(i) - inputs.maxHeight)/inputs.maxHeight/10;
 
   % Peak mechanical power limit
   c(1,7:inputs.numDeltaLelems+6) = (outputs.P_m_o_eff(i,:) - inputs.peakM2E_F*inputs.P_ratedElec)/(inputs.peakM2E_F*inputs.P_ratedElec)/1000;
@@ -36,7 +36,7 @@ function [c, ceq] = constraints(i,inputs)
   c(1,7+4*inputs.numDeltaLelems:5*inputs.numDeltaLelems+6) = (0 - outputs.Ft_drum_i(i,:))/(inputs.Ft_max*inputs.Ft_max_SF*1000)/1000;
 
   % Forced smoothness
-  c(1,7+5*inputs.numDeltaLelems:6*inputs.numDeltaLelems+6) = 0 - all(diff(outputs.vk_r(i,:)) <= 0);
+  % c(1,7+5*inputs.numDeltaLelems:6*inputs.numDeltaLelems+6) = 0 - all(diff(outputs.vk_r(i,:)) <= 0);
 
     
   %% Equality constraints

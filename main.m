@@ -3,37 +3,48 @@ function [optData,outputs,processedOutputs] = main(inputs)
   
   %% Optimise operation for every wind speed
   %%        [deltaL,  avgPattEle,  pattAngRadius, startPattRadius, VRI,   CL_ri,  reelOutSpeed, CL_ro,                                       kinematicRatio]
+  
+  %% AP3
   % All free
-    x0     = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 0.5*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      120*nx];
-    x_init = [500,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 20*nx,   inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 500*nx];
- 
+    x0     = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 0.5*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      120*nx];
+    x_init = [500,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 20*nx,   inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 500*nx];
   % Fixed
-  % x0     = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 2*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      300*nx];
-  % x_init = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 2*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,     120*nx];
+  % x0     = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 3*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      100*nx];
+  % x_init = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 3*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,     120*nx];
+  
+  %% Scaling effects
+   % x0     = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 0.5*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      120*nx];
+   % x_init = [500,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 20*nx,   inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 500*nx];
 
+  %%
   
   for i=1:length(inputs.vw_ref)
    
 %    Output of previous wind speed as input to next wind speed
     x0     = x0./x_init;
 
-    % Bounds
+    %% Bounds: AP3
     % All free
     lb     = [50,   deg2rad(1),  deg2rad(1),  50,  0*nx,                0*nx,                                   0*nx, 0*nx,                                   1*nx]./x_init; % 
-    ub     = [500,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 20*nx,   inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 500*nx]./x_init; % 
-
+    ub     = [500,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 20*nx,   inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 500*nx]./x_init; % 
     % Fixed
-    % lb     = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, 0*nx, 2*nx,      0*nx,      1*nx]./x_init;   % 
-    % ub     = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 2*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      600*nx]./x_init; % 
+    % lb     = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, 0*nx, 3*nx,      0*nx,      1*nx]./x_init;   % 
+    % ub     = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 3*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      600*nx]./x_init; % 
 
 
+    %% Bounds: Scaling effects
+    % lb     = [50,   deg2rad(1),  deg2rad(1),  50,  0*nx,                0*nx,                                   0*nx, 0*nx,                                   1*nx]./x_init; % 
+    % ub     = [500,  deg2rad(90), deg2rad(60), 100, inputs.vk_r_i_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 20*nx,   inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 500*nx]./x_init; % 
+
+    %%
     options                           = optimoptions('fmincon');
-    options.Display                   = 'iter-detailed';
+    %options.Display                   = 'iter-detailed';
+    options.Display                   = 'notify-detailed';
     options.Algorithm                 = 'sqp';
     options.FiniteDifferenceType      = 'forward';
    % options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-12 1e-12 1e-6*nx 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
     % options.FiniteDifferenceStepSize  = 1e-12.*[1 1 1 1 nx nx nx nx];
-    options.ConstraintTolerance      = 1e-5;
+    % options.ConstraintTolerance      = 1e-5;
   %  options.OptimalityTolerance       = 1e-9;
   %     options.StepTolerance             = 1e-6;
     options.MaxFunctionEvaluations    = 3000*numel(x_init);
@@ -64,9 +75,12 @@ function [optData,outputs,processedOutputs] = main(inputs)
     % Changing initial guess if previous wind speed evaluation is infeasible
     if outputs.P_e_avg(i) <= 0    
         % All free
-        x0 = [200,    deg2rad(30), deg2rad(5),    50, 20*nx, 1.5*nx, 0.5*nx, inputs.CL_maxAirfoil*inputs.CLeff_F*nx, 120*nx];        
+        x0 = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 0.5*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      120*nx];        
         % Fixed 
-        % x0      = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 2*nx,      inputs.CL_maxAirfoil*inputs.CLeff_F*nx,      300*nx];
+        % x0      = [250,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 3*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      100*nx];
+        % Scaling effects
+        % x0     = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, 1.5*nx, 0.5*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      120*nx];
+        
     end  
   end
   disp(exitflag)
@@ -83,7 +97,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
   temp2                  = vw(mean((outputs.E_result - outputs.E),2) < 0.001); % Glide ratio constraint violation acceptance
   processedOutputs.cutIn = max(temp1(1),temp2(1)); % At Reference height
  % processedOutputs.cutIn = max(temp1(1));
- 
+ % processedOutputs.cutIn = 5;
 
   %% Rated wind and power
   temp3                       = round(outputs.P_e_avg./max(outputs.P_e_avg),2);
@@ -145,6 +159,9 @@ function [optData,outputs,processedOutputs] = main(inputs)
           processedOutputs.gamma(i)          = rad2deg(outputs.gamma(i));
           processedOutputs.CL(i,:)           = outputs.CL(i,:);
           processedOutputs.CD(i,:)           = outputs.CD(i,:);
+          processedOutputs.CD_k(i,:)         = outputs.CD_k(i,:);
+          processedOutputs.CD_k_i(i,:)       = outputs.CD_k_i(i,:);
+          processedOutputs.CD_t(i,:)         = outputs.CD_t(i,:);
           processedOutputs.CL_i(i,:)         = outputs.CL_i(i,:);
           processedOutputs.CD_i(i,:)         = outputs.CD_i(i,:);
           processedOutputs.E(i,:)            = outputs.E(i,:);
