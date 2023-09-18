@@ -1,26 +1,24 @@
 function [optData,outputs,processedOutputs] = main(inputs)
   nx = ones(1,inputs.numDeltaLelems);
   
-  %% Optimise operation for every wind speed
-  %%        [deltaL,  avgPattEle,  pattAngRadius, startPattRadius, VRI,   CL_ri,  reelOutSpeed, CL_ro,                                       kinematicRatio]
-  
-  %% AP3
+  %% Optimise operation for every wind speed  
+  %% AP3 initial guess
   % All free
-    x0     = [200,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 0.5*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      120*nx];
-    x_init = [500,  deg2rad(90), deg2rad(60), 100, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 20*nx,   inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 500*nx];
+    %        [deltaL, avgPattEle,  coneAngle,     Rp_start, v_i,               CL_i,                                    v_o,    CL_o,                                    kinematicRatio]
+    x0     = [200,    deg2rad(30), deg2rad(5),    50,       inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 0.5*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 120*nx];
+    x_init = [500,    deg2rad(90), deg2rad(60),   100, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 20*nx,   inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 500*nx];
   % Fixed
   % x0     = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 3*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      100*nx];
   % x_init = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 3*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,     120*nx];
   
-  %% Scaling effects
+  %% Scaling effects initial guess
    % x0     = [200,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 0.5*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      120*nx];
    % x_init = [500,  deg2rad(90), deg2rad(60), 100, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 20*nx,   inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 500*nx];
 
   %%
-  
   for i=1:length(inputs.vw_ref)
    
-%    Output of previous wind speed as input to next wind speed
+    % Output of previous wind speed as input to next wind speed
     x0     = x0./x_init;
 
     %% Bounds: AP3
@@ -57,16 +55,9 @@ function [optData,outputs,processedOutputs] = main(inputs)
   %                                @optimplotconstrviolation, @optimplotfunccount, @optimplotstepsize};
     con = @(x) constraints(i,inputs);
 
-    Objective = @(x) objective(x,x_init,i,inputs);
+    obj = @(x) objective(x,x_init,i,inputs);
 
-  % % Multistart options
-  % ms_opts = MultiStart('UseParallel',true,'StartPointsToRun', 'random');
-  % ms = GlobalSearch(ms_opts);
-  % % ms = MultiStart('UseParallel',true,'StartPoints', 5);
-  % problem = createOptimProblem('fmincon', 'objective', Objective, 'x0', x0, 'lb', lb, 'ub', ub, 'nonlcon', con, 'options', options);
-  % [x,fval,exitflag(i),Output(i)] = run(ms, problem);
-
-    [x,~,exitflag(i),optHist(i),lambda(i)] = fmincon(Objective,x0,[],[],[],[],lb,ub,con,options);
+    [x,~,exitflag(i),optHist(i),lambda(i)] = fmincon(obj,x0,[],[],[],[],lb,ub,con,options);
 
     % Storing final results
     [~,inputs,outputs] = objective(x,x_init,i,inputs);
@@ -85,31 +76,31 @@ function [optData,outputs,processedOutputs] = main(inputs)
   end
   disp(exitflag)
   % Store optimisation results data
-  optData(1).optHist  = optHist;
-  optData(1).exitflag = exitflag;
-  optData(1).lambda   = lambda;
+  optData.optHist  = optHist;
+  optData.exitflag = exitflag;
+  optData.lambda   = lambda;
 
   %% Post processing
-  vw = inputs.vw_ref; 
+  vw = inputs.vw_ref; % Wind speed at ref. height
 
   %% Cut-in wind speed
-  temp1                  = vw(outputs.P_e_avg > 0);
-  temp2                  = vw(abs(mean((outputs.E_result - outputs.E),2)) < 0.01); % Glide ratio constraint violation acceptance
-  processedOutputs.cutIn = max(temp1(1),temp2(1)); % At Reference height
- % processedOutputs.cutIn = max(temp1(1));
- % processedOutputs.cutIn = 5;
+  % Glide ratio constraint violation acceptance for feasible solution
+  temp1                  = vw(abs(mean((outputs.E_result - outputs.E),2)) < 0.01); 
+  processedOutputs.cutIn = max(temp1(1));
+ % processedOutputs.cutIn = 7;
 
   %% Rated wind and power
   temp3                       = round(outputs.P_e_avg./max(outputs.P_e_avg),2);
-  temp4                       = vw(temp3==1);
+  temp4                       = vw(temp3>=0.99);
   processedOutputs.ratedWind  = temp4(1); % At Reference height 
   processedOutputs.ratedPower = outputs.P_e_avg(vw==temp4(1));
 
   %% Cut-out wind speed
-  processedOutputs.cutOut   = 25; % At operational height
+  processedOutputs.cutOut   = 25; % At operational height (Assumption)
+  % Operating range traslated to wind speed at ref. height
   processedOutputs.vw_100m_operRange = vw(mean(outputs.vw,2)<=processedOutputs.cutOut);
 
-  %% System data
+  %% Extract feasible results in the operational range
   processedOutputs.Dia_te = outputs.d_t;
    for i=1:length(vw)
       if vw(i)>=processedOutputs.cutIn
@@ -188,7 +179,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
   end
 
   %% Cycle power representation for wind speeds in the operational range
-  for i = processedOutputs.cutIn:processedOutputs.cutOut
+  for i = processedOutputs.cutIn:vw(end)
     [processedOutputs.cyclePowerRep(i)] = createCyclePowerRep(i,processedOutputs); 
   end
   function [cyclePowerRep] = createCyclePowerRep(ws, system)
@@ -203,21 +194,14 @@ function [optData,outputs,processedOutputs] = main(inputs)
     cyclePowerRep.ti     = cyclePowerRep.t2 + cyclePowerRep.ti_eff; %[s]
     cyclePowerRep.tCycle = cyclePowerRep.to + cyclePowerRep.to; %[s]
     
-    % cyclePowerRep.t_inst = cumsum([0 cyclePowerRep.t1 system.to_eff(cyclePowerRep.idx,:) cyclePowerRep.t1 cyclePowerRep.t2 system.ti_eff(cyclePowerRep.idx,:) cyclePowerRep.t2 0]);
-    % 
-    % cyclePowerRep.P_e_inst = [0 system.P_e_o_eff(cyclePowerRep.idx,1) system.P_e_o_eff(cyclePowerRep.idx,:) 0 ...
-    %             -flip(system.P_e_i_eff(cyclePowerRep.idx,1)) -flip(system.P_e_i_eff(cyclePowerRep.idx,:)) 0 0]./10^3;
-    % 
-    % cyclePowerRep.P_m_inst = [0 system.P_m_o_eff(cyclePowerRep.idx,1) system.P_m_o_eff(cyclePowerRep.idx,:) 0 ...
-    %             -flip(system.P_m_i_eff(cyclePowerRep.idx,1)) -flip(system.P_m_i_eff(cyclePowerRep.idx,:)) 0 0]./10^3;
-
-    cyclePowerRep.t_inst = cumsum([0 cyclePowerRep.t1 (cyclePowerRep.to_eff-cyclePowerRep.t1) cyclePowerRep.t1 cyclePowerRep.t2 (cyclePowerRep.ti_eff-cyclePowerRep.t2) cyclePowerRep.t2]);
+    cyclePowerRep.t_inst   = cumsum([0 cyclePowerRep.t1 (cyclePowerRep.to_eff-cyclePowerRep.t1) cyclePowerRep.t1 ...
+                              cyclePowerRep.t2 (cyclePowerRep.ti_eff-cyclePowerRep.t2) cyclePowerRep.t2]);
 
     cyclePowerRep.P_e_inst = [0 system.P_e_o_eff(cyclePowerRep.idx,1) system.P_e_o_eff(cyclePowerRep.idx,end) 0 ...
-                -system.P_e_i_eff(cyclePowerRep.idx,end) -system.P_e_i_eff(cyclePowerRep.idx,1) 0]./10^3;
+                              -system.P_e_i_eff(cyclePowerRep.idx,end) -system.P_e_i_eff(cyclePowerRep.idx,1) 0]./10^3;
 
     cyclePowerRep.P_m_inst = [0 system.P_m_o_eff(cyclePowerRep.idx,1) system.P_m_o_eff(cyclePowerRep.idx,end) 0 ...
-                -system.P_m_i_eff(cyclePowerRep.idx,end) -system.P_m_i_eff(cyclePowerRep.idx,1) 0]./10^3;
+                              -system.P_m_i_eff(cyclePowerRep.idx,end) -system.P_m_i_eff(cyclePowerRep.idx,1) 0]./10^3;
     
   end
   

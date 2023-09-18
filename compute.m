@@ -46,13 +46,13 @@ function [inputs] = compute(i,inputs)
         % Pattern ground clearance
         outputs.pattGrClr(i,j) = outputs.l_t_inCycle(i,j)*sin(outputs.beta(i)-outputs.gamma(i));
 
-        % Effective mass lumped at kite (Kite + tether)
-        outputs.m_t(i,j)  = inputs.Te_matDensity*pi()/4*outputs.d_t^2*outputs.l_t_inCycle(i,j);
+        % Effective mass lumped at kite point (Kite + tether)
+        outputs.m_t(i,j)   = inputs.Te_matDensity*pi()/4*outputs.d_t^2*outputs.l_t_inCycle(i,j);
         outputs.m_eff(i,j) = outputs.m_k(i)+sin(outputs.beta(i))*outputs.m_t(i,j);
 
-        % Magnitudes of Coordinates of the pattern positions in Spherical ref. frame
+        % Coordinates of the Kite's position and orientation in the Spherical ref. frame
         if inputs.evalPoint == 0
-            % Center point for pattern at elevation
+            % Center point (representative point)
             outputs.theta(i,j) = pi()/2 - (outputs.beta(i));
             outputs.phi(i,j)   = 0;
             outputs.chi(i,j)   = deg2rad(90);
@@ -83,6 +83,7 @@ function [inputs] = compute(i,inputs)
         outputs.CD_t(i,j)   = (1/4)*inputs.Cd_c*outputs.d_t*outputs.l_t_inCycle(i,j)/inputs.S;
         outputs.CD(i,j)     = outputs.CD_k(i,j) + outputs.CD_t(i,j);
 
+        % Effective Glide ratio
         outputs.E(i,j)      = outputs.CL(i,j)/outputs.CD(i,j);
 
         % Average pattern height at point of interest on deltaL
@@ -124,7 +125,7 @@ function [inputs] = compute(i,inputs)
         outputs.CR(i,j)       = sqrt(outputs.CL(i,j)^2+outputs.CD(i,j)^2);
         outputs.halfRhoS(i,j) = 0.5*outputs.rho_air(i,j)*inputs.S;
         
-         % Wind velocity vector
+        % Wind velocity vector
         outputs.vw_r(i,j)     = outputs.vw(i,j)*sin(outputs.theta(i,j))*cos(outputs.phi(i,j));
         outputs.vw_theta(i,j) = outputs.vw(i,j)*cos(outputs.theta(i,j))*cos(outputs.phi(i,j));
         outputs.vw_phi(i,j)   = -outputs.vw(i,j)*sin(outputs.phi(i,j));
@@ -148,7 +149,7 @@ function [inputs] = compute(i,inputs)
         outputs.vk_theta(i,j) = outputs.vk_tau(i,j)*cos(outputs.chi(i,j));
         outputs.vk_phi(i,j)   = outputs.vk_tau(i,j)*sin(outputs.chi(i,j));
        
-        % Circumferential velocity (responsible for Centrifugal Force)
+        % Circumferential velocity (responsible for Centrifugal Force if included)
         if inputs.evalPoint == 0 || inputs.evalPoint == 1 || inputs.evalPoint == 3
             % Center/Top/Bottom points
              outputs.vk_omega(i,j)   = outputs.vk_phi(i,j); 
@@ -208,7 +209,7 @@ function [inputs] = compute(i,inputs)
         outputs.Fa_phi(i,j)   = -outputs.Fg_phi(i,j) -outputs.Fc_phi(i,j);
         outputs.Fa_r(i,j)     = sqrt(outputs.Fa(i,j)^2-outputs.Fa_theta(i,j)^2-outputs.Fa_phi(i,j)^2);
         
-        % Roll angle
+        % Roll angle in case of Gravity (N.A when CF is included)
         outputs.rollAngle(i,j) = atan(outputs.Fa_theta(i,j)/outputs.Fa_r(i,j));
         
         % Apparent wind velocity vector
@@ -242,15 +243,18 @@ function [inputs] = compute(i,inputs)
         if inputs.FgToggle == 0
             outputs.Ft_drum(i,j) = outputs.Ft(i,j);
         else
-            outputs.Ft_k_theta(i,j) = -(1/2)*sin(outputs.theta(i,j))*outputs.m_t(i,j)*inputs.gravity;
-            outputs.Ft_k_r(i,j)     = sqrt(outputs.Ft(i,j)^2 - outputs.Ft_k_theta(i,j)^2);
-            outputs.Ft_k_phi(i,j)   = 0; 
+            outputs.Ft_theta(i,j) = -(1/2)*sin(outputs.theta(i,j))*outputs.m_t(i,j)*inputs.gravity;
+            outputs.Ft_r(i,j)     = sqrt(outputs.Ft(i,j)^2 - outputs.Ft_theta(i,j)^2);
+            outputs.Ft_phi(i,j)   = 0; 
             % Tether force at the drum
-            outputs.Ft_drum(i,j) = sqrt((outputs.Ft_k_r(i,j) - cos(outputs.theta(i,j))*outputs.m_t(i)*inputs.gravity)^2 + outputs.Ft_k_theta(i,j)^2);
+            outputs.Ft_drum(i,j) = sqrt((outputs.Ft_r(i,j) - cos(outputs.theta(i,j))*outputs.m_t(i)*inputs.gravity)^2 + outputs.Ft_theta(i,j)^2);
         end
         
         % Lift-to-drag ratio that follows from the chosen kinematic ratio
         outputs.E_result(i,j) = sqrt(((outputs.Fa(i,j)*outputs.va(i,j))/outputs.F_dot_v(i,j))^2-1);
+
+        % Ratio of Kinemactic Ratio and Glide Ratio
+        outputs.kByE(i,j) = outputs.kRatio(i,j)/outputs.E_result(i,j);
           
         % Effective mechanical reel-out power
         outputs.P_m_o_eff(i,j) = outputs.Ft_drum(i,j)*outputs.vk_r(i,j); %[W]   
@@ -267,12 +271,12 @@ function [inputs] = compute(i,inputs)
 
         %% Retraction Phase: Full Force balance 
         
-        % Position in spherical coordinates
+        % Kite position in spherical coordinates
+        % Reel-in is assumed to start from the top of the pattern
         outputs.theta_i(i,j) = pi()/2 - (outputs.beta(i)+outputs.gamma(i));
         outputs.phi_i(i,j)   = 0;
      
-
-      % Wind velocity vector
+        % Wind velocity vector
         outputs.vw_r_i(i,j)     = outputs.vw(i,j)*sin(outputs.theta_i(i,j))*cos(outputs.phi_i(i,j));
         outputs.vw_theta_i(i,j) = outputs.vw(i,j)*cos(outputs.theta_i(i,j))*cos(outputs.phi_i(i,j));
         outputs.vw_phi_i(i,j)   = -outputs.vw(i,j)*sin(outputs.phi_i(i,j)); % 
@@ -338,11 +342,11 @@ function [inputs] = compute(i,inputs)
         if inputs.FgToggle == 0
             outputs.Ft_drum_i(i,j) = outputs.Ft_i(i,j);
         else
-            outputs.Ft_k_theta_i(i,j) = -(1/2)*sin(outputs.theta_i(i,j))*outputs.m_t(i,j)*inputs.gravity;
-            outputs.Ft_k_r_i(i,j)     = sqrt(outputs.Ft_i(i,j)^2 - outputs.Ft_k_theta_i(i,j)^2);
-            outputs.Ft_k_phi_i(i,j)   = 0; 
+            outputs.Ft_theta_i(i,j) = -(1/2)*sin(outputs.theta_i(i,j))*outputs.m_t(i,j)*inputs.gravity;
+            outputs.Ft_r_i(i,j)     = sqrt(outputs.Ft_i(i,j)^2 - outputs.Ft_theta_i(i,j)^2);
+            outputs.Ft_phi_i(i,j)   = 0; 
             % Tether force at the drum
-            outputs.Ft_drum_i(i,j) = sqrt((outputs.Ft_k_r_i(i,j) - cos(outputs.theta_i(i,j))*outputs.m_t(i)*inputs.gravity)^2 + outputs.Ft_k_theta_i(i,j)^2);
+            outputs.Ft_drum_i(i,j) = sqrt((outputs.Ft_r_i(i,j) - cos(outputs.theta_i(i,j))*outputs.m_t(i)*inputs.gravity)^2 + outputs.Ft_theta_i(i,j)^2);
         end
 
         % Effective mechanical reel-out power
@@ -361,10 +365,10 @@ function [inputs] = compute(i,inputs)
          
     %% Cycle calculation
      
-    % Reel-out time
+      % Reel-out time
       outputs.t1(i)       = outputs.vk_r(i,1)/inputs.a_d_max;
       outputs.to_eff(i,:) = outputs.elemDeltaL(i)./outputs.vk_r(i,:);
-      outputs.to(i)      = outputs.t1(i) + sum(outputs.to_eff(i,:));
+      outputs.to(i)       = outputs.t1(i) + sum(outputs.to_eff(i,:));
      
       % Reel-out power during transition
       outputs.P1_m_o(i) = outputs.P_m_o_eff(i,1)/2;
@@ -377,29 +381,29 @@ function [inputs] = compute(i,inputs)
       % Reel-in time
         outputs.t2(i)       = outputs.vk_r_i(i)/inputs.a_d_max;
         outputs.ti_eff(i,:) = outputs.elemDeltaL(i)./outputs.vk_r_i(i,:);
-        outputs.ti(i)      = outputs.t2(i) + sum(outputs.ti_eff(i,:));
+        outputs.ti(i)       = outputs.t2(i) + sum(outputs.ti_eff(i,:));
       
-      % Reel-in power duing transition
-      outputs.P2_m_i(i)     = outputs.P_m_i_eff(i,1)/2;
-      outputs.P2_e_i(i)     = outputs.P_e_i_eff(i,1)/2;
-
-      % Reel-in power 
-      outputs.P_m_i(i) = (sum(outputs.P_m_i_eff(i,:).*outputs.ti_eff(i,:)) + outputs.P2_m_i(i)*outputs.t2(i))/outputs.ti(i);
-      outputs.P_e_i(i) = (sum(outputs.P_e_i_eff(i,:).*outputs.ti_eff(i,:)) + outputs.P2_e_i(i)*outputs.t2(i))/outputs.ti(i);
-
-      % Cycle time
-      outputs.tCycle(i) = outputs.to(i)+outputs.ti(i);
-
-      % Time for one pattern revolution and number of patterns in the cycle
-      outputs.tPatt(i,:)     = 2*pi()*outputs.Rp(i,:)./outputs.vk_omega(i,:);
-      outputs.numOfPatt(i,:) = outputs.to(i)./outputs.tPatt(i,:);
-
-      % Electrical cycle power
-       outputs.P_e_avg(i) = (sum(outputs.to_eff(i,:).*outputs.P_e_o_eff(i,:)) + outputs.t1(i)*outputs.P1_e_o(i) - ...
-                                   sum(outputs.ti_eff(i,:).*outputs.P_e_i_eff(i,:)) -outputs.t2(i)*outputs.P2_e_i(i))/outputs.tCycle(i);    
-
-      % Mechanical cycle power - without drivetrain eff
-      outputs.P_m_avg(i) = (sum(outputs.to_eff(i,:).*outputs.P_m_o_eff(i,:)) + outputs.t1(i)*outputs.P1_m_o(i) - ...
-                                   sum(outputs.ti_eff(i,:).*outputs.P_m_i_eff(i,:)) - outputs.t2(i)*outputs.P2_m_i(i))/outputs.tCycle(i);
+        % Reel-in power duing transition
+        outputs.P2_m_i(i)     = outputs.P_m_i_eff(i,1)/2;
+        outputs.P2_e_i(i)     = outputs.P_e_i_eff(i,1)/2;
+  
+        % Reel-in power 
+        outputs.P_m_i(i) = (sum(outputs.P_m_i_eff(i,:).*outputs.ti_eff(i,:)) + outputs.P2_m_i(i)*outputs.t2(i))/outputs.ti(i);
+        outputs.P_e_i(i) = (sum(outputs.P_e_i_eff(i,:).*outputs.ti_eff(i,:)) + outputs.P2_e_i(i)*outputs.t2(i))/outputs.ti(i);
+  
+        % Cycle time
+        outputs.tCycle(i) = outputs.to(i)+outputs.ti(i);
+  
+        % Time for one pattern revolution and number of patterns in the cycle
+        outputs.tPatt(i,:)     = 2*pi()*outputs.Rp(i,:)./outputs.vk_omega(i,:);
+        outputs.numOfPatt(i,:) = outputs.to(i)./outputs.tPatt(i,:);
+  
+        % Electrical cycle power
+         outputs.P_e_avg(i) = (sum(outputs.to_eff(i,:).*outputs.P_e_o_eff(i,:)) + outputs.t1(i)*outputs.P1_e_o(i) - ...
+                                     sum(outputs.ti_eff(i,:).*outputs.P_e_i_eff(i,:)) -outputs.t2(i)*outputs.P2_e_i(i))/outputs.tCycle(i);    
+  
+        % Mechanical cycle power - without drivetrain eff
+        outputs.P_m_avg(i) = (sum(outputs.to_eff(i,:).*outputs.P_m_o_eff(i,:)) + outputs.t1(i)*outputs.P1_m_o(i) - ...
+                                     sum(outputs.ti_eff(i,:).*outputs.P_m_i_eff(i,:)) - outputs.t2(i)*outputs.P2_m_i(i))/outputs.tCycle(i);
 
 end      

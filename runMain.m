@@ -82,9 +82,6 @@ if inputs.mainPlots == 1
       hold off
   end
 
-
-
-
   % Plots showing the per element results for rated wind speed
   ws = processedOutputs.ratedWind;
   fig = figure();
@@ -131,10 +128,10 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(processedOutputs.Fa(ws,:),':o','linewidth',1,'markersize',3);
-  plot(processedOutputs.Fa_i(ws,:),':^','linewidth',1,'markersize',3);
-  plot(processedOutputs.Ft_drum(ws,:),':s','linewidth',1,'markersize',3);
-  plot(processedOutputs.Ft_drum_i(ws,:),':d','linewidth',1,'markersize',3);
+  plot(processedOutputs.Fa(ws,:)/1e3,':o','linewidth',1,'markersize',3);
+  plot(processedOutputs.Fa_i(ws,:)/1e3,':^','linewidth',1,'markersize',3);
+  plot(processedOutputs.Ft_drum(ws,:)/1e3,':s','linewidth',1,'markersize',3);
+  plot(processedOutputs.Ft_drum_i(ws,:)/1e3,':d','linewidth',1,'markersize',3);
   legend('F_{a,o}','F_{a,i}','F_{t,drum,o}','F_{t,drum,i}','location','northwest');
   ylabel('(kN)');
   hold off
@@ -343,14 +340,18 @@ end
 %   fixedWA.P_m_o(i)   = outputs.P_m_o;
 %   fixedWA.Ft_to_S(i) = fixedWA.Ft_max(i)/inputs.S;
 % end
-% figure()
+% figure('units','inch','Position', [4 4 3.5 2.2])
 % hold on
 % grid on
 % box on
+% xlabel('F_{t,max} (kN)');
 % yyaxis left
-% plot(fixedWA.Ft_max,fixedWA.P_m_o);
+% plot(fixedWA.Ft_max,fixedWA.P_m_o/1e3,'linewidth',1);
+% ylabel('P_{m,o} (kN)');
 % yyaxis right
-% plot(fixedWA.Ft_max,fixedWA.m_k);
+% plot(fixedWA.Ft_max,fixedWA.m_k,'linewidth',1);
+% ylabel('m_k (kg)');
+% title('S = 50 m^2');
 % hold off
 % 
 % % Given Ft_max/S ratio
@@ -358,7 +359,7 @@ end
 % clearvars
 % clear global
 % inputSheet_scalingEffects;
-% FixedRatio.Ft_maxToS = 3.5;
+% FixedRatio.Ft_maxToS = 8;
 % for i =1:7
 %   inputs.S = 10*i;
 %   FixedRatio.S(i)      = inputs.S;
@@ -368,14 +369,18 @@ end
 %   FixedRatio.m_k(i)     = outputs.m_k;
 %   FixedRatio.P_m_o(i)   = outputs.P_m_o;
 % end
-% figure()
+% figure('units','inch','Position', [8 4 3.5 2.2])
 % hold on
 % grid on
 % box on
+% xlabel('S (m^2)');
 % yyaxis left
-% plot(FixedRatio.S,FixedRatio.P_m_o);
+% plot(FixedRatio.S,FixedRatio.P_m_o/1e3,'linewidth',1);
+% ylabel('P_{m,o} (kN)');
 % yyaxis right
-% plot(FixedRatio.S,FixedRatio.m_k);
+% plot(FixedRatio.S,FixedRatio.m_k,'linewidth',1);
+% ylabel('m_k (kg)');
+% title('F_{t,max}/S = 8 kN/m^2');
 % hold off
 % 
 % % Fixed Ft_mas
@@ -383,7 +388,7 @@ end
 % clearvars
 % clear global
 % inputSheet_scalingEffects;
-% FixedFt_max.Ft_max = 40;
+% FixedFt_max.Ft_max = 200;
 % for i =1:10
 %   inputs.S = 10*i;
 %   FixedFt_max.S(i)       = inputs.S;
@@ -393,22 +398,30 @@ end
 %   FixedFt_max.m_k(i)     = outputs.m_k;
 %   FixedFt_max.P_m_o(i)   = outputs.P_m_o;
 % end
-% figure()
+% figure('units','inch','Position', [12 4 3.5 2.2])
 % hold on
 % grid on
 % box on
+% xlabel('S (m^2)');
 % yyaxis left
-% plot(FixedFt_max.S,FixedFt_max.P_m_o);
+% plot(FixedFt_max.S,FixedFt_max.P_m_o/1e3,'linewidth',1);
+% ylabel('P_{m,o} (kN)');
 % yyaxis right
-% plot(FixedFt_max.S,FixedFt_max.m_k);
+% plot(FixedFt_max.S,FixedFt_max.m_k,'linewidth',1);
+% ylabel('m_k (kg)');
+% title('F_{t.max} = 200 kN');
 % hold off
 
 
 %% Comparison with base-case
 
-% lambda.NoEle    = [5.07, 5.23, 5.36, 5.48, 5.58];
+% lambda.NoEle = [5.07, 5.23, 5.36, 5.48, 5.58];
 % lambda.Ele   = [4.1,4.26,4.4,4.51,4.62];
 % lambda.G     = [3.45,3.83,4.08,4.26,4.41];
+% 
+% kByE.NoEle   = [1,1,1,1,1];
+% kByE.Ele     = [1,1,1,1,1];
+% kByE.G       = [0.84,0.89,0.92,0.94,0.95];
 % 
 % zeta.NoEle    = [15.63,15.24,14.8,14.34,13.87];
 % zeta.Ele   = [10.4,10.28,10.09,9.86,9.61];
@@ -416,22 +429,25 @@ end
 % ws = 11:15;
 % 
 % figure()
+% subplot(1,2,1)
 % hold on
 % box on
 % grid on
-% plot(ws,lambda.NoEle,'-d','markersize',3,'linewidth',1);
-% plot(ws,lambda.Ele,'-o','markersize',3,'linewidth',1);
-% plot(ws,lambda.G,'-s','markersize',3,'linewidth',1);
+% xlabel('Wind speed (m/s)');
+% plot(ws,kByE.NoEle,'-d','markersize',3,'linewidth',1);
+% plot(ws,kByE.Ele,'-o','markersize',3,'linewidth',1);
+% plot(ws,kByE.G,'-s','markersize',3,'linewidth',1);
 % legend('No Elevation', 'Elevation',' Elevation + Gravity'); 
-% ylabel('λ(-)');
+% ylabel('k/E(-)');
 % % xticks([1,2,3,4,5]);
 % % xticklabels({'Top (Flying left)','Side (Flying down)','Bottom (Flying right)','Side(Flying up)','Center (flying left)'});
 % hold off
-% 
-% figure()
+% subplot(1,2,2)
+% % figure()
 % hold on
 % box on
 % grid on
+% xlabel('Wind speed (m/s)');
 % plot(ws,zeta.NoEle,'-d','markersize',3,'linewidth',1);
 % plot(ws,zeta.Ele,'-o','markersize',3,'linewidth',1);
 % plot(ws,zeta.G,'-s','markersize',3,'linewidth',1);

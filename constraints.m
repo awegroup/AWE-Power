@@ -23,7 +23,7 @@ function [c, ceq] = constraints(i,inputs)
   % Peak mechanical power limit
   c(1,7:inputs.numDeltaLelems+6) = (outputs.P_m_o_eff(i,:) - inputs.peakM2E_F*inputs.P_ratedElec)/(inputs.peakM2E_F*inputs.P_ratedElec)/1000;
 
-  % Maximum tether force
+  % % Maximum tether force
   c(1,7+inputs.numDeltaLelems:2*inputs.numDeltaLelems+6) = (outputs.Ft(i,:) - inputs.Ft_max*inputs.Ft_max_SF*1000)/(inputs.Ft_max*inputs.Ft_max_SF*1000)/1000;
 
   % Apparent speed cannot be negative

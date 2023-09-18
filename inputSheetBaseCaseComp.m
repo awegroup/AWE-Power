@@ -6,7 +6,7 @@ inputs.numDeltaLelems = 1;
 
 inputs.evalPoint      = 0; % 0 = Center, 1 = Top, 2 = Side left, 3 = Bottom, 4 = Side right
 inputs.FcToggle       = 0; % 0 = No, 1 = Yes
-inputs.FgToggle       = 0; % 0 = No, 1 = Yes
+inputs.FgToggle       = 1; % 0 = No, 1 = Yes
 
 inputs.vw_ref         = 11:1:15; %[m/s]
 inputs.h_ref          = 100; %[m]
