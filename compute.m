@@ -100,7 +100,7 @@ function [inputs] = compute(i,inputs)
           outputs.Rp(i,j) = outputs.Rp(i,j-1) + outputs.elemDeltaL(i)*tan(outputs.gamma(i));
         end
         
-        % Wind speed at evaluation point
+        % Wind speed at h_inCycle using the shear model
         if inputs.evalPoint == 3
             % Bottom point
             r = -outputs.Rp(i,j)*cos(outputs.beta(i));
@@ -111,8 +111,14 @@ function [inputs] = compute(i,inputs)
             % Side or Center points
             r = 0;
         end
-        outputs.vw(i,j) = inputs.vw_ref(i)*((outputs.h_inCycle(i,j) + r)/inputs.h_ref)^inputs.windShearExp;
-        
+        if inputs.vertWindProfile == 0
+          % Modelled 
+          outputs.vw(i,j) = inputs.vw_ref(i)*((outputs.h_inCycle(i,j) + r)/inputs.h_ref)^inputs.windShearExp;
+        else
+          % Extrapolated from dataset
+          outputs.vw(i,j) = inputs.vw_ref(i)*interp1(inputs.windProfile_h, inputs.windProfile_vw, (outputs.h_inCycle(i,j) + r), 'linear', 'extrap');
+        end
+
         % Air density as a function of height   % Ref: https://en.wikipedia.org/wiki/Density_of_air
         M = 0.0289644; % [kg/mol]
         R = 8.3144598; % [N·m/(mol·K)]

@@ -5,6 +5,7 @@ clear global
 
 % Defined input sheet
 inputSheet_AP3;
+% inputSheet;
 
 % Get results
 [optData,outputs,processedOutputs] = main(inputs);
@@ -14,6 +15,8 @@ if inputs.mainPlots == 1
   
   vw = inputs.vw_ref;
   x_axis_limit = [0 processedOutputs.vw_100m_operRange(end)];
+
+  directory = 'C:\PhD\Publications\2023_Analytical-model-for-ground-gen-AWES\Images\Results';
 
   newcolors = [ % 0.25, 0.25, 0.25
     0 0.4470 0.7410
@@ -44,17 +47,28 @@ if inputs.mainPlots == 1
   xlim([0.5 1.5])
   xlabel('Wind Speed (-)')
   ylabel('Height (m)')
+  % saveas(gcf, fullfile(directory, ['vert_wind_prof', '.fig']));
+  % print(gcf, fullfile(directory, ['vert_wind_prof', '.eps']), '-depsc2');
+  hold off
 
-  % % Wind speed at 100m vs avg wind speed during reel-out
-  % figure('units','inch','Position', [17 6 2 2.2])
-  % hold on
-  % grid on
-  % box on
-  % plot(vw,mean(outputs.vw,2),':o','linewidth',1,'markersize',2);
-  % xlim(x_axis_limit);
-  % xlabel('v_w at 100m height (m/s)');
-  % ylabel('v_{w,avg} in Cycle (m/s)');
+% Continuous function from vertical wind profile
+% Define the heights at which you want to interpolate
+heights = [0:10:1000]; % Adjust the desired height values as needed
 
+% Interpolate V_MegAWES_Cabauw at the specified heights
+V_interpolated = interp1(z_MegAWES, V_MegAWES_Ijmuiden, heights, 'linear', 'extrap');
+
+% Plot the interpolated function
+figure('units','inch','Position', [15 6 2 2.2])
+hold on 
+box on
+grid on
+plot(V_MegAWES_Ijmuiden, z_MegAWES, 'o', V_interpolated, heights, '-');
+xlabel('Wind speed (m/s)');
+ylabel('Height (m)');
+title('Wind profile');
+legend('Data', 'Interpolated', 'Location', 'Best');
+hold off
 
   % Cycle timeseries plots: Pattern averages
   windSpeeds = [processedOutputs.ratedWind];
@@ -204,7 +218,7 @@ if inputs.mainPlots == 1
   hold on
   grid on
   box on
-  plot(vw, mean(processedOutputs.rollAngle,2),'s:','linewidth',1,'markersize',5);
+  plot(vw, mean(processedOutputs.rollAngle,2),'s:','linewidth',1,'markersize',3);
   plot(vw, processedOutputs.beta,'o:','linewidth',1,'markersize',3);
   plot(vw, processedOutputs.gamma,'d:','linewidth',1,'markersize',3);
   ylabel('(deg)');

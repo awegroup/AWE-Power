@@ -1,8 +1,9 @@
 % Inputs sheet
 inputs                = struct();
 
-inputs.mainPlots      = 1; % 0 = No, 1 = Yes
-inputs.numDeltaLelems = 1;
+inputs.mainPlots       = 1; % 0 = No, 1 = Yes
+inputs.numDeltaLelems  = 1;
+inputs.vertWindProfile = 0; % 0 = Modelled, 1 = From dataset 
 
 inputs.evalPoint      = 0; % 0 = Center, 1 = Top, 2 = Side left, 3 = Bottom, 4 = Side right
 inputs.FcToggle       = 0; % 0 = No, 1 = Yes
@@ -11,6 +12,8 @@ inputs.FgToggle       = 1; % 0 = No, 1 = Yes
 inputs.vw_ref         = 12; %[m/s]
 inputs.h_ref          = 100; %[m]
 inputs.windShearExp   = 0; % 0.143 over land, 0.11 over sea
+inputs.windProfile_vw = [0.847612611633547,0.870603040595613,0.927240267828556,0.959346286990695,0.982291573490674,1,1.01377720773809,1.02356771954493,1.02766760602000,1.03079423355205,1.03659625208888,1.04025827758100,1.04284618416620,1.04496440015282,1.04461712713371,1.02473617783789,1.01076976884552];
+inputs.windProfile_h  = [10,20,40,60,80,100,120,140,150,160,180,200,220,250,300,500,600];
 
 inputs.S              = 70; % 12
 inputs.AR             = 12;
