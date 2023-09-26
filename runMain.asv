@@ -71,7 +71,7 @@ legend('Data', 'Interpolated', 'Location', 'Best');
 hold off
 
   % Cycle timeseries plots: Pattern averages
-  windSpeeds = [processedOutputs.ratedWind,processedOutputs.cutOut,processedOutputs.cutIn];
+  windSpeeds = [processedOutputs.ratedWind];
   for i = windSpeeds
       idx = find(vw == i);
       figure('units','inch','Position', [15 3 3.5 2.2])
@@ -207,9 +207,9 @@ hold off
   plot(vw, mean(processedOutputs.Rp,2),'o:','linewidth',1,'markersize',3);
   plot(vw, processedOutputs.deltaL,'^:','linewidth',1,'markersize',3);
   plot(vw, processedOutputs.l_t_max,'s:','linewidth',1,'markersize',3);
-  plot(vw, processedOutputs.l_t_min,'x:','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.l_t_min,'s:','linewidth',1,'markersize',3);
   ylabel('(m)');
-  legend('h_{p,avg}','R_{p,avg}','Δl','l_{t,max}','l_{t,min}','location','northwest','Orientation','vertical');
+  legend('h_{p,avg}','R_{p,avg}','Δl','l_{t,max}','location','northwest','Orientation','vertical');
   xlabel('Wind speed at 100m height (m/s)');
   xlim(x_axis_limit);
   %ylim([0 160]);

@@ -79,6 +79,7 @@ function [inputs] = compute(i,inputs)
         end
         
         % Effective CD
+        % outputs.CL(i,j)     = inputs.Cl_maxAirfoil*inputs.Cl_eff_F;
         outputs.CD_k(i,j)   = inputs.Cd0 + (outputs.CL(i,j)-inputs.Cl0_airfoil)^2/(pi()*inputs.AR*inputs.e);
         outputs.CD_t(i,j)   = (1/4)*inputs.Cd_c*outputs.d_t*outputs.l_t_inCycle(i,j)/inputs.S;
         outputs.CD(i,j)     = outputs.CD_k(i,j) + outputs.CD_t(i,j);
@@ -281,14 +282,22 @@ function [inputs] = compute(i,inputs)
         % Reel-in is assumed to start from the top of the pattern
         outputs.theta_i(i,j) = pi()/2 - (outputs.beta(i)+outputs.gamma(i));
         outputs.phi_i(i,j)   = 0;
+        
+        if inputs.vertWindProfile == 0
+          % Modelled 
+          outputs.vw_i(i,j) = inputs.vw_ref(i)*((outputs.h_inCycle(i,j) + outputs.Rp(i,j)*cos(outputs.beta(i)))/inputs.h_ref)^inputs.windShearExp;
+        else
+          % Extrapolated from dataset
+          outputs.vw_i(i,j) = inputs.vw_ref(i)*interp1(inputs.windProfile_h, inputs.windProfile_vw, (outputs.h_inCycle(i,j) + outputs.Rp(i,j)*cos(outputs.beta(i))), 'linear', 'extrap');
+        end
      
         % Wind velocity vector
-        outputs.vw_r_i(i,j)     = outputs.vw(i,j)*sin(outputs.theta_i(i,j))*cos(outputs.phi_i(i,j));
-        outputs.vw_theta_i(i,j) = outputs.vw(i,j)*cos(outputs.theta_i(i,j))*cos(outputs.phi_i(i,j));
-        outputs.vw_phi_i(i,j)   = -outputs.vw(i,j)*sin(outputs.phi_i(i,j)); % 
+        outputs.vw_r_i(i,j)     = outputs.vw_i(i,j)*sin(outputs.theta_i(i,j))*cos(outputs.phi_i(i,j));
+        outputs.vw_theta_i(i,j) = outputs.vw_i(i,j)*cos(outputs.theta_i(i,j))*cos(outputs.phi_i(i,j));
+        outputs.vw_phi_i(i,j)   = -outputs.vw_i(i,j)*sin(outputs.phi_i(i,j)); % 
 
         % Reel-in factor
-        outputs.f_i(i,j) = outputs.vk_r_i(i,j)/outputs.vw(i,j);
+        outputs.f_i(i,j) = outputs.vk_r_i(i,j)/outputs.vw_i(i,j);
         
         % Apparent speed vector
         outputs.va_r_i(i,j)     = outputs.vw_r_i(i,j) - (-outputs.vk_r_i(i,j)); % Reel-in speed direction is in the negative radial direction)

@@ -2,7 +2,7 @@
 inputs                = struct();
 
 inputs.mainPlots       = 1; % 0 = No, 1 = Yes
-inputs.numDeltaLelems  = 5; %[num]
+inputs.numDeltaLelems  = 4; %[num]
 inputs.vertWindProfile = 0; % 0 = Modelled, 1 = From dataset 
 
 inputs.evalPoint      = 0; % 0 = Center, 1 = Top, 2 = Side left, 3 = Bottom, 4 = Side right

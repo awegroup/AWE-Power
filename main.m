@@ -4,9 +4,9 @@ function [optData,outputs,processedOutputs] = main(inputs)
   %% Optimise operation for every wind speed  
   %% AP3 initial guess
   % All free
-    %        [deltaL, avgPattEle,  coneAngle,     Rp_start, v_i,               CL_i,                                    v_o,    CL_o,                                    kinematicRatio]
-    x0     = [200,    deg2rad(30), deg2rad(5),    50,       inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 0.5*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 120*nx];
-    x_init = [500,    deg2rad(90), deg2rad(60),   100, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 20*nx,   inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 500*nx];
+    %        [deltaL, avgPattEle,  coneAngle,     Rp_start, v_i,               CL_i,                                    v_o,    kinematicRatio]
+    x0     = [200,    deg2rad(30), deg2rad(5),    50,       inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 0.5*nx, 90*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx];
+    x_init = [500,  deg2rad(90), deg2rad(60), 100, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, inputs.v_d_max*nx, 500*nx,inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx];
   % Fixed
   % x0     = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 3*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      100*nx];
   % x_init = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 3*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,     120*nx];
@@ -23,8 +23,8 @@ function [optData,outputs,processedOutputs] = main(inputs)
 
     %% Bounds: AP3
     % All free
-    lb     = [50,   deg2rad(1),  deg2rad(1),  50,  0*nx,                0*nx,                                   0.1*nx, 0*nx,                                   1*nx]./x_init; % 
-    ub     = [500,  deg2rad(90), deg2rad(60), 100, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, inputs.v_d_max*nx,   inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 500*nx]./x_init; % 
+    lb     = [50,   deg2rad(1),  deg2rad(1),  50,  1*nx,                0.1*nx,                                   0.2*nx,          1*nx, 0.1*nx]./x_init; % 
+    ub     = [500,  deg2rad(90), deg2rad(60), 100, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, inputs.v_d_max*nx,  200*nx,inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx]./x_init; % 
     % Fixed
     % lb     = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 0*nx, 3*nx,      0*nx,      1*nx]./x_init;   % 
     % ub     = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 3*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      600*nx]./x_init; % 
@@ -36,17 +36,18 @@ function [optData,outputs,processedOutputs] = main(inputs)
 
     %%
     options                           = optimoptions('fmincon');
-    options.Display                   = 'iter-detailed';
+%     options.Display                   = 'iter-detailed';
+    options.Display                   = 'final-detailed';
     % options.Display                   = 'notify-detailed';
     options.Algorithm                 = 'sqp';
     options.FiniteDifferenceType      = 'forward';
    % options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-12 1e-12 1e-6*nx 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
     % options.FiniteDifferenceStepSize  = 1e-12.*[1 1 1 1 nx nx nx nx];
-    % options.ConstraintTolerance      = 1e-5;
+%     options.ConstraintTolerance      = 1e-5;
   %  options.OptimalityTolerance       = 1e-9;
   %     options.StepTolerance             = 1e-6;
     options.MaxFunctionEvaluations    = 3000*numel(x_init);
-    options.MaxIterations             = 300*numel(x_init);
+    options.MaxIterations             = 500*numel(x_init);
   %   options.FunctionTolerance        = 1e-9;
   %   options.DiffMaxChange            = 1e-1;
   %   options.DiffMinChange            = 0;
@@ -64,14 +65,13 @@ function [optData,outputs,processedOutputs] = main(inputs)
     x0 = x.*x_init;
 
     % Changing initial guess if previous wind speed evaluation is infeasible
-    if outputs.P_e_avg(i) <= 0    
+    if abs(mean((outputs.E_result - outputs.E),2)) > 0.01    
         % All free
-        x0 = [200,    deg2rad(30), deg2rad(5),    50,              20*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 0.7*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      120*nx];        
+        x0 = [200,    deg2rad(30), deg2rad(5),    50,       inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 0.5*nx, 90*nx,inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx];        
         % Fixed 
         % x0      = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 3*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      100*nx];
         % Scaling effects
-        % x0     = [200,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 0.5*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      120*nx];
-        
+        % x0     = [200,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 0.5*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      120*nx];     
     end  
   end
   disp(exitflag)
@@ -105,6 +105,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
    for i=1:length(vw)
       if vw(i)>=processedOutputs.cutIn
           processedOutputs.vw(i,:)           = outputs.vw(i,:);
+          processedOutputs.vw_i(i,:)         = outputs.vw_i(i,:);
           processedOutputs.P1_m_o(i)         = outputs.P1_m_o(i);
           processedOutputs.P2_m_i(i)         = outputs.P2_m_i(i); 
           processedOutputs.P_m_o_eff(i,:)    = outputs.P_m_o_eff(i,:);
@@ -141,6 +142,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
           processedOutputs.h_cycleStart(i)   = outputs.h_cycleStart(i);
           processedOutputs.h_cycleAvg(i)     = outputs.h_cycleAvg(i);
           processedOutputs.l_t_max(i)        = outputs.l_t_max(i);
+          processedOutputs.l_t_min(i)        = outputs.l_t_min(i);
           processedOutputs.l_t_inCycle(i,:)  = outputs.l_t_inCycle(i,:);
           processedOutputs.h_inCycle(i,:)    = outputs.h_inCycle(i,:);
           processedOutputs.vk_omega(i,:)     = outputs.vk_omega(i,:); 
