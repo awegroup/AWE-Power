@@ -4,9 +4,9 @@ function [optData,outputs,processedOutputs] = main(inputs)
   %% Optimise operation for every wind speed  
   %% AP3 initial guess
   % All free
-    %        [deltaL, avgPattEle,  coneAngle,     Rp_start, v_i,               CL_i,                                    v_o,    kinematicRatio]
-    x0     = [200,    deg2rad(30), deg2rad(5),    50,       inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 0.5*nx, 90*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx];
-    x_init = [500,  deg2rad(90), deg2rad(60), 100, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, inputs.v_d_max*nx, 500*nx,inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx];
+    %        [deltaL, avgPattEle,  coneAngle,     Rp_start,                   v_i,               CL_i,                                    v_o,    kinematicRatio,  CL]
+    x0     = [200,    deg2rad(30), deg2rad(5),    50, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 0.5*nx, 90*nx,           inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx];
+    x_init = [500,    deg2rad(90), deg2rad(60),   100, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, inputs.v_d_max*nx, 500*nx,inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx];
   % Fixed
   % x0     = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 3*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      100*nx];
   % x_init = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 3*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,     120*nx];
@@ -23,7 +23,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
 
     %% Bounds: AP3
     % All free
-    lb     = [50,   deg2rad(1),  deg2rad(1),  50,  1*nx,                0.1*nx,                                   0.2*nx,          1*nx, 0.1*nx]./x_init; % 
+    lb     = [50,   deg2rad(1),  deg2rad(1),  50,  1*nx, 0.1*nx, 0.2*nx, 1*nx, 0.1*nx]./x_init; % 
     ub     = [500,  deg2rad(90), deg2rad(60), 100, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, inputs.v_d_max*nx,  200*nx,inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx]./x_init; % 
     % Fixed
     % lb     = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 0*nx, 3*nx,      0*nx,      1*nx]./x_init;   % 

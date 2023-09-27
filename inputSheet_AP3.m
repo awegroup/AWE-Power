@@ -17,6 +17,7 @@ inputs.windProfile_h  = [10,20,40,60,80,100,120,140,150,160,180,200,220,250,300,
 
 inputs.S              = 12; %[m^2]
 inputs.AR             = 12; %[-]
+inputs.b              = sqrt(inputs.AR*inputs.S);
 inputs.P_ratedElec    = 150*1000; %[W]
 inputs.massOverride   = 0;
 inputs.kiteMass       = 600; %[kg]

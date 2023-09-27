@@ -14,8 +14,7 @@ function [inputs] = compute(i,inputs)
       outputs.m_k(i) = 10*(a*inputs.S^2 +b*inputs.S-k1)*(c1*(inputs.AR/AR_ref)^2-d1*(inputs.AR/AR_ref)+k2); 
     end
     
-    %% Constant for the cycle
-    outputs.b                  = sqrt(inputs.AR*inputs.S);     
+    %% Constant for the cycle     
     outputs.l_t_min(i)         = outputs.Rp_start(i)/sin(outputs.gamma(i));
     outputs.pattStartGrClr(i)  = outputs.l_t_min(i)*sin(outputs.beta(i)-outputs.gamma(i));
     outputs.h_cycleStart(i)    = outputs.l_t_min(i)*cos(outputs.gamma(i))*sin(outputs.beta(i));

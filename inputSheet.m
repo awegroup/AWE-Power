@@ -11,18 +11,19 @@ inputs.FgToggle       = 1; % 0 = No, 1 = Yes
 
 inputs.vw_ref         = 1:1:25; %[m/s]
 inputs.h_ref          = 100; %[m]
-inputs.windShearExp   = 0.143; %[-] % 0.143 over land, 0.11 over sea
+inputs.windShearExp   = 0; %[-] % 0.143 over land, 0.11 over sea
 inputs.windProfile_vw = [0.847612611633547,0.870603040595613,0.927240267828556,0.959346286990695,0.982291573490674,1,1.01377720773809,1.02356771954493,1.02766760602000,1.03079423355205,1.03659625208888,1.04025827758100,1.04284618416620,1.04496440015282,1.04461712713371,1.02473617783789,1.01076976884552];
 inputs.windProfile_h  = [10,20,40,60,80,100,120,140,150,160,180,200,220,250,300,500,600];
 
-inputs.S              = 100;
+inputs.S              = 80;
 inputs.AR             = 12;
-inputs.P_ratedElec    = 5000*1000; %[W]
+inputs.b              = sqrt(inputs.AR*inputs.S);
+inputs.P_ratedElec    = 2000*1000; %[W]
 inputs.massOverride   = 0;
 inputs.kiteMass       = 5000; %[kg]
 inputs.peakM2E_F      = 3.5;
 
-inputs.Ft_max            = 600; %[kN]
+inputs.Ft_max            = 500; %[kN]
 inputs.Ft_max_SF         = 0.8; % 0.8 for gust margin
 inputs.maxTeLen          = 2000; %[m]
 inputs.maxHeight         = 1000; %[m]
@@ -30,7 +31,7 @@ inputs.minGroundClear    = 80; %[m]
 inputs.Te_matStrength    = 7e8;
 inputs.Te_matDensity     = 980; %[kg/m^3] 
 
-inputs.Cl_maxAirfoil  = 2.5; %[-] % 2.7
+inputs.Cl_maxAirfoil  = 2.7; %[-] % 2.7
 inputs.Cl_eff_F       = 0.8; %[-] % 0.8
 inputs.Cl0_airfoil    = 0.65; %[-]
 inputs.e              = 0.6; %[-] % 0.6
