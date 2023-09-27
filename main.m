@@ -1,40 +1,19 @@
 function [optData,outputs,processedOutputs] = main(inputs)
-  nx = ones(1,inputs.numDeltaLelems);
-  
   %% Optimise operation for every wind speed  
-  %% AP3 initial guess
-  % All free
-    %        [deltaL, avgPattEle,  coneAngle,     Rp_start,                   v_i,               CL_i,                                    v_o,    kinematicRatio,  CL]
-    x0     = [200,    deg2rad(30), deg2rad(5),    50, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 0.5*nx, 90*nx,           inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx];
-    x_init = [500,    deg2rad(90), deg2rad(60),   100, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, inputs.v_d_max*nx, 500*nx,inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx];
-  % Fixed
-  % x0     = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 3*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      100*nx];
-  % x_init = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 3*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,     120*nx];
   
-  %% Scaling effects initial guess
-   % x0     = [200,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 0.5*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      120*nx];
-   % x_init = [500,  deg2rad(90), deg2rad(60), 100, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 20*nx,   inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 500*nx];
+  % Initial guess
+  x0     = inputs.x0;
+  x_init = inputs.x_init;
 
-  %%
   for i=1:length(inputs.vw_ref)
    
     % Output of previous wind speed as input to next wind speed
     x0     = x0./x_init;
 
-    %% Bounds: AP3
-    % All free
-    lb     = [50,   deg2rad(1),  deg2rad(1),  50,  1*nx, 0.1*nx, 0.2*nx, 1*nx, 0.1*nx]./x_init; % 
-    ub     = [500,  deg2rad(90), deg2rad(60), 100, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, inputs.v_d_max*nx,  200*nx,inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx]./x_init; % 
-    % Fixed
-    % lb     = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 0*nx, 3*nx,      0*nx,      1*nx]./x_init;   % 
-    % ub     = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 3*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      600*nx]./x_init; % 
+    % Bounds
+    lb = inputs.lb./x_init;
+    ub = inputs.ub./x_init;
 
-
-    %% Bounds: Scaling effects
-    % lb     = [50,   deg2rad(1),  deg2rad(1),  50,  0*nx,                0*nx,                                   0.1*nx, 0*nx,                                   1*nx]./x_init; % 
-    % ub     = [500,  deg2rad(90), deg2rad(60), 100, inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, inputs.v_d_max*nx,   inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 500*nx]./x_init; % 
-
-    %%
     options                           = optimoptions('fmincon');
 %     options.Display                   = 'iter-detailed';
     options.Display                   = 'final-detailed';
@@ -51,9 +30,6 @@ function [optData,outputs,processedOutputs] = main(inputs)
   %   options.FunctionTolerance        = 1e-9;
   %   options.DiffMaxChange            = 1e-1;
   %   options.DiffMinChange            = 0;
-  %   options.OutputFcn                = @O_outfun;
-  %    options.PlotFcns                 = {@optimplotfval, @optimplotx, @optimplotfirstorderopt,...
-  %                                @optimplotconstrviolation, @optimplotfunccount, @optimplotstepsize};
     con = @(x) constraints(i,inputs);
 
     obj = @(x) objective(x,x_init,i,inputs);
@@ -65,13 +41,8 @@ function [optData,outputs,processedOutputs] = main(inputs)
     x0 = x.*x_init;
 
     % Changing initial guess if previous wind speed evaluation is infeasible
-    if abs(mean((outputs.E_result - outputs.E),2)) > 0.01    
-        % All free
-        x0 = [200,    deg2rad(30), deg2rad(5),    50,       inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 0.5*nx, 90*nx,inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx];        
-        % Fixed 
-        % x0      = [250,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 3*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      100*nx];
-        % Scaling effects
-        % x0     = [200,    deg2rad(30), deg2rad(5),    50,              inputs.v_d_max*nx, 1.5*nx, 0.5*nx,      inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx,      120*nx];     
+    if abs(mean((outputs.E_result - outputs.E),2)) > 0.01
+        x0 = inputs.x0;             
     end  
   end
   disp(exitflag)

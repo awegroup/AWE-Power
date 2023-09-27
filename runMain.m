@@ -16,8 +16,6 @@ if inputs.mainPlots == 1
   vw = inputs.vw_ref;
   x_axis_limit = [0 processedOutputs.vw_100m_operRange(end)];
 
-  directory = 'C:\PhD\Publications\2023_Analytical-model-for-ground-gen-AWES\Images\Results';
-
   newcolors = [ % 0.25, 0.25, 0.25
     0 0.4470 0.7410
   0.8500 0.3250 0.0980 
