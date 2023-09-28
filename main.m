@@ -8,37 +8,38 @@ function [optData,outputs,processedOutputs] = main(inputs)
   for i=1:length(inputs.vw_ref)
    
     % Output of previous wind speed as input to next wind speed
-    x0     = x0./x_init;
+    x0     = x0;%./x_init;
 
     % Bounds
-    lb = inputs.lb./x_init;
-    ub = inputs.ub./x_init;
+    lb = inputs.lb;%./x_init;
+    ub = inputs.ub;%./x_init;
 
     options                           = optimoptions('fmincon');
 %     options.Display                   = 'iter-detailed';
-    options.Display                   = 'final-detailed';
-    % options.Display                   = 'notify-detailed';
+    % options.Display                   = 'final-detailed';
+    options.Display                   = 'notify-detailed';
     options.Algorithm                 = 'sqp';
     options.FiniteDifferenceType      = 'forward';
+    options.ScaleProblem             = true;
    % options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-12 1e-12 1e-6*nx 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
-    % options.FiniteDifferenceStepSize  = 1e-12.*[1 1 1 1 nx nx nx nx];
-%     options.ConstraintTolerance      = 1e-5;
+    % options.FiniteDifferenceStepSize  = 1e-9;
+    % options.ConstraintTolerance      = 1e-6;
   %  options.OptimalityTolerance       = 1e-9;
-  %     options.StepTolerance             = 1e-6;
+      % options.StepTolerance             = 1e-4;
     options.MaxFunctionEvaluations    = 3000*numel(x_init);
     options.MaxIterations             = 500*numel(x_init);
   %   options.FunctionTolerance        = 1e-9;
   %   options.DiffMaxChange            = 1e-1;
   %   options.DiffMinChange            = 0;
-    con = @(x) constraints(i,inputs);
-
-    obj = @(x) objective(x,x_init,i,inputs);
+    
+   con = @(x) constraints(i,inputs);
+   obj = @(x) objective(x,x_init,i,inputs);
 
     [x,~,exitflag(i),optHist(i),lambda(i)] = fmincon(obj,x0,[],[],[],[],lb,ub,con,options);
 
     % Storing final results
     [~,inputs,outputs] = objective(x,x_init,i,inputs);
-    x0 = x.*x_init;
+    x0 = x;%.*x_init;
 
     % Changing initial guess if previous wind speed evaluation is infeasible
     if abs(mean((outputs.E_result - outputs.E),2)) > 0.01
