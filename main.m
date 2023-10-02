@@ -23,10 +23,10 @@ function [optData,outputs,processedOutputs] = main(inputs)
     options.ScaleProblem             = true;
    % options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-12 1e-12 1e-6*nx 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
     % options.FiniteDifferenceStepSize  = 1e-9;
-    % options.ConstraintTolerance      = 1e-6;
+    % options.ConstraintTolerance      = 1e-5;
   %  options.OptimalityTolerance       = 1e-9;
       % options.StepTolerance             = 1e-4;
-    options.MaxFunctionEvaluations    = 3000*numel(x_init);
+    options.MaxFunctionEvaluations    = 5000*numel(x_init);
     options.MaxIterations             = 500*numel(x_init);
   %   options.FunctionTolerance        = 1e-9;
   %   options.DiffMaxChange            = 1e-1;
@@ -43,7 +43,9 @@ function [optData,outputs,processedOutputs] = main(inputs)
 
     % Changing initial guess if previous wind speed evaluation is infeasible
     if abs(mean((outputs.E_result - outputs.E),2)) > 0.01
-        x0 = inputs.x0;             
+        x0 = inputs.x0;       
+    elseif exitflag(i) == 0
+      x0 = inputs.x0;
     end  
   end
   disp(exitflag)
