@@ -5,7 +5,8 @@ clear global
 
 % Defined input sheet
 inputSheet_AP3;
-% inputSheet;
+% inputSheet_2MW;
+%inputSheet;
 
 % Get results
 [optData,outputs,processedOutputs] = main(inputs);
@@ -39,9 +40,9 @@ if inputs.mainPlots == 1
   box on
   grid on
   plot(V,z,'linewidth',1.2)
-  plot(V_MegAWES_Cabauw,z_MegAWES,'linewidth',1.2)
-  plot(V_MegAWES_Ijmuiden,z_MegAWES,'linewidth',1.2)
-  legend('α = 0.43','Cabauw,NL','Ijmuiden,NL');
+  plot(V_MegAWES_Cabauw,z_MegAWES,'--','linewidth',1.2)
+  plot(V_MegAWES_Ijmuiden,z_MegAWES,'-.','linewidth',1.2)
+  legend('α = 0.143','Cabauw,NL','Ijmuiden,NL');
   xlim([0.5 1.5])
   xlabel('Wind Speed (-)')
   ylabel('Height (m)')
@@ -69,7 +70,7 @@ legend('Data', 'Interpolated', 'Location', 'Best');
 hold off
 
   % Cycle timeseries plots: Pattern averages
-  windSpeeds = [processedOutputs.ratedWind,processedOutputs.cutOut,processedOutputs.cutIn];
+  windSpeeds = [15,processedOutputs.cutOut,processedOutputs.cutIn];
   for i = windSpeeds
       idx = find(vw == i);
       figure('units','inch','Position', [15 3 3.5 2.2])
@@ -322,6 +323,7 @@ hold off
     1.30E+01, 1.41E+01, 1.50E+01, 1.60E+01, 1.70E+01, 1.80E+01, 1.90E+01]; %[m/s]
   AP3.PC.power = [0.00E+00, 7.01E+03, 2.37E+04, 4.31E+04, 6.47E+04, 8.46E+04, ...
     1.02E+05, 1.20E+05, 1.34E+05, 1.49E+05, 1.50E+05, 1.50E+05, 1.50E+05]./10^3; %[kW]
+
   figure('units','inch','Position', [4 4 3.5 2.2])
   colororder(newcolors)
   hold on
@@ -341,18 +343,18 @@ end
 
 %% Scaling effects
 
-% % Fixed WA: Finding opt tether size for given WA
+% % Fixed WA: Finding opt tether size for given WA. No constraints and No reel-in
 % clc
 % clearvars
 % clear global
 % inputSheet_scalingEffects;
-% inputs.S = 50;
+% inputs.S = 100;
 % for i =1:6
-%   inputs.Ft_max = 100*i;
+%   inputs.Ft_max = 200+200*i;
 %   fixedWA.Ft_max(i) = inputs.Ft_max;
 %   [optData,outputs,postProRes] = main(inputs);
 %   fixedWA.m_k(i)     = outputs.m_k;
-%   fixedWA.P_m_o(i)   = outputs.P_m_o;
+%   fixedWA.zeta(i)    = outputs.zetaMech;
 %   fixedWA.Ft_to_S(i) = fixedWA.Ft_max(i)/inputs.S;
 % end
 % figure('units','inch','Position', [4 4 3.5 2.2])
@@ -361,49 +363,21 @@ end
 % box on
 % xlabel('F_{t,max} (kN)');
 % yyaxis left
-% plot(fixedWA.Ft_max,fixedWA.P_m_o/1e3,'linewidth',1);
-% ylabel('P_{m,o} (kN)');
+% plot(fixedWA.Ft_max,fixedWA.zeta,'o-','linewidth',1,'MarkerSize',3);
+% ylabel('ζ (-)');
 % yyaxis right
-% plot(fixedWA.Ft_max,fixedWA.m_k,'linewidth',1);
+% plot(fixedWA.Ft_max,fixedWA.m_k,'^-','linewidth',1,'MarkerSize',3);
 % ylabel('m_k (kg)');
-% title('S = 50 m^2');
+% title('S = 100 m^2');
 % hold off
 % 
-% % Given Ft_max/S ratio
+% 
+% % Fixed Ft_max
 % clc
 % clearvars
 % clear global
 % inputSheet_scalingEffects;
-% FixedRatio.Ft_maxToS = 8;
-% for i =1:7
-%   inputs.S = 10*i;
-%   FixedRatio.S(i)      = inputs.S;
-%   inputs.Ft_max        = FixedRatio.Ft_maxToS*FixedRatio.S(i);
-%   FixedRatio.Ft_max(i) = inputs.Ft_max;
-%   [optData,outputs,postProRes] = main(inputs);
-%   FixedRatio.m_k(i)     = outputs.m_k;
-%   FixedRatio.P_m_o(i)   = outputs.P_m_o;
-% end
-% figure('units','inch','Position', [8 4 3.5 2.2])
-% hold on
-% grid on
-% box on
-% xlabel('S (m^2)');
-% yyaxis left
-% plot(FixedRatio.S,FixedRatio.P_m_o/1e3,'linewidth',1);
-% ylabel('P_{m,o} (kN)');
-% yyaxis right
-% plot(FixedRatio.S,FixedRatio.m_k,'linewidth',1);
-% ylabel('m_k (kg)');
-% title('F_{t,max}/S = 8 kN/m^2');
-% hold off
-% 
-% % Fixed Ft_mas
-% clc
-% clearvars
-% clear global
-% inputSheet_scalingEffects;
-% FixedFt_max.Ft_max = 200;
+% FixedFt_max.Ft_max = 400;
 % for i =1:10
 %   inputs.S = 10*i;
 %   FixedFt_max.S(i)       = inputs.S;
@@ -411,7 +385,7 @@ end
 %   FixedFt_max.Ft_max     = inputs.Ft_max;
 %   [optData,outputs,postProRes] = main(inputs);
 %   FixedFt_max.m_k(i)     = outputs.m_k;
-%   FixedFt_max.P_m_o(i)   = outputs.P_m_o;
+%   FixedFt_max.zeta(i)    = outputs.zetaMech;
 % end
 % figure('units','inch','Position', [12 4 3.5 2.2])
 % hold on
@@ -419,14 +393,103 @@ end
 % box on
 % xlabel('S (m^2)');
 % yyaxis left
-% plot(FixedFt_max.S,FixedFt_max.P_m_o/1e3,'linewidth',1);
-% ylabel('P_{m,o} (kN)');
+% plot(FixedFt_max.S,FixedFt_max.zeta,'o-','linewidth',1,'MarkerSize',3);
+% ylabel('ζ (-)');
 % yyaxis right
-% plot(FixedFt_max.S,FixedFt_max.m_k,'linewidth',1);
+% plot(FixedFt_max.S,FixedFt_max.m_k,'^-','linewidth',1,'MarkerSize',3);
 % ylabel('m_k (kg)');
 % title('F_{t.max} = 200 kN');
 % hold off
 
+% % Full power curve plots without and with mass effect 
+%   inputSheet;
+%   inputs.S = 100;
+%   for i = 1:2
+%     inputs.FgToggle = i-1;
+%     [optData,outputs,postProRes] = main(inputs);
+%     P(i).massEffect =  postProRes.P_e_avg;
+%   end
+%   figSize = [5 5 3.2 2];
+%   figure('units','inch','Position', figSize)
+%   hold on
+%   grid on
+%   box on
+%   plot(P(1).massEffect./1e3,'o-','linewidth',1,'MarkerSize',2);
+%   plot(P(2).massEffect./1e3,'^-','linewidth',1,'MarkerSize',2);
+%   legend('Without gravity','With gravity');
+%   xlabel('Wind speed at 100m height (m/s)');
+%   ylabel('Power (kW)');
+%   hold off
+% 
+% % Full Power curve plots for fixed S, increasing Ft_max
+% inputSheet;
+% inputs.S = 100;
+% figSize = [5 5 3.2 2];
+% figure('units','inch','Position', figSize)
+% hold on
+% grid on
+% box on
+% numEvals = 5;
+% legendLabels = cell(numEvals,1);
+% for i = 1:numEvals
+%     inputs.Ft_max = 2*inputs.S + i*100;
+%     [optData,outputs,postProRes] = main(inputs);
+%     P(i).increasingFt_max =  postProRes.P_e_avg;
+%     % Plotting
+%     plot(P(i).increasingFt_max./1e3,'o-','linewidth',1,'MarkerSize',2);
+%     legendLabels{i} = ['F_{t,max}= ' num2str(inputs.Ft_max)];
+% end
+% xlabel('Wind speed at 100m height (m/s)');
+% ylabel('Power (kW)');
+% legend(legendLabels, 'Location', 'Best');
+% hold off
+% 
+% % Full Power curve plots for increasing S, fixed Ft_max/S, no mechanical power limit
+% inputSheet;
+% inputs.peakM2E_F      = 30;
+% figSize = [5 5 3.2 2];
+% figure('units','inch','Position', figSize)
+% hold on
+% grid on
+% box on
+% numEvals = 5;
+% legendLabels = cell(numEvals,1);
+% for i = 1:numEvals
+%     inputs.S = i*30;
+%     inputs.Ft_max = 8*inputs.S;
+%     [optData,outputs,postProRes] = main(inputs);
+%     P(i).increasingS =  postProRes.P_e_avg;
+%     % Plotting
+%     plot(P(i).increasingS./1e3,'o-','linewidth',1,'MarkerSize',2);
+%     legendLabels{i} = ['S = ' num2str(inputs.S)];
+% end
+% xlabel('Wind speed at 100m height (m/s)');
+% ylabel('Power (kW)');
+% legend(legendLabels, 'Location', 'Best');
+% hold off
+% 
+% % Full Power curve plots for a range of peak mechanical power limits
+% inputSheet;
+% inputs.S = 60;
+% inputs.Ft_max = 7*inputs.S;
+% figSize = [5 5 3.2 2];
+% figure('units','inch','Position', figSize)
+% hold on
+% grid on
+% box on
+% legendLabels = cell(5,1);
+% for i = 1:5
+%     inputs.peakM2E_F = i;
+%     [optData,outputs,postProRes] = main(inputs);
+%     P(i).increasingPeakM2E =  postProRes.P_e_avg;
+%     % Plotting
+%     plot(P(i).increasingPeakM2E./1e3,'o-','linewidth',1,'MarkerSize',2);
+%     legendLabels{i} = ['f = ' num2str(inputs.peakM2E_F)];   
+% end
+% xlabel('Wind speed at 100m height (m/s)');
+% ylabel('Power (kW)');
+% legend(legendLabels, 'Location', 'Best');
+% hold off
 
 %% Comparison with base-case
 

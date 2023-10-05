@@ -54,7 +54,6 @@ inputs.airDensity     = 1.225; %[kg/m^3]
 nx = ones(1,inputs.numDeltaLelems);
 %               [deltaL, avgPattEle,  coneAngle,     Rp_start, v_i,               CL_i,   v_o,    kinematicRatio, CL]
 inputs.x0     = [250,    deg2rad(30), deg2rad(5),    50,       inputs.v_d_max*nx, 1.5*nx, 3*nx,   100*nx,         inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx];
-inputs.x_init = [250,    deg2rad(30), deg2rad(5),    50,       inputs.v_d_max*nx, 1.5*nx, 3*nx,   120*nx,   inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx];
 
 inputs.lb     = [250,    deg2rad(30), deg2rad(5),    50,       inputs.v_d_max*nx, 0*nx, 3*nx, 1*nx, 0*nx]; % 
 inputs.ub     = [250,    deg2rad(30), deg2rad(5),    50,       inputs.v_d_max*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx, 3*nx, 600*nx, inputs.Cl_maxAirfoil*inputs.Cl_eff_F*nx]; %

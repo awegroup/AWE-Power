@@ -1,52 +1,53 @@
 function [optData,outputs,processedOutputs] = main(inputs)
-  %% Optimise operation for every wind speed  
+    
   
   % Initial guess
   x0     = inputs.x0;
-  x_init = inputs.x_init;
 
+  % Bounds
+  lb = inputs.lb;
+  ub = inputs.ub;
+
+  % Optimise operation for every wind speed
   for i=1:length(inputs.vw_ref)
    
-    % Output of previous wind speed as input to next wind speed
-    x0     = x0;%./x_init;
-
-    % Bounds
-    lb = inputs.lb;%./x_init;
-    ub = inputs.ub;%./x_init;
-
     options                           = optimoptions('fmincon');
-%     options.Display                   = 'iter-detailed';
-    % options.Display                   = 'final-detailed';
-    options.Display                   = 'notify-detailed';
-    options.Algorithm                 = 'sqp';
-    options.FiniteDifferenceType      = 'forward';
-    options.ScaleProblem             = true;
-   % options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-12 1e-12 1e-6*nx 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
-    % options.FiniteDifferenceStepSize  = 1e-9;
-    % options.ConstraintTolerance      = 1e-5;
+  %     options.Display                   = 'iter-detailed';
+  options.Display                   = 'final-detailed';
+  % options.Display                   = 'notify-detailed';
+  options.Algorithm                 = 'sqp';
+  options.FiniteDifferenceType      = 'forward';
+  options.ScaleProblem             = true;
+  % options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-12 1e-12 1e-6*nx 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
+  % options.FiniteDifferenceStepSize  = 1e-9;
+  % options.ConstraintTolerance      = 1e-5;
   %  options.OptimalityTolerance       = 1e-9;
-      % options.StepTolerance             = 1e-4;
-    options.MaxFunctionEvaluations    = 5000*numel(x_init);
-    options.MaxIterations             = 500*numel(x_init);
+  % options.StepTolerance             = 1e-4;
+  options.MaxFunctionEvaluations    = 5000*numel(x0);
+  options.MaxIterations             = 500*numel(x0);
   %   options.FunctionTolerance        = 1e-9;
   %   options.DiffMaxChange            = 1e-1;
   %   options.DiffMinChange            = 0;
     
    con = @(x) constraints(i,inputs);
-   obj = @(x) objective(x,x_init,i,inputs);
+   obj = @(x) objective(x,i,inputs);
 
+    
     [x,~,exitflag(i),optHist(i),lambda(i)] = fmincon(obj,x0,[],[],[],[],lb,ub,con,options);
 
     % Storing final results
-    [~,inputs,outputs] = objective(x,x_init,i,inputs);
-    x0 = x;%.*x_init;
+    [~,inputs,outputs] = objective(x,i,inputs);
+
+    % Solution of current wind speed as the initial guess for the next wind speed
+    x0 = x;
 
     % Changing initial guess if previous wind speed evaluation is infeasible
-    if abs(mean((outputs.E_result - outputs.E),2)) > 0.01
+    if abs(mean((outputs.E_result - outputs.E),2)) > 0.01 
         x0 = inputs.x0;       
     elseif exitflag(i) == 0
       x0 = inputs.x0;
-    end  
+    end 
+
   end
   disp(exitflag)
   % Store optimisation results data
@@ -141,16 +142,9 @@ function [optData,outputs,processedOutputs] = main(inputs)
           processedOutputs.dutyCycle(i)      = processedOutputs.to(i)/processedOutputs.tCycle(i);
           
           % Coefficient of power (Cp) as defined for HAWTs
-%           outputs.sweptArea(i)         = pi()*((outputs.Rp(i)+outputs.b/2)^2 - (outputs.Rp(i)-outputs.b/2)^2);
-%           outputs.Cp_reelOut(i)        = outputs.P_m_o(i)/(0.5*outputs.rho_air(i)*outputs.sweptArea(i)*vw(i)^3);
-%           % Axial induction factor maximising Cp is a = 0.5 and is independent of reel-out factor
-%           % Ref paper: The Betz limit applied to Airborne Wind Energy, https://doi.org/10.1016/j.renene.2018.04.034
-%           f(i)                         = outputs.f(i);
-%           a_ideal                      = 0.5;
-%           outputs.Cp_max_ifaIsHalf(i)  = (1-f(i))^2*4*a_ideal*(1-a_ideal)*f(i);
-%           a                            = abs(roots([1 -1 outputs.Cp_reelOut(i)/(4*f(i)*(1-f(i))^2)]));
-%           outputs.axialInductionF(i,1) = a(1);
-%           outputs.axialInductionF(i,2) = a(2);      
+          outputs.sweptArea(i,:)     = pi()*((outputs.Rp(i,:)+inputs.b/2)^2 - (outputs.Rp(i,:)-inputs.b/2)^2);
+          outputs.Cp_m_o(i,:)        = outputs.P_m_o(i)/(0.5*outputs.rho_air(i,:)*outputs.sweptArea(i,:)*outputs.vw(i,:)^3);
+          outputs.Cp_e_avg(i,:)      = outputs.P_e_avg(i)/(0.5*outputs.rho_air(i,:)*outputs.sweptArea(i,:)*outputs.vw(i,:)^3);
       end      
   end
 
