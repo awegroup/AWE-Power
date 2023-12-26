@@ -70,7 +70,7 @@ legend('Data', 'Interpolated', 'Location', 'Best');
 hold off
 
   % Cycle timeseries plots: Pattern averages
-  windSpeeds = [15,processedOutputs.cutOut,processedOutputs.cutIn];
+  windSpeeds = [8,9 15,processedOutputs.cutOut,processedOutputs.cutIn];
   for i = windSpeeds
       idx = find(vw == i);
       figure('units','inch','Position', [15 3 3.5 2.2])
@@ -406,19 +406,20 @@ end
 %   inputs.S = 100;
 %   for i = 1:2
 %     inputs.FgToggle = i-1;
-%     [optData,outputs,postProRes] = main(inputs);
-%     P(i).massEffect =  postProRes.P_e_avg;
+%     [optData,outputs,processedOutputs] = main(inputs);
+%     P(i).massEffect =  processedOutputs.P_e_avg;
 %   end
 %   figSize = [5 5 3.2 2];
 %   figure('units','inch','Position', figSize)
 %   hold on
 %   grid on
 %   box on
-%   plot(P(1).massEffect./1e3,'o-','linewidth',1,'MarkerSize',2);
-%   plot(P(2).massEffect./1e3,'^-','linewidth',1,'MarkerSize',2);
+%   plot(P(1).massEffect./1e6,'o-','linewidth',1,'MarkerSize',2);
+%   plot(P(2).massEffect./1e6,'^-','linewidth',1,'MarkerSize',2);
 %   legend('Without gravity','With gravity');
 %   xlabel('Wind speed at 100m height (m/s)');
-%   ylabel('Power (kW)');
+%   xlim([0 processedOutputs.vw_100m_operRange(end)]);
+%   ylabel('Power (MW)');
 %   hold off
 % 
 % % Full Power curve plots for fixed S, increasing Ft_max
@@ -433,14 +434,16 @@ end
 % legendLabels = cell(numEvals,1);
 % for i = 1:numEvals
 %     inputs.Ft_max = 2*inputs.S + i*100;
-%     [optData,outputs,postProRes] = main(inputs);
-%     P(i).increasingFt_max =  postProRes.P_e_avg;
+%     [optData,outputs,processedOutputs] = main(inputs);
+%     P(i).increasingFt_max =  processedOutputs.P_e_avg;
 %     % Plotting
-%     plot(P(i).increasingFt_max./1e3,'o-','linewidth',1,'MarkerSize',2);
-%     legendLabels{i} = ['F_{t,max}= ' num2str(inputs.Ft_max)];
+%     plot(P(i).increasingFt_max./1e6,'o-','linewidth',1,'MarkerSize',2);
+%     legendLabels{i} = ['F_{t,max}= ' num2str(inputs.Ft_max) 'kN'];
 % end
 % xlabel('Wind speed at 100m height (m/s)');
-% ylabel('Power (kW)');
+% ylabel('Power (MW)');
+% title(strcat('S = ',num2str(inputs.S),'m^2'));
+% xlim([0 processedOutputs.vw_100m_operRange(end)]);
 % legend(legendLabels, 'Location', 'Best');
 % hold off
 % 
@@ -457,37 +460,16 @@ end
 % for i = 1:numEvals
 %     inputs.S = i*30;
 %     inputs.Ft_max = 8*inputs.S;
-%     [optData,outputs,postProRes] = main(inputs);
-%     P(i).increasingS =  postProRes.P_e_avg;
+%     [optData,outputs,processedOutputs] = main(inputs);
+%     P(i).increasingS =  processedOutputs.P_e_avg;
 %     % Plotting
-%     plot(P(i).increasingS./1e3,'o-','linewidth',1,'MarkerSize',2);
-%     legendLabels{i} = ['S = ' num2str(inputs.S)];
+%     plot(P(i).increasingS./1e6,'o-','linewidth',1,'MarkerSize',2);
+%     legendLabels{i} = ['S = ' num2str(inputs.S) 'm^2'];
 % end
 % xlabel('Wind speed at 100m height (m/s)');
-% ylabel('Power (kW)');
-% legend(legendLabels, 'Location', 'Best');
-% hold off
-% 
-% % Full Power curve plots for a range of peak mechanical power limits
-% inputSheet;
-% inputs.S = 60;
-% inputs.Ft_max = 7*inputs.S;
-% figSize = [5 5 3.2 2];
-% figure('units','inch','Position', figSize)
-% hold on
-% grid on
-% box on
-% legendLabels = cell(5,1);
-% for i = 1:5
-%     inputs.peakM2E_F = i;
-%     [optData,outputs,postProRes] = main(inputs);
-%     P(i).increasingPeakM2E =  postProRes.P_e_avg;
-%     % Plotting
-%     plot(P(i).increasingPeakM2E./1e3,'o-','linewidth',1,'MarkerSize',2);
-%     legendLabels{i} = ['f = ' num2str(inputs.peakM2E_F)];   
-% end
-% xlabel('Wind speed at 100m height (m/s)');
-% ylabel('Power (kW)');
+% xlim([0 processedOutputs.vw_100m_operRange(end)]);
+% ylabel('Power (MW)');
+% title(strcat('F_{t,max}/S = ',num2str(inputs.Ft_max/inputs.S),'kN/m^2'));
 % legend(legendLabels, 'Location', 'Best');
 % hold off
 

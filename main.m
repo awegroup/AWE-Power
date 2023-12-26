@@ -20,7 +20,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
   options.ScaleProblem             = true;
   % options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-12 1e-12 1e-6*nx 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
   % options.FiniteDifferenceStepSize  = 1e-9;
-  % options.ConstraintTolerance      = 1e-5;
+  % options.ConstraintTolerance      = 1e-8;
   %  options.OptimalityTolerance       = 1e-9;
   % options.StepTolerance             = 1e-4;
   options.MaxFunctionEvaluations    = 5000*numel(x0);
@@ -142,9 +142,9 @@ function [optData,outputs,processedOutputs] = main(inputs)
           processedOutputs.dutyCycle(i)      = processedOutputs.to(i)/processedOutputs.tCycle(i);
           
           % Coefficient of power (Cp) as defined for HAWTs
-          outputs.sweptArea(i,:)     = pi()*((outputs.Rp(i,:)+inputs.b/2)^2 - (outputs.Rp(i,:)-inputs.b/2)^2);
-          outputs.Cp_m_o(i,:)        = outputs.P_m_o(i)/(0.5*outputs.rho_air(i,:)*outputs.sweptArea(i,:)*outputs.vw(i,:)^3);
-          outputs.Cp_e_avg(i,:)      = outputs.P_e_avg(i)/(0.5*outputs.rho_air(i,:)*outputs.sweptArea(i,:)*outputs.vw(i,:)^3);
+          outputs.sweptArea(i,:)     = pi().*((outputs.Rp(i,:)+inputs.b/2).^2 - (outputs.Rp(i,:)-inputs.b/2).^2);
+          outputs.Cp_m_o(i,:)        = outputs.P_m_o(i)./(0.5.*outputs.rho_air(i,:).*outputs.sweptArea(i,:).*outputs.vw(i,:).^3);
+          outputs.Cp_e_avg(i,:)      = outputs.P_e_avg(i)./(0.5.*outputs.rho_air(i,:).*outputs.sweptArea(i,:).*outputs.vw(i,:).^3);
       end      
   end
 
