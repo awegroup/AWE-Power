@@ -31,14 +31,14 @@ As an example, the model can be run using pre-defined inputs simulating a 150kW 
 
 ## To Run with User-defined Inputs
 
-To run the model with user-defined inputs, a data structure named 'inputs' needs to be created with all necessary inputs as defined in 'inpusSheet_AP3.m'. 
-The model can then be run using the command '[optData,outputs,processedOutputs] = main(inputs);' by parsing the newly defined inputs.
+To run the model with user-defined inputs, a data structure named 'inputs' needs to be created with all necessary inputs as defined in 'inputSheet_AP3.m'. 
+The model can then be run by parsing the newly defined inputs using the command '[optData,outputs,processedOutputs] = main(inputs);'.
 
 ### Generated Output Files
 
 1. 'optData' has the details regarding the optimization.
 2. 'outputs' has all the raw outputs.
-3. 'processedOutputs' has post-processed outputs with relevant outputs for better visualization.
+3. 'processedOutputs' has post-processed outputs with relevant results for better visualization.
 
 ---
 
