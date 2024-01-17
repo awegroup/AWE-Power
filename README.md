@@ -8,10 +8,10 @@ Following are the key points describing the model and its purpose:
 3) It is suitable for integration with cost models and systems engineering tools. This enhances the applicability of the proposed model in exploring potential of airborne wind energy to the energy system.
 
 The model is divided into 4 scripts:
-2) main.m
-3) objective.m
-4) constraints.m
-5) compute.m
+1) main.m
+2) objective.m
+3) constraints.m
+4) compute.m
 
 (Please ignore the rest of the files when trying to understand the model and the implementation for the first time)
 
