@@ -3,12 +3,11 @@ clc
 clearvars
 clear global
 
-% Defined input sheet
+%% Defined input sheet
 inputSheet_AP3;
-% inputSheet_2MW;
 %inputSheet;
 
-% Get results
+%% Run Model
 [optData,outputs,processedOutputs] = main(inputs);
 
 %% Main Plots
@@ -31,7 +30,7 @@ if inputs.mainPlots == 1
   Vref = 10; % m/s
   z = 10:10:600; % m
   V = Vref * (z/inputs.h_ref).^inputs.windShearExp/Vref;
-%   MegAWES Onshore location Cabauw. Wind speeds normalized with value at 100m
+%   MegAWES Onshore location Cabauw. Wind speeds normalized with value at 100m. Profiles from: https://doi.org/10.1016/j.renene.2022.06.094
   z_MegAWES = [10,20,40,60,80,100,120,140,150,160,180,200,220,250,300,500,600];
   V_MegAWES_Cabauw = [0.541219682843206,0.607355091566827,0.768630154201962,0.868484406441142,0.941395360902529,1,1.04810058627160,1.08638854381156,1.10277338731106,1.11715868927737,1.14412258234309,1.16573551308321,1.18394938534465,1.20653423381438,1.23266397972046,1.26662287360302,1.26414483994687];
   V_MegAWES_Ijmuiden = [0.847612611633547,0.870603040595613,0.927240267828556,0.959346286990695,0.982291573490674,1,1.01377720773809,1.02356771954493,1.02766760602000,1.03079423355205,1.03659625208888,1.04025827758100,1.04284618416620,1.04496440015282,1.04461712713371,1.02473617783789,1.01076976884552];
@@ -248,7 +247,7 @@ hold off
   %ylim([0 160]);
   hold off
 
-  % % Non-dim factors
+  % % Efficiencies
   % ERO_elec = sum(processedOutputs.PROeff_elec.*processedOutputs.tROeff,2)' + processedOutputs.PRO1_elec.*processedOutputs.t1;
   % ERI_elec = sum(processedOutputs.PRIeff_elec.*processedOutputs.tRIeff,2)' + processedOutputs.PRI2_elec.*processedOutputs.t2;
   % ERO_mech = sum(processedOutputs.PROeff_mech.*processedOutputs.tROeff,2)' + processedOutputs.PRO1_mech.*processedOutputs.t1;
@@ -334,7 +333,6 @@ hold off
   plot(AP3.PC.ws, AP3.PC.power,':^k','linewidth',1,'MarkerSize',3);
   ylabel('Power (kW)');
   legend('Ideal Reel-out','QSM','6-DOF','location','southeast');
-  % legend('Loyd - Ideal','Model results','location','southeast');
   xlabel('Wind speed at 100m height (m/s)');
   xlim(x_axis_limit);
   hold off
