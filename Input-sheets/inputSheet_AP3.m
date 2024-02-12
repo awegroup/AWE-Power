@@ -1,7 +1,6 @@
 % Inputs sheet: AP3
 inputs                = struct();
 
-inputs.mainPlots       = 1; % 0 = No, 1 = Yes
 inputs.numDeltaLelems  = 5; %[num]
 inputs.vertWindProfile = 0; % 0 = Modelled, 1 = From dataset 
 

@@ -1,7 +1,6 @@
 % Inputs sheet: Performance model framework
 inputs                = struct();
 
-inputs.mainPlots       = 1; % 0 = No, 1 = Yes
 inputs.numDeltaLelems  = 1;
 inputs.vertWindProfile = 0; % 0 = Modelled, 1 = From dataset 
 

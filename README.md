@@ -12,21 +12,22 @@ This code is an implementation of a quasi-steady model estimating the power curv
 
 ## Overview of Scripts
 
-The code is divided into 5 scripts:
+The code is divided into 6 scripts:
 
 1. `runMain.m`
-2. `main.m`
-3. `objective.m`
-4. `constraints.m`
-5. `compute.m`
+2. `plotResults.m`
+3. `main.m`
+4. `objective.m`
+5. `constraints.m`
+6. `compute.m`
 
-The model requires definition of an input file. Some pre-defined input files can be found in the folder named `Input-sheets`. 
+Additionally, the model requires definition of an input file. Some pre-defined input files can be found in the folder named `Input-sheets`. 
 
 ---
 
-## Example Run
+## Example Results
 
-As an example, the model can be run using pre-defined inputs simulating a 150kW system by simply executing `runMain.m` in the working directory. This will also plot all the relevant outputs.
+As an example, results generated using a pre-defined inputs file simulating a system with a rated electrical power of 150 kW can be visualized by simply executing `plotResults.m` from the working directory. This script uses the pre-stored outputs from the folder named `Outputs`.
 
 ---
 
