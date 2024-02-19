@@ -3,10 +3,10 @@ clearvars
 clear global
 
 %% Load saved outputs
-load Outputs/inputs.mat
-load Outputs/optData.mat
-load Outputs/outputs.mat
-load Outputs/processedOutputs.mat
+load Outputs_Example/inputs.mat
+load Outputs_Example/optData.mat
+load Outputs_Example/outputs.mat
+load Outputs_Example/processedOutputs.mat
 
 %% Plot settings
 vw = inputs.vw_ref;
