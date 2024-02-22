@@ -33,8 +33,7 @@ function [c, ceq] = constraints(i,inputs)
   c(1,7+3*inputs.numDeltaLelems:4*inputs.numDeltaLelems+6) = (0 - outputs.lambda(i,:));
 
   % Tether force during reel-in cannot be negative
-  c(1,7+4*inputs.numDeltaLelems:5*inputs.numDeltaLelems+6) = (0 - outputs.Ft_drum_i(i,:)); % This works for AP3 (cannot understand why)
-  % c(1,7+4*inputs.numDeltaLelems:5*inputs.numDeltaLelems+6) = (0 - outputs.Ft_i(i,:));  % % This works for MW sacle (cannot understand why)
+  c(1,7+4*inputs.numDeltaLelems:5*inputs.numDeltaLelems+6) = (0 - outputs.Ft_i(i,:));  
 
     
   %% Equality constraints

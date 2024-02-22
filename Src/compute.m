@@ -119,17 +119,9 @@ function [inputs] = compute(i,inputs)
           outputs.vw(i,j) = inputs.vw_ref(i)*interp1(inputs.windProfile_h, inputs.windProfile_vw, (outputs.h_inCycle(i,j) + r), 'linear', 'extrap');
         end
 
-        % Air density as a function of height   % Ref: https://en.wikipedia.org/wiki/Density_of_air
-        M = 0.0289644; % [kg/mol]
-        R = 8.3144598; % [N·m/(mol·K)]
-        T = 288.15;    % [Kelvin]
-        L = 0.0065;    % [Kelvin/m] 
-        outputs.rho_air(i,j) = inputs.airDensity*(1-L*(outputs.h_inCycle(i,j) + r)/T)^(inputs.gravity*M/R/L-1);
-        % outputs.rho_air(i,j) = inputs.airDensity;
-
         % Intermediate calculation for brevity
         outputs.CR(i,j)       = sqrt(outputs.CL(i,j)^2+outputs.CD(i,j)^2);
-        outputs.halfRhoS(i,j) = 0.5*outputs.rho_air(i,j)*inputs.S;
+        outputs.halfRhoS = 0.5*inputs.airDensity*inputs.S;
         
         % Wind velocity vector
         outputs.vw_r(i,j)     = outputs.vw(i,j)*sin(outputs.theta(i,j))*cos(outputs.phi(i,j));
@@ -143,7 +135,7 @@ function [inputs] = compute(i,inputs)
         outputs.va(i,j) = (outputs.vw_r(i,j)-outputs.vk_r(i,j))*sqrt(1+outputs.kRatio(i,j)^2);
         
         % Aerodynamic force magnitude
-        outputs.Fa(i,j) = outputs.halfRhoS(i,j)*outputs.CR(i,j)*outputs.va(i,j)^2;
+        outputs.Fa(i,j) = outputs.halfRhoS*outputs.CR(i,j)*outputs.va(i,j)^2;
         
         % Tangential kite velocity factor
         a = cos(outputs.theta(i,j))*cos(outputs.phi(i,j))*cos(outputs.chi(i,j))-sin(outputs.phi(i,j))*sin(outputs.chi(i,j));
@@ -265,7 +257,7 @@ function [inputs] = compute(i,inputs)
         % Effective mechanical reel-out power
         outputs.P_m_o_eff(i,j) = outputs.Ft_drum(i,j)*outputs.vk_r(i,j); %[W]   
         
-        outputs.zetaMech(i,j)    = outputs.P_m_o_eff(i,j)/(outputs.halfRhoS(i,j)*outputs.vw(i,j)^3);
+        outputs.zetaMech(i,j)    = outputs.P_m_o_eff(i,j)/(outputs.halfRhoS*outputs.vw(i,j)^3);
        
         % Effective electrical reel-out power
         % Generator efficiency. As a function of RPM/RPM_max, where RPM_max is driven by winch 
@@ -310,7 +302,7 @@ function [inputs] = compute(i,inputs)
         outputs.CD_k_i(i,j)     = inputs.Cd0+(outputs.CL_i(i,j)- inputs.Cl0_airfoil)^2/(pi()*inputs.AR*inputs.e);
         outputs.CD_i(i,j)       = outputs.CD_k_i(i,j) + outputs.CD_t(i,j);
         outputs.E_i(i,j)        = outputs.CL_i(i,j)/outputs.CD_i(i,j);
-        outputs.Fa_i(i,j)       = outputs.halfRhoS(i,j)*sqrt(outputs.CL_i(i,j)^2+outputs.CD_i(i,j)^2)*outputs.va_i(i,j)^2;
+        outputs.Fa_i(i,j)       = outputs.halfRhoS*sqrt(outputs.CL_i(i,j)^2+outputs.CD_i(i,j)^2)*outputs.va_i(i,j)^2;
 
         % Gravitational force vector (kite + tether)
         if inputs.FgToggle == 0
