@@ -41,10 +41,11 @@ function [optData,outputs,processedOutputs] = main(inputs)
     % Solution of current wind speed as the initial guess for the next wind speed
     x0 = x;
 
-    % Changing initial guess if previous wind speed evaluation is infeasible
-    if abs(mean((outputs.E_result - outputs.E),2)) > 0.01 
+    % Changing initial guess if previous wind speed evaluation is considered infeasible
+    if abs(mean((outputs.E_result - outputs.E),2)) > 1 %0.01 
         x0 = inputs.x0;       
-    elseif exitflag(i) == 0
+    % Changing the initial guess after reaching rated power for capping
+    elseif round(outputs.flag(i)) == 1 && round(outputs.flag(i-1)) ~= 1
       x0 = inputs.x0;
     end 
 
@@ -60,7 +61,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
 
   %% Cut-in wind speed
   % Glide ratio constraint violation acceptance for feasible solution
-  temp1                  = vw(abs(mean((outputs.E_result - outputs.E),2)) < 0.01); 
+  temp1                  = vw(abs(mean((outputs.E_result - outputs.E),2)) < 0.01); %0.01
   processedOutputs.cutIn = max(temp1(1));
  % processedOutputs.cutIn = 7;
 

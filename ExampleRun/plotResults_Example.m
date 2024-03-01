@@ -141,7 +141,7 @@ plot(processedOutputs.Fa(ws,:)/1e3,':o','linewidth',1,'markersize',3);
 plot(processedOutputs.Fa_i(ws,:)/1e3,':^','linewidth',1,'markersize',3);
 plot(processedOutputs.Ft_drum(ws,:)/1e3,':s','linewidth',1,'markersize',3);
 plot(processedOutputs.Ft_drum_i(ws,:)/1e3,':v','linewidth',1,'markersize',3);
-legend('F_{a,o}','F_{a,i}','F_{tg,o}','F_{tg,i}','location','northwest');
+legend('F_{a,o}','F_{a,i}','F_{t,o}','F_{t,i}','location','northwest');
 ylabel('(kN)');
 hold off
 han=axes(fig,'visible','off'); 
@@ -237,7 +237,7 @@ plot(vw, mean(processedOutputs.Ft_drum,2)./10^3,':^','linewidth',1,'markersize',
 plot(vw, mean(processedOutputs.Ft_drum_i,2)./10^3,':d','linewidth',1,'markersize',3);
 plot(vw, processedOutputs.W./10^3,':x','linewidth',1,'markersize',4);
 ylabel('(kN)');
-legend('F_{a,o}','F_{a,i}','F_{tg,o}','F_{tg,i}','W','location','northwest');
+legend('F_{a,o}','F_{a,i}','F_{t,o}','F_{t,i}','W','location','northwest');
 xlabel('Wind speed at 100m height (m/s)');
 xlim(x_axis_limit);
 %ylim([0 160]);

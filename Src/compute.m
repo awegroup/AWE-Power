@@ -47,7 +47,7 @@ function [inputs] = compute(i,inputs)
 
         % Effective mass lumped at kite point (Kite + tether)
         outputs.m_t(i,j)   = inputs.Te_matDensity*pi()/4*outputs.d_t^2*outputs.l_t_inCycle(i,j);
-        outputs.m_eff(i,j) = outputs.m_k(i)+sin(outputs.beta(i))*outputs.m_t(i,j);
+        outputs.m_eff(i,j) = outputs.m_k(i) + 0.5*outputs.m_t(i,j);
 
         % Coordinates of the Kite's position and orientation in the Spherical ref. frame
         if inputs.evalPoint == 0
@@ -236,17 +236,18 @@ function [inputs] = compute(i,inputs)
         
         % Straight-tether force 
         outputs.Ft(i,j) = outputs.Fa_r(i,j) + outputs.Fg_r(i,j) + outputs.Fc_r(i,j);
+        outputs.Ft_drum(i,j) = outputs.Ft(i,j);
 
-        % Loss in Ft due to tether sag
-        if inputs.FgToggle == 0
-            outputs.Ft_drum(i,j) = outputs.Ft(i,j);
-        else
-            outputs.Ft_theta(i,j) = -(1/2)*sin(outputs.theta(i,j))*outputs.m_t(i,j)*inputs.gravity;
-            outputs.Ft_r(i,j)     = sqrt(outputs.Ft(i,j)^2 - outputs.Ft_theta(i,j)^2);
-            outputs.Ft_phi(i,j)   = 0; 
-            % Tether force at the drum
-            outputs.Ft_drum(i,j) = sqrt((outputs.Ft_r(i,j) - cos(outputs.theta(i,j))*outputs.m_t(i)*inputs.gravity)^2 + outputs.Ft_theta(i,j)^2);
-        end
+%         % Loss in Ft due to tether sag as described in Vlugt et. al 2019 paper
+%         if inputs.FgToggle == 0
+%             outputs.Ft_drum(i,j) = outputs.Ft(i,j);
+%         else
+%             outputs.Ft_theta(i,j) = -(1/2)*sin(outputs.theta(i,j))*outputs.m_t(i,j)*inputs.gravity;
+%             outputs.Ft_r(i,j)     = sqrt(outputs.Ft(i,j)^2 - outputs.Ft_theta(i,j)^2);
+%             outputs.Ft_phi(i,j)   = 0; 
+%             % Tether force at the drum
+%             outputs.Ft_drum(i,j) = sqrt((outputs.Ft_r(i,j) - cos(outputs.theta(i,j))*outputs.m_t(i)*inputs.gravity)^2 + outputs.Ft_theta(i,j)^2);
+%         end
         
         % Lift-to-drag ratio that follows from the chosen kinematic ratio
         outputs.E_result(i,j) = sqrt(((outputs.Fa(i,j)*outputs.va(i,j))/outputs.F_dot_v(i,j))^2-1);
@@ -406,7 +407,14 @@ function [inputs] = compute(i,inputs)
   
         % Electrical cycle power
          outputs.P_e_avg(i) = (sum(outputs.to_eff(i,:).*outputs.P_e_o_eff(i,:)) + outputs.t1(i)*outputs.P1_e_o(i) - ...
-                                     sum(outputs.ti_eff(i,:).*outputs.P_e_i_eff(i,:)) -outputs.t2(i)*outputs.P2_e_i(i))/outputs.tCycle(i);    
+                                     sum(outputs.ti_eff(i,:).*outputs.P_e_i_eff(i,:)) -outputs.t2(i)*outputs.P2_e_i(i))/outputs.tCycle(i);   
+         
+         % Flag for the solver to reset the inputs after reaching rated power
+         if round(outputs.P_e_avg(i)) == inputs.P_ratedElec
+           outputs.flag(i)    = 1;
+         else
+           outputs.flag(i)    = 0;
+         end
   
         % Mechanical cycle power - without drivetrain eff
         outputs.P_m_avg(i) = (sum(outputs.to_eff(i,:).*outputs.P_m_o_eff(i,:)) + outputs.t1(i)*outputs.P1_m_o(i) - ...
