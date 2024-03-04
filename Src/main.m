@@ -16,7 +16,8 @@ function [optData,outputs,processedOutputs] = main(inputs)
   options.Display                   = 'final-detailed';
   % options.Display                   = 'notify-detailed';
   options.Algorithm                 = 'sqp';
-  options.FiniteDifferenceType      = 'forward';
+  options.FiniteDifferenceType      = 'central';
+%   options.FiniteDifferenceType      = 'forward';
   options.ScaleProblem             = true;
   % options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-12 1e-12 1e-6*nx 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
   % options.FiniteDifferenceStepSize  = 1e-9;
@@ -44,9 +45,9 @@ function [optData,outputs,processedOutputs] = main(inputs)
     % Changing initial guess if previous wind speed evaluation is considered infeasible
     if abs(mean((outputs.E_result - outputs.E),2)) > 1 %0.01 
         x0 = inputs.x0;       
-    % Changing the initial guess after reaching rated power for capping
-    elseif round(outputs.flag(i)) == 1 && round(outputs.flag(i-1)) ~= 1
-      x0 = inputs.x0;
+%     % Changing the initial guess after reaching rated power for capping
+%     elseif round(outputs.flag(i)) == 1 && round(outputs.flag(i-1)) ~= 1
+%       x0 = inputs.x0;
     end 
 
   end

@@ -409,12 +409,13 @@ function [inputs] = compute(i,inputs)
          outputs.P_e_avg(i) = (sum(outputs.to_eff(i,:).*outputs.P_e_o_eff(i,:)) + outputs.t1(i)*outputs.P1_e_o(i) - ...
                                      sum(outputs.ti_eff(i,:).*outputs.P_e_i_eff(i,:)) -outputs.t2(i)*outputs.P2_e_i(i))/outputs.tCycle(i);   
          
-         % Flag for the solver to reset the inputs after reaching rated power
-         if round(outputs.P_e_avg(i)) == inputs.P_ratedElec
-           outputs.flag(i)    = 1;
-         else
-           outputs.flag(i)    = 0;
-         end
+%          % Flag for the solver to reset the inputs after reaching rated power
+%          outputs.flag(1)  = 0;
+%          if round(outputs.P_e_avg(i)) == inputs.P_ratedElec
+%            outputs.flag(i+1)    = 1;
+%          else
+%            outputs.flag(i+1)    = 0;
+%          end
   
         % Mechanical cycle power - without drivetrain eff
         outputs.P_m_avg(i) = (sum(outputs.to_eff(i,:).*outputs.P_m_o_eff(i,:)) + outputs.t1(i)*outputs.P1_m_o(i) - ...
