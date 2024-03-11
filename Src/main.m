@@ -1,8 +1,8 @@
-function [inputs, outputs, optimDetails, processedOutputs] = main(inputSheetName)
+function [inputs, outputs, optimDetails, processedOutputs] = main(inputs, inputSheetName)
   
   % Load inputs
-  inputs = strcat(inputSheetName, '.m');
-  run(inputs);
+%   inputs = strcat(inputSheetName, '.m');
+%   run(inputs);
 
   % Initial guess for optimisation
   x0     = inputs.x0;
@@ -82,6 +82,7 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputSheetName
       if vw(i)>=processedOutputs.cutIn
           processedOutputs.vw(i,:)           = outputs.vw(i,:);
           processedOutputs.vw_i(i,:)         = outputs.vw_i(i,:);
+          processedOutputs.m_k(i)            = outputs.m_k(i);  
           processedOutputs.P1_m_o(i)         = outputs.P1_m_o(i);
           processedOutputs.P2_m_i(i)         = outputs.P2_m_i(i); 
           processedOutputs.P_m_o_eff(i,:)    = outputs.P_m_o_eff(i,:);
@@ -138,7 +139,7 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputSheetName
           processedOutputs.f_i(i,:)          = outputs.f_i(i,:); 
           processedOutputs.tPatt(i,:)        = outputs.tPatt(i,:);
           processedOutputs.dutyCycle(i)      = processedOutputs.to(i)/processedOutputs.tCycle(i);
-
+          processedOutputs.zetaMech(i,:)     = outputs.zetaMech(i,:);  
           % Cycle efficiency
           processedOutputs.CycleEff_elec(i)  = (processedOutputs.P_e_avg(i)*processedOutputs.tCycle(i))/...
                                                     (processedOutputs.P_e_o(i)*processedOutputs.to(i));
@@ -147,9 +148,9 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputSheetName
 
           
           % Coefficient of power (Cp) as defined for HAWTs
-          outputs.sweptArea(i,:)     = pi().*((outputs.Rp(i,:)+inputs.b/2).^2 - (outputs.Rp(i,:)-inputs.b/2).^2);
-          outputs.Cp_m_o(i,:)        = outputs.P_m_o(i)./(0.5.*inputs.airDensity.*outputs.sweptArea(i,:).*outputs.vw(i,:).^3);
-          outputs.Cp_e_avg(i,:)      = outputs.P_e_avg(i)./(0.5.*inputs.airDensity.*outputs.sweptArea(i,:).*outputs.vw(i,:).^3);
+          processedOutputs.sweptArea(i,:)     = pi().*((outputs.Rp(i,:)+inputs.b/2).^2 - (outputs.Rp(i,:)-inputs.b/2).^2);
+          processedOutputs.Cp_m_o(i,:)        = outputs.P_m_o(i)./(0.5.*inputs.airDensity.*processedOutputs.sweptArea(i,:).*outputs.vw(i,:).^3);
+          processedOutputs.Cp_e_avg(i,:)      = outputs.P_e_avg(i)./(0.5.*inputs.airDensity.*processedOutputs.sweptArea(i,:).*outputs.vw(i,:).^3);
       end      
   end
 

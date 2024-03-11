@@ -1,4 +1,4 @@
-% Input Sheet Example
+% Input Sheet: Effect of Gravity
 inputs                = struct();
 
 inputs.numDeltaLelems  = 5; %[num]

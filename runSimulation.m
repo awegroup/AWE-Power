@@ -4,8 +4,11 @@ clc
 clearvars
 clear global
 
+% Load defined input sheet
+inputSheet_Example;
+
 % Enter your defined input sheet name as an argument 
-[inputs, outputs, optimDetails, processedOutputs] = main('inputSheet_Example');
+[inputs, outputs, optimDetails, processedOutputs] = main(inputs, 'inputSheet_Example');
 
 
 
