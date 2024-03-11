@@ -118,8 +118,8 @@ function [inputs] = compute(i,inputs)
         end
         
         % Gravitational force vector (kite + tether)
-        outputs.Fg_r(i,j)     = -outputs.W(i)*cos(outputs.theta(i,j));
-        outputs.Fg_theta(i,j) = outputs.W(i)*sin(outputs.theta(i,j));
+        outputs.Fg_r(i,j)     = -outputs.W(i,j)*cos(outputs.theta(i,j));
+        outputs.Fg_theta(i,j) = outputs.W(i,j)*sin(outputs.theta(i,j));
         outputs.Fg_phi(i,j)   = 0;
         
         % Aerodynamic force vector
@@ -212,8 +212,8 @@ function [inputs] = compute(i,inputs)
         outputs.Fa_i(i,j)       = outputs.halfRhoS*sqrt(outputs.CL_i(i,j)^2+outputs.CD_i(i,j)^2)*outputs.va_i(i,j)^2;
 
         % Gravitational force vector (kite + tether)
-        outputs.Fg_r_i(i,j)       = -outputs.W(i)*cos(outputs.theta_i(i,j));
-        outputs.Fg_theta_i(i,j)   = outputs.W(i)*sin(outputs.theta_i(i,j));
+        outputs.Fg_r_i(i,j)       = -outputs.W(i,j)*cos(outputs.theta_i(i,j));
+        outputs.Fg_theta_i(i,j)   = outputs.W(i,j)*sin(outputs.theta_i(i,j));
         outputs.Fg_phi_i(i,j)     = 0;
 
         % Aerodynamic force vector

@@ -106,7 +106,7 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputSheetName
           processedOutputs.Ft_i(i,:)         = outputs.Ft_i(i,:);
           processedOutputs.Fa(i,:)           = outputs.Fa(i,:);
           processedOutputs.Fa_i(i,:)         = outputs.Fa_i(i,:);
-          processedOutputs.W(i)              = outputs.W(i);
+          processedOutputs.W(i,:)            = outputs.W(i,:);
           processedOutputs.vo(i,:)           = outputs.vk_r(i,:);
           processedOutputs.vk_tau(i,:)       = outputs.vk_tau(i,:);
           processedOutputs.vi(i,:)           = outputs.vk_r_i(i,:);
@@ -138,6 +138,13 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputSheetName
           processedOutputs.f_i(i,:)          = outputs.f_i(i,:); 
           processedOutputs.tPatt(i,:)        = outputs.tPatt(i,:);
           processedOutputs.dutyCycle(i)      = processedOutputs.to(i)/processedOutputs.tCycle(i);
+
+          % Cycle efficiency
+          processedOutputs.CycleEff_elec(i)  = (processedOutputs.P_e_avg(i)*processedOutputs.tCycle(i))/...
+                                                    (processedOutputs.P_e_o(i)*processedOutputs.to(i));
+          processedOutputs.CycleEff_mech(i)  = (processedOutputs.P_m_avg(i)*processedOutputs.tCycle(i))/...
+                                                    (processedOutputs.P_m_o(i)*processedOutputs.to(i));
+
           
           % Coefficient of power (Cp) as defined for HAWTs
           outputs.sweptArea(i,:)     = pi().*((outputs.Rp(i,:)+inputs.b/2).^2 - (outputs.Rp(i,:)-inputs.b/2).^2);
