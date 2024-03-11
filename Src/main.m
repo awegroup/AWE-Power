@@ -1,7 +1,10 @@
-function [optData,outputs,processedOutputs] = main(inputs)
-    
+function [inputs, outputs, optimDetails, processedOutputs] = main(inputSheetName)
   
-  % Initial guess
+  % Load inputs
+  inputs = strcat(inputSheetName, '.m');
+  run(inputs);
+
+  % Initial guess for optimisation
   x0     = inputs.x0;
 
   % Bounds
@@ -24,8 +27,8 @@ function [optData,outputs,processedOutputs] = main(inputs)
 %   options.ConstraintTolerance      = 1e-4;
   %  options.OptimalityTolerance       = 1e-9;
 %   options.StepTolerance             = 1e-4;
-  options.MaxFunctionEvaluations    = 5000*numel(x0);
-  options.MaxIterations             = 500*numel(x0);
+%   options.MaxFunctionEvaluations    = 5000*numel(x0);
+%   options.MaxIterations             = 500*numel(x0);
   %   options.FunctionTolerance        = 1e-9;
   %   options.DiffMaxChange            = 1e-1;
   %   options.DiffMinChange            = 0;
@@ -39,23 +42,20 @@ function [optData,outputs,processedOutputs] = main(inputs)
     % Storing final results
     [~,inputs,outputs] = objective(x,i,inputs);
 
-    % Solution of current wind speed as the initial guess for the next wind speed
-    x0 = x;
-
     % Changing initial guess if previous wind speed evaluation is considered infeasible
     if abs(mean((outputs.E_result - outputs.E),2)) > 1 %0.01 
-        x0 = inputs.x0;       
-%     % Changing the initial guess after reaching rated power for capping
-%     elseif round(outputs.flag(i)) == 1 && round(outputs.flag(i-1)) ~= 1
-%       x0 = inputs.x0;
+        x0 = inputs.x0;     
+    else
+        % Solution of current wind speed as the initial guess for the next wind speed
+        x0 = x;
     end 
 
   end
   disp(exitflag)
   % Store optimisation results data
-  optData.optHist  = optHist;
-  optData.exitflag = exitflag;
-  optData.lambda   = lambda;
+  optimDetails.optHist  = optHist;
+  optimDetails.exitflag = exitflag;
+  optimDetails.lambda   = lambda;
 
   %% Post processing
   vw = inputs.vw_ref; % Wind speed at ref. height
@@ -64,7 +64,6 @@ function [optData,outputs,processedOutputs] = main(inputs)
   % Glide ratio constraint violation acceptance for feasible solution
   temp1                  = vw(abs(mean((outputs.E_result - outputs.E),2)) < 0.01); %0.01
   processedOutputs.cutIn = max(temp1(1));
- % processedOutputs.cutIn = 7;
 
   %% Rated wind and power
   temp3                       = round(outputs.P_e_avg./max(outputs.P_e_avg),2);
@@ -104,11 +103,9 @@ function [optData,outputs,processedOutputs] = main(inputs)
           processedOutputs.ti(i)             = outputs.ti(i);
           processedOutputs.tCycle(i)         = outputs.tCycle(i);
           processedOutputs.Ft(i,:)           = outputs.Ft(i,:);
-          processedOutputs.Ft_drum(i,:)      = outputs.Ft_drum(i,:);
-          processedOutputs.Ft_drum_i(i,:)    = outputs.Ft_drum_i(i,:);
+          processedOutputs.Ft_i(i,:)         = outputs.Ft_i(i,:);
           processedOutputs.Fa(i,:)           = outputs.Fa(i,:);
           processedOutputs.Fa_i(i,:)         = outputs.Fa_i(i,:);
-          processedOutputs.Fc(i,:)           = outputs.Fc(i,:);
           processedOutputs.W(i)              = outputs.W(i);
           processedOutputs.vo(i,:)           = outputs.vk_r(i,:);
           processedOutputs.vk_tau(i,:)       = outputs.vk_tau(i,:);
@@ -121,8 +118,7 @@ function [optData,outputs,processedOutputs] = main(inputs)
           processedOutputs.l_t_max(i)        = outputs.l_t_max(i);
           processedOutputs.l_t_min(i)        = outputs.l_t_min(i);
           processedOutputs.l_t_inCycle(i,:)  = outputs.l_t_inCycle(i,:);
-          processedOutputs.h_inCycle(i,:)    = outputs.h_inCycle(i,:);
-          processedOutputs.vk_omega(i,:)     = outputs.vk_omega(i,:); 
+          processedOutputs.h_inCycle(i,:)    = outputs.h_inCycle(i,:); 
           processedOutputs.va(i,:)           = outputs.va(i,:);
           processedOutputs.beta(i)           = rad2deg(outputs.beta(i));
           processedOutputs.rollAngle(i,:)    = rad2deg(-outputs.rollAngle(i,:));
@@ -177,4 +173,11 @@ function [optData,outputs,processedOutputs] = main(inputs)
     
   end
   
+  %% Save outputs
+  
+  % Change names to associate with specific input file
+  save(['OutputFiles\' inputSheetName '_' 'optimDetails' '.mat'], 'optimDetails');
+  save(['OutputFiles\' inputSheetName '_' 'outputs' '.mat'], 'outputs');
+  save(['OutputFiles\' inputSheetName '_' 'processedOutputs' '.mat'], 'processedOutputs');
+
 end
