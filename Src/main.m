@@ -140,10 +140,12 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs, inputS
           processedOutputs.tPatt(i,:)        = outputs.tPatt(i,:);
           processedOutputs.dutyCycle(i)      = processedOutputs.to(i)/processedOutputs.tCycle(i);
           processedOutputs.zetaMech(i,:)     = outputs.zetaMech(i,:);  
+          processedOutputs.d_te              = outputs.d_t;  
+
           % Cycle efficiency
-          processedOutputs.CycleEff_elec(i)  = (processedOutputs.P_e_avg(i)*processedOutputs.tCycle(i))/...
+          processedOutputs.cycleEff_elec(i)  = (processedOutputs.P_e_avg(i)*processedOutputs.tCycle(i))/...
                                                     (processedOutputs.P_e_o(i)*processedOutputs.to(i));
-          processedOutputs.CycleEff_mech(i)  = (processedOutputs.P_m_avg(i)*processedOutputs.tCycle(i))/...
+          processedOutputs.cycleEff_mech(i)  = (processedOutputs.P_m_avg(i)*processedOutputs.tCycle(i))/...
                                                     (processedOutputs.P_m_o(i)*processedOutputs.to(i));
 
           

@@ -5,7 +5,7 @@ inputs.numDeltaLelems  = 1; %[num]
 inputs.FgToggle        = 1; % 0 = No, 1 = Yes
 inputs.vertWindProfile = 0; % 0 = Modelled, 1 = From dataset 
 
-inputs.vw_ref         = 15; %[m/s]
+inputs.vw_ref         = 1:1:25; %[m/s]
 inputs.h_ref          = 100; %[m]
 inputs.windShearExp   = 0.143; %[-] % 0.143 over land, 0.11 over sea
 
@@ -41,7 +41,7 @@ inputs.Cd0            = 0.056; %[-]
 inputs.Cd_c           = 1.2; %[-] % 1.1?
 
 inputs.v_d_max       = 20; %[m/s]
-inputs.a_d_max       = 20; %[m/s]
+inputs.a_d_max       = 5; %[m/s]
 
 inputs.etaGen.param   = [0.671, -1.4141, 0.9747, 0.7233]; %[-]
 inputs.etaGen.v_max   = inputs.v_d_max; %[m/s] % Or can enter a value from supplier

@@ -1,6 +1,5 @@
 %% Paper plots
 
-
 %% Effect of gravity
 clc 
 clearvars
@@ -13,6 +12,7 @@ for i = 1:2
   clear global
 end
 
+% Power curve plot
 figure('units','inch','Position', [5 5 3.5 2.5])
 hold on
 grid on
@@ -25,20 +25,36 @@ xlabel('Wind speed at 100m height (m/s)');
 xlim([0 processedOutputs.vw_100m_operRange(end)]);
 hold off
 
-figure('units','inch','Position', [5 5 3.5 2.5])
-hold on
-grid on
-box on
-plot(gravityEffect(1).dutyCycle.*100,'o-','linewidth',1,'MarkerSize',2);
-plot(gravityEffect(2).dutyCycle.*100,'^-','linewidth',1,'MarkerSize',2);
-legend('eta_{no-gravity}','eta_{gravity}');
-ylabel('(%)');
-xlabel('Wind speed at 100m height (m/s)');
-xlim([0 processedOutputs.vw_100m_operRange(end)]);
-hold off
+% Cycle power rep. plots
+col_b = [0 0.4470 0.7410];
+col_o = [0.8500 0.3250 0.0980];
+cols = [col_b col_o];
+windSpeeds = [7, 15];
+for i = windSpeeds
+    idx = find(inputs.vw_ref == i);
+    figure('units','inch','Position', [4.2 6.5 3.5 2.2])
+    hold on
+    grid on
+    box on
+    % Plot your data
+    plot(gravityEffect(1).cyclePowerRep(i).t_inst, gravityEffect(1).cyclePowerRep(i).P_e_inst,'Color',col_b,'linewidth',1.2, 'DisplayName', 'P_{no-gravity}');
+    plot(gravityEffect(2).cyclePowerRep(i).t_inst, gravityEffect(2).cyclePowerRep(i).P_e_inst,'Color',col_o,'linewidth',1.2, 'DisplayName', 'P_{gravity}');
+    yline(gravityEffect(1).P_e_avg(i)/10^3, '--','Color',col_b,'linewidth',1.2, 'DisplayName', 'P_{no-gravity}','HandleVisibility', 'off');
+    yline(gravityEffect(2).P_e_avg(i)/10^3, '--','Color',col_o,'linewidth',1.2, 'DisplayName', 'P_{gravity}','HandleVisibility', 'off');
+    % Set yline positions within the range of your data
+    yline(0, '-', 'linewidth', 1, 'HandleVisibility', 'off');    
+    % Dummy line for average power entry in legend
+    plot(NaN, NaN, '--', 'Color', 'k', 'linewidth', 1, 'DisplayName', 'P_{avg}');
+    ylabel('(kW)');
+    xlabel('Time (s)');      
+    legend('Location', 'Best'); 
+    title(strcat('Wind speed at 100m:', num2str(processedOutputs.cyclePowerRep(idx).ws), ' m/s'));      
+    hold off
+end
+
 
 %% Effect of scaling on fixed wind speed of 15 m/s
-% Problem settings
+% Model settings
 % Zero ground clearance, no constraint on rated, max power, tether length, height, patterns, etc.
 % Enforce max. tether force constraint
 % Change objective function to max. P_m_o
@@ -49,13 +65,15 @@ clc
 clearvars
 clear global
 inputSheet_scalingEffects;
-inputs.S = 60;
-for i =1:6
+inputs.vw_ref         = 12; %[m/s]
+inputs.S = 100;
+for i =1:7
   inputs.Ft_max = 200+200*i;
   fixedWA.Ft_max(i) = inputs.Ft_max;
   [inputs, outputs, optimDetails, processedOutputs] = main(inputs, 'inputSheet_scalingEffects');
   fixedWA.m_k(i)         = processedOutputs.m_k;
   fixedWA.zetaMech(i)    = processedOutputs.zetaMech;
+  fixedWA.d_te(i)        = processedOutputs.d_te;
   fixedWA.Ft_to_S(i)     = fixedWA.Ft_max(i)/inputs.S;
   clear global
 end
@@ -63,23 +81,24 @@ figure('units','inch','Position', [4 4 3.5 2.2])
 hold on
 grid on
 box on
-xlabel('F_{t,max} (kN)');
+xlabel('d_{t} (cm)');
 yyaxis left
-plot(fixedWA.Ft_max,fixedWA.zetaMech,'o-','linewidth',1,'MarkerSize',3);
+plot(fixedWA.d_te.*100,fixedWA.zetaMech,'o-','linewidth',1,'MarkerSize',3);
 ylabel('ζ (-)');
 yyaxis right
-plot(fixedWA.Ft_max,fixedWA.m_k,'^-','linewidth',1,'MarkerSize',3);
+plot(fixedWA.d_te.*100,fixedWA.m_k,'^-','linewidth',1,'MarkerSize',3);
 ylabel('m_k (kg)');
-title('S = 100 m^2');
+title(['S = ' num2str(inputs.S) 'm^2']);
 hold off
 
-% Fixed Ft_max
+% Fixed Ft_max: Finding opt WA for given Tether size
 clc
 clearvars
 clear global
 inputSheet_scalingEffects;
-FixedFt_max.Ft_max = 300;
-for i =1:8
+inputs.vw_ref         = 12; %[m/s]
+FixedFt_max.Ft_max = 400;
+for i =1:6
   inputs.S = 10*i;
   FixedFt_max.S(i)       = inputs.S;
   inputs.Ft_max          = FixedFt_max.Ft_max;
@@ -87,6 +106,7 @@ for i =1:8
   [inputs, outputs, optimDetails, processedOutputs] = main(inputs, 'inputSheet_scalingEffects');
   FixedFt_max.m_k(i)     = processedOutputs.m_k;
   FixedFt_max.zeta(i)    = processedOutputs.zetaMech;
+  FixedFt_max.d_te       = processedOutputs.d_te;
   clear global
 end
 figure('units','inch','Position', [12 4 3.5 2.2])
@@ -100,61 +120,80 @@ ylabel('ζ (-)');
 yyaxis right
 plot(FixedFt_max.S,FixedFt_max.m_k,'^-','linewidth',1,'MarkerSize',3);
 ylabel('m_k (kg)');
-title('F_{t.max} = 200 kN');
+title(['F_{t,max} = ' num2str(FixedFt_max.Ft_max) 'kN (d_{t} = ' num2str(round(FixedFt_max.d_te*100,1)) 'cm)']);
 hold off
 
 
 %% Effects of scaling on full operational wind speed range 
-% % Full Power curve plots for fixed S, increasing Ft_max
-% inputSheet;
-% inputs.S = 100;
-% figSize = [5 5 3.2 2];
-% figure('units','inch','Position', figSize)
-% hold on
-% grid on
-% box on
-% numEvals = 5;
-% legendLabels = cell(numEvals,1);
-% for i = 1:numEvals
-%     inputs.Ft_max = 2*inputs.S + i*100;
-%     [optData,outputs,processedOutputs] = main(inputs);
-%     P(i).increasingFt_max =  processedOutputs.P_e_avg;
-%     % Plotting
-%     plot(P(i).increasingFt_max./1e6,'o-','linewidth',1,'MarkerSize',2);
-%     legendLabels{i} = ['F_{t,max}= ' num2str(inputs.Ft_max) 'kN'];
-% end
-% xlabel('Wind speed at 100m height (m/s)');
-% ylabel('Power (MW)');
-% title(strcat('S = ',num2str(inputs.S),'m^2'));
-% xlim([0 processedOutputs.vw_100m_operRange(end)]);
-% legend(legendLabels, 'Location', 'Best');
-% hold off
-% 
-% % Full Power curve plots for increasing S, fixed Ft_max/S, no mechanical power limit
-% inputSheet;
-% inputs.peakM2E_F      = 30;
-% figSize = [5 5 3.2 2];
-% figure('units','inch','Position', figSize)
-% hold on
-% grid on
-% box on
-% numEvals = 5;
-% legendLabels = cell(numEvals,1);
-% for i = 1:numEvals
-%     inputs.S = i*30;
-%     inputs.Ft_max = 8*inputs.S;
-%     [optData,outputs,processedOutputs] = main(inputs);
-%     P(i).increasingS =  processedOutputs.P_e_avg;
-%     % Plotting
-%     plot(P(i).increasingS./1e6,'o-','linewidth',1,'MarkerSize',2);
-%     legendLabels{i} = ['S = ' num2str(inputs.S) 'm^2'];
-% end
-% xlabel('Wind speed at 100m height (m/s)');
-% xlim([0 processedOutputs.vw_100m_operRange(end)]);
-% ylabel('Power (MW)');
-% title(strcat('F_{t,max}/S = ',num2str(inputs.Ft_max/inputs.S),'kN/m^2'));
-% legend(legendLabels, 'Location', 'Best');
-% hold off
+
+% Full Power curve plots for fixed S, increasing Ft_max
+clc
+clearvars
+clear global
+inputSheet_scalingEffects;
+inputs.S = 100;
+numEvals = 4;
+for i = 1:numEvals
+    inputs.Ft_max = inputs.S + i*100;
+    Ft_max(i)     = inputs.Ft_max;
+    [inputs, outputs, optimDetails, processedOutputs] = main(inputs, 'inputSheet_scalingEffects');
+    fullPC_incrFt_max(i)  =  processedOutputs;
+    clear global
+end
+% Plotting 
+figSize = [5 5 3.2 2];
+figure('units','inch','Position', figSize)
+hold on
+grid on
+box on
+legendLabels = cell(numEvals,1);
+for i = 1:numEvals
+    plot(fullPC_incrFt_max(i).P_e_avg./1e6,'o-','linewidth',1,'MarkerSize',2);
+    legendLabels{i} = ['F_{t,max}= ' num2str(Ft_max(i)) 'kN'];
+end
+xlabel('Wind speed at 100m height (m/s)');
+ylabel('Power (MW)');
+title(strcat('S = ',num2str(inputs.S),'m^2'));
+xlim([0 processedOutputs.vw_100m_operRange(end)]);
+legend(legendLabels, 'Location', 'Best');
+hold off
+
+
+% Full Power curve plots for increasing S, fixed Ft_max/S, no mechanical power limit
+clc
+clearvars
+clear global
+inputSheet_scalingEffects;
+inputs.P_ratedElec    = 1000*1000; %[W]
+Ft_maxByS = 3;
+numEvals = 4;
+legendLabels = cell(numEvals,1);
+% Computation loop
+for i = 1:numEvals
+    inputs.S = i*30;
+    S(i)     = inputs.S;
+    inputs.Ft_max = Ft_maxByS*inputs.S;
+    [inputs, outputs, optimDetails, processedOutputs] = main(inputs, 'inputSheet_scalingEffects');
+    fullPC_incrS(i) =  processedOutputs;
+    clear global
+end
+% Plotting loop
+figSize = [5 5 3.2 2];
+figure('units','inch','Position', figSize)
+hold on
+grid on
+box on
+for i = 1:numEvals
+    plot(fullPC_incrS(i).P_e_avg./1e6,'o-','linewidth',1,'MarkerSize',2);
+    legendLabels{i} = ['S = ' num2str(S(i)) 'm^2'];
+end
+xlabel('Wind speed at 100m height (m/s)');
+xlim([0 processedOutputs.vw_100m_operRange(end)]);
+ylabel('Power (MW)');
+title(strcat('F_{t,max}/S = ',num2str(Ft_maxByS),'kN/m^2'));
+legend(legendLabels, 'Location', 'Best');
+hold off
+
 
 %% Sensitivity plots example
 

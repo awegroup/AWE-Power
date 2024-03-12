@@ -88,8 +88,8 @@ function [] = plotResults(inputSheetName)
     han.XLabel.Visible='on';
     han.YLabel.Visible='off';
     ylabel(han,'yourYLabel');
-    xlabel(han,'Discretized reel-out length elements');
-    title(han,'Wind speed at 100m = 15 m/s');
+    xlabel(han,'Discretized reeling distance over cycle');
+    title(han,['Wind speed at 100m = ' num2str(ws) 'm/s']);
 
     % Speeds
     figure('units','inch','Position', [0.2 0.5 3.5 2.2])
@@ -300,7 +300,7 @@ function [] = plotResults(inputSheetName)
         % Plot your data
         plot(processedOutputs.cyclePowerRep(i).t_inst, processedOutputs.cyclePowerRep(i).P_e_inst,'linewidth',1.5, 'DisplayName', 'P_{e}');
         plot(processedOutputs.cyclePowerRep(i).t_inst,processedOutputs.cyclePowerRep(i).P_m_inst,'--','linewidth',1.5, 'DisplayName', 'P_{m}');
-        yline(processedOutputs.P_e_avg(idx)/10^3, '-.', 'linewidth',1.2, 'DisplayName', 'P_{e,avg}');
+        yline(processedOutputs.P_e_avg(idx)/10^3, ':', 'linewidth',1.2, 'DisplayName', 'P_{e,avg}');
         % Set yline positions within the range of your data
         yline(0, '-', 'linewidth', 1, 'HandleVisibility', 'off');      
         ylabel('(kW)');
