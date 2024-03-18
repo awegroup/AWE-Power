@@ -1,0 +1,7 @@
+*.slxc
+slprj/
+**/.DS_Store
+*.prj
+*.slx.*
+*.m~
+*_msf.*
