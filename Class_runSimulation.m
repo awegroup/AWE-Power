@@ -20,16 +20,16 @@ inputs.kiteMass         = 600; %[kg]
 inputs.numDeltaLelems   = 2; %[num]
 
 %% Create class
-simulationQSM = KiteQSMsimulation(inputs);
+simulationQSM = KiteQSMsimulation2(inputs);
 
 options                           = optimoptions('fmincon');
 options.Display                   = 'none'; %'iter-detailed', 'notify-detailed'
 options.Algorithm                 = 'sqp';
 options.FiniteDifferenceType      = 'central'; % 'forward'
-options.ScaleProblem             = true;
+options.ScaleProblem              = true;
 % options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-12 1e-12 1e-6*nx 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
 % options.FiniteDifferenceStepSize  = 1e-9;
-% options.ConstraintTolerance      = 1e-4;
+% options.ConstraintTolerance       = 1e-4;
 % options.OptimalityTolerance       = 1e-9;
 % options.StepTolerance             = 1e-4;
 % options.MaxFunctionEvaluations    = 5000*numel(x0);
@@ -39,10 +39,10 @@ options.ScaleProblem             = true;
 % options.DiffMinChange            = 0;
 
 %% Run QSM
-simulationQSM = simulationQSM.runsimulation(options);
+simulationQSM = simulationQSM.runsimulation(simulationQSM.inputs, options);
 
 %% Post processing
-simulationQSM = simulationQSM.processoutputs();
+simulationQSM = simulationQSM.processoutputs(simulationQSM.inputs, simulationQSM.outputs);
 
 %% Plotting
-simulationQSM.plotresults();
+simulationQSM.plotresults(simulationQSM.inputs, simulationQSM.processedOutputs);

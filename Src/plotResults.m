@@ -13,7 +13,7 @@ function [] = plotResults(inputSheetName)
     
 
     %% Plot settings
-    vw = inputs.vw_ref;
+    vw = obj.inputs.vw_ref;
     x_axis_limit = [0 processedOutputs.vw_100m_operRange(end)];
 
     newcolors = [ % 0.25, 0.25, 0.25

@@ -4,6 +4,7 @@ classdef KiteQSMsimulation < handle
         outputs
         optimDetails
         processedOutputs
+        kiteMass
     end
     
     methods
@@ -144,15 +145,16 @@ classdef KiteQSMsimulation < handle
             for i = 1:length(f)
                 obj.inputs = setfield(obj.inputs, f{i}, p3.Results.(f{i}));
             end
+
         end
         
-        function obj = runsimulation(obj, optionsFMINCON)
-
+        function obj = runsimulation(obj, inputs, optionsFMINCON)
+            persistent outputs;
             if nargin<2
                 optionsFMINCON                      = optimoptions('fmincon');
                 optionsFMINCON.Display              = 'none';
                 optionsFMINCON.Algorithm            = 'sqp';
-                optionsFMINCON.FiniteDifferenceType = 'central';
+                optionsFMINCON.FiniteDifferenceType = 'forward';
                 optionsFMINCON.ScaleProblem         = true;
             else
                 if ~isa(optionsFMINCON, 'optim.options.Fmincon')
@@ -164,412 +166,442 @@ classdef KiteQSMsimulation < handle
             x0 = obj.inputs.x0;
 
             % Bounds
-            lb = obj.inputs.lb;
-            ub = obj.inputs.ub;
+            lb = inputs.lb;
+            ub = inputs.ub;
 
             % Initialize variables to store results
-            exitflag = zeros(1, length(obj.inputs.windSpeedReference));
-            optHist = cell(1, length(obj.inputs.windSpeedReference));
-            lambda = cell(1, length(obj.inputs.windSpeedReference));
+            exitflag = zeros(1, length(inputs.windSpeedReference));
+            optHist = cell(1, length(inputs.windSpeedReference));
+            lambda = cell(1, length(inputs.windSpeedReference));
 
-            obj.initialise_outputs_to_zero();
-            obj.outputs.halfRhoS = 0.5*obj.inputs.densityAir*obj.inputs.areaWing;
+            % Preinitialize the struct with all fields set to empty arrays
+            varNames = {'deltaL', 'beta', 'gamma', 'Rp_start', 'vk_r_i', ...
+                      'CL_i', 'vk_r', 'kRatio', 'CL', 'l_t_min', ...
+                      'pattStartGrClr', 'h_cycleStart', 'l_t_max', ...
+                      'pattEndGrClr', 'l_t_avg', 'h_cycleAvg', 'h_cycleEnd', ...
+                      'd_t', 'elemDeltaL', 'l_t_inCycle', ...
+                      'pattGrClr', 'm_t', 'm_eff', 'theta', 'phi', 'chi', ...
+                      'CD_k', 'CD_t', 'CD', 'E', 'h_inCycle', 'Rp', 'vw', ...
+                      'vw_r', 'vw_theta', 'vw_phi', 'f', 'va', 'Fa', 'lambda', ...
+                      'vk_tau', 'vk_theta', 'vk_phi', 'W', 'Fg_r', 'Fg_theta', ...
+                      'Fg_phi', 'Fa_theta', 'Fa_phi', 'Fa_r', 'rollAngle', 'va_r', ...
+                      'va_theta', 'va_phi', 'F_dot_v', 'D_r', 'D_theta', 'D_phi', ...
+                      'L_r', 'L_theta', 'L_phi', 'D', 'L', 'Ft', 'E_result', ...
+                      'kByE', 'P_m_o_eff', 'zetaMech', 'etaGen_o', 'P_e_o_eff', ...
+                      'theta_i', 'phi_i', 'vw_i', 'vw_r_i', 'vw_theta_i', ...
+                      'vw_phi_i', 'f_i', 'va_r_i', 'va_theta_i', 'va_phi_i', ...
+                      'va_i', 'CD_k_i', 'CD_i', 'E_i', 'Fa_i', 'Fg_r_i', ...
+                      'Fg_theta_i', 'Fg_phi_i', 'Fa_theta_i', 'Fa_phi_i', ...
+                      'Fa_r_i', 'F_dot_v_i', 'D_r_i', 'D_theta_i', 'D_phi_i', ...
+                      'L_r_i', 'L_theta_i', 'L_phi_i', 'D_i', 'L_i', 'E_result_i', ...
+                      'Ft_i', 'P_m_i_eff', 'etaGen_i', 'P_e_i_eff', 't1', 'to_eff', ...
+                      'to', 'P1_m_o', 'P1_e_o', 'P_m_o', 'P_e_o', 't2', 'ti_eff', ...
+                      'ti', 'P2_m_i', 'P2_e_i', 'P_m_i', 'P_e_i', 'tCycle', ...
+                      'tPatt', 'numOfPatt', 'P_e_avg', 'P_m_avg'};
+
+            % Initialize an empty structure
+            outputSave = struct();
+            
+            % Add fields to the empty structure using the variable names
+            for i = 1:length(varNames)
+                outputSave.(varNames{i})(length(inputs.windSpeedReference),1) = 0;
+            end
+            outputs = [];
+
+            % obj.initialise_outputs_to_zero();
+            halfRhoS = 0.5*inputs.densityAir*inputs.areaWing;
 
             % Kite mass 
-            if obj.inputs.doMassOverride == 1
-                obj.outputs.m_k = obj.inputs.kiteMass;
+            if inputs.doMassOverride == 1
+                obj.kiteMass = inputs.kiteMass;
             else
                 % Vincent Bonnin's simple mass model developed at Ampyx Power. Based on AP3 data and projected data for larger systems (AP4-AP5)      
                 a1     = 0.002415;       a2     = 0.0090239;       b1     = 0.17025;       b2     = 3.2493;
                 k1     = 5;              c1     = 0.46608;         d1     = 0.65962;       k2     = 1.1935;
                 AR_ref = 12;
-                a = a1*(obj.inputs.forceTether_max/1000/obj.inputs.areaWing) + a2;
-                b = b1*(obj.inputs.forceTether_max/1000/obj.inputs.areaWing) + b2;
-                obj.outputs.m_k = 10*(a*obj.inputs.areaWing^2 +b*obj.inputs.areaWing-k1)*(c1*(obj.inputs.aspectRatio/AR_ref)^2-d1*(obj.inputs.aspectRatio/AR_ref)+k2); 
+                a_massCalc = a1*(inputs.forceTether_max/1000/inputs.areaWing) + a2;
+                b_massCalc = b1*(inputs.forceTether_max/1000/inputs.areaWing) + b2;
+                obj.kiteMass = 10*(a_massCalc*inputs.areaWing^2 +b_massCalc*inputs.areaWing-k1)...
+                    *(c1*(inputs.aspectRatio/AR_ref)^2-d1*(inputs.aspectRatio/AR_ref)+k2); 
             end
 
             % Optimize operation for every wind speed
-            for i = 1:length(obj.inputs.windSpeedReference)
-
+            for i = 1:length(inputs.windSpeedReference)
+                windSpeed = inputs.windSpeedReference(i); 
                 % Define objective and constraint functions
-                conFunc = @(x) constraints(obj, i);
-                objFunc = @(x) objective(obj, x, i);
+                conFunc = @(x) constraints(x, inputs);
+                objFunc = @(x) objective(x, inputs, obj.kiteMass, halfRhoS, windSpeed);
 
                 % Run optimization
+
                 [x, ~, exitflag(i), optHist{i}, lambda{i}] = fmincon(objFunc, x0, [], [], [], [], lb, ub, conFunc, optionsFMINCON);
 
                 % Store final results
-                obj.objective(x, i);
+                [~] = objective(x, inputs, obj.kiteMass, halfRhoS, windSpeed);
+                for var_i = 1:length(varNames)
+                    tempOut = outputs.(varNames{var_i});
+                    outputSave.(varNames{var_i})(i,1:numel(tempOut)) = tempOut;
+                end
 
                 % Update initial guess for the next iteration
-                if abs(mean((obj.outputs.E_result - obj.outputs.E), 2)) > 1 %0.01
-                    x0 = obj.inputs.x0;
+                if abs(mean((outputs.E_result - outputs.E), 2)) > 1 %0.01
+                    x0 = inputs.x0;
                 else
                     x0 = x;
                 end
             end
 
             % Store optimization details
+            obj.outputs = outputSave;
             obj.optimDetails.optHist = optHist;
             obj.optimDetails.exitflag = exitflag;
             obj.optimDetails.lambda = lambda;
-        end
-
-        function [c, ceq] = constraints(obj, i)
-            %% Inequality constraints
-            % Access outputs through obj.outputs
-
-            % Min clearance between ground and bottom point of pattern
-            c(1)   = (obj.inputs.minGroundClear - obj.outputs.pattStartGrClr(i));
-            c(2)   = (obj.inputs.minGroundClear - obj.outputs.pattEndGrClr(i));
-
-            % Capping for requested electrical rated power
-            c(3)   = (obj.outputs.P_e_avg(i) - obj.inputs.P_ratedElec); 
-
-            % Tether length limit
-            c(4) = (obj.outputs.l_t_max(i) - obj.inputs.maxTeLen); 
-
-            % Min number of patterns to get into transition 
-            c(5) = (1 - mean(obj.outputs.numOfPatt(i,:)));
-
-            % Max. cycle avg height
-            c(6) = (obj.outputs.h_cycleEnd(i) - obj.inputs.maxHeight);
-
-            % Peak mechanical power limit
-            c(7:obj.inputs.numDeltaLelems+6) = (obj.outputs.P_m_o_eff(i,:) - obj.inputs.peakM2E_F*obj.inputs.P_ratedElec);
-
-            % Maximum tether force
-            c(7+obj.inputs.numDeltaLelems:2*obj.inputs.numDeltaLelems+6) = (obj.outputs.Ft(i,:) - obj.inputs.forceTether_max*obj.inputs.safetyFactor_forceTetherMax);
-
-            % Apparent speed cannot be negative
-            c(7+2*obj.inputs.numDeltaLelems:3*obj.inputs.numDeltaLelems+6) = (0 - obj.outputs.va(i,:));
-
-            % Tangential velocity factor cannot be negative
-            c(7+3*obj.inputs.numDeltaLelems:4*obj.inputs.numDeltaLelems+6) = (0 - obj.outputs.lambda(i,:));
-
-            % Tether force during reel-in cannot be negative
-            c(7+4*obj.inputs.numDeltaLelems:5*obj.inputs.numDeltaLelems+6) = (0 - obj.outputs.Ft_i(i,:));  
-
-            %% Equality constraints
-            % Glide ratio during reel-out
-            ceq(0*obj.inputs.numDeltaLelems+1:1*obj.inputs.numDeltaLelems) = (obj.outputs.E_result(i,:) - obj.outputs.E(i,:));
-
-            % Glide ratio during reel-in
-            ceq(1*obj.inputs.numDeltaLelems+1:2*obj.inputs.numDeltaLelems) = (obj.outputs.E_result_i(i,:) - obj.outputs.E_i(i,:));
-        end
-
-        function [fval, obj] = objective(obj, x, i)
-            % Assign variable values
-            obj.outputs.deltaL(i) = x(1);
-            obj.outputs.beta(i) = x(2);
-            obj.outputs.gamma(i) = x(3);
-            obj.outputs.Rp_start(i) = x(4);
-            obj.outputs.vk_r_i(i, 1:obj.inputs.numDeltaLelems) = x(0*obj.inputs.numDeltaLelems+5:1*obj.inputs.numDeltaLelems+4);
-            obj.outputs.CL_i(i, 1:obj.inputs.numDeltaLelems) = x(1*obj.inputs.numDeltaLelems+5:2*obj.inputs.numDeltaLelems+4);
-            obj.outputs.vk_r(i, 1:obj.inputs.numDeltaLelems) = x(2*obj.inputs.numDeltaLelems+5:3*obj.inputs.numDeltaLelems+4);
-            obj.outputs.kRatio(i, 1:obj.inputs.numDeltaLelems) = x(3*obj.inputs.numDeltaLelems+5:4*obj.inputs.numDeltaLelems+4);
-            obj.outputs.CL(i, 1:obj.inputs.numDeltaLelems) = x(4*obj.inputs.numDeltaLelems+5:5*obj.inputs.numDeltaLelems+4);
-
-            % Main computation
-            obj.compute(i);
-
-            % Objective: Maximise electrical cycle average power
-            fval = -obj.outputs.P_e_avg(i);
-
-            % Objective: Maximise mechanical reel-out power
-%             fval = -obj.outputs.P_m_o(i);
-        end
-
-        function obj = compute(obj, i)
             
+            function fval = objective(x, inputs, kiteMass, halfRhoS, windSpeedReference)
+                numDeltaLelems = inputs.numDeltaLelems;
             
-            % Constant for the cycle
-            obj.outputs.l_t_min(i) = obj.outputs.Rp_start(i)/sin(obj.outputs.gamma(i));
-            obj.outputs.pattStartGrClr(i) = obj.outputs.l_t_min(i)*sin(obj.outputs.beta(i)-obj.outputs.gamma(i));
-            obj.outputs.h_cycleStart(i) = obj.outputs.l_t_min(i)*cos(obj.outputs.gamma(i))*sin(obj.outputs.beta(i));
-            obj.outputs.l_t_max(i) = obj.outputs.l_t_min(i)+obj.outputs.deltaL(i)/cos(obj.outputs.gamma(i));
-            obj.outputs.pattEndGrClr(i) = obj.outputs.l_t_max(i)*sin(obj.outputs.beta(i)-obj.outputs.gamma(i));
-            obj.outputs.l_t_avg(i) = (obj.outputs.l_t_max(i)+obj.outputs.l_t_min(i))/2; %[m]
-            obj.outputs.h_cycleAvg(i) = obj.outputs.l_t_avg(i)*cos(obj.outputs.gamma(i))*sin(obj.outputs.beta(i));
-            obj.outputs.h_cycleEnd(i) = obj.outputs.l_t_max(i)*cos(obj.outputs.gamma(i))*sin(obj.outputs.beta(i));
-            obj.outputs.d_t = sqrt(obj.inputs.forceTether_max/obj.inputs.maxStrengthTether*4/pi); %[m] safety factor could be added (say *1.1)
-            
-            % Discretizing the reel-out length in chosen number of elements
-            % Found to be not highly sensitive to the number of elements
-            obj.outputs.deltaLelems = obj.inputs.numDeltaLelems;
-            obj.outputs.elemDeltaL(i) = obj.outputs.deltaL(i)/obj.outputs.deltaLelems;
-            
-            % Assigning and evaluating a single flight state equilibrium for each length element for reel-out and reel-in phase
-            for j = 1:obj.outputs.deltaLelems
-                % Reel-out phase:
-                % Tether length at jth element
-                if j == 1
-                    obj.outputs.l_t_inCycle(i,j) = obj.outputs.l_t_min(i) + obj.outputs.elemDeltaL(i)/2/cos(obj.outputs.gamma(i));
-                else
-                    obj.outputs.l_t_inCycle(i,j) = obj.outputs.l_t_inCycle(i,j-1) + obj.outputs.elemDeltaL(i)/cos(obj.outputs.gamma(i));
-                end
+                outputs.deltaL = x(1);
+                outputs.beta = x(2);
+                outputs.gamma = x(3);
+                outputs.Rp_start = x(4);
+                outputs.vk_r_i(1,1:numDeltaLelems) = x(0*numDeltaLelems+5:1*numDeltaLelems+4);
+                outputs.CL_i(1,1:numDeltaLelems) = x(1*numDeltaLelems+5:2*numDeltaLelems+4);
+                outputs.vk_r(1,1:numDeltaLelems) = x(2*numDeltaLelems+5:3*numDeltaLelems+4);
+                outputs.kRatio(1,1:numDeltaLelems) = x(3*numDeltaLelems+5:4*numDeltaLelems+4);
+                outputs.CL(1,1:numDeltaLelems) = x(4*numDeltaLelems+5:5*numDeltaLelems+4);
+    
+                % Constant for the cycle
+                outputs.l_t_min = outputs.Rp_start/sin(outputs.gamma);
+                outputs.pattStartGrClr = outputs.l_t_min*sin(outputs.beta-outputs.gamma);
+                outputs.h_cycleStart = outputs.l_t_min*cos(outputs.gamma)*sin(outputs.beta);
+                outputs.l_t_max = outputs.l_t_min+outputs.deltaL/cos(outputs.gamma);
+                outputs.pattEndGrClr = outputs.l_t_max*sin(outputs.beta-outputs.gamma);
+                outputs.l_t_avg = (outputs.l_t_max+outputs.l_t_min)/2; %[m]
+                outputs.h_cycleAvg = outputs.l_t_avg*cos(outputs.gamma)*sin(outputs.beta);
+                outputs.h_cycleEnd = outputs.l_t_max*cos(outputs.gamma)*sin(outputs.beta);
+                outputs.d_t = sqrt(inputs.forceTether_max/inputs.maxStrengthTether*4/pi); %[m] safety factor could be added (say *1.1)
                 
-                % Pattern ground clearance
-                obj.outputs.pattGrClr(i,j) = obj.outputs.l_t_inCycle(i,j)*sin(obj.outputs.beta(i)-obj.outputs.gamma(i));
-            
-                % Effective mass lumped at kite point (Kite + tether)
-                obj.outputs.m_t(i,j) = obj.inputs.densityTether*pi/4*obj.outputs.d_t^2*obj.outputs.l_t_inCycle(i,j);
-                obj.outputs.m_eff(i,j) = obj.outputs.m_k + 0.5*obj.outputs.m_t(i,j);
-            
-                % Coordinates of the Kite's position and orientation in the Spherical ref. frame
-                % Center point (representative point)
-                obj.outputs.theta(i,j) = pi/2 - (obj.outputs.beta(i));
-                obj.outputs.phi(i,j) = 0;
-                obj.outputs.chi(i,j) = deg2rad(90);
-            
-                % Effective CD
-                obj.outputs.CD_k(i,j) = obj.inputs.Cd0 + (obj.outputs.CL(i,j)-obj.inputs.Cl0_airfoil)^2/(pi*obj.inputs.aspectRatio*obj.inputs.e);
-                obj.outputs.CD_t(i,j) = (1/4)*obj.inputs.Cd_cylinder*obj.outputs.d_t*obj.outputs.l_t_inCycle(i,j)/obj.inputs.areaWing;
-                obj.outputs.CD(i,j) = obj.outputs.CD_k(i,j) + obj.outputs.CD_t(i,j);
-            
-                % Effective Glide ratio
-                obj.outputs.E(i,j) = obj.outputs.CL(i,j)/obj.outputs.CD(i,j);
-            
-                % Average pattern height at point of interest on deltaL
-                if j == 1
-                    obj.outputs.h_inCycle(i,j) = obj.outputs.h_cycleStart(i) + obj.outputs.elemDeltaL(i)/2*sin(obj.outputs.beta(i));
-                else
-                    obj.outputs.h_inCycle(i,j) = obj.outputs.h_inCycle(i,j-1) + obj.outputs.elemDeltaL(i)*sin(obj.outputs.beta(i));
-                end
-            
-                % Pattern radius at point of interest on deltaL
-                if j == 1
-                    obj.outputs.Rp(i,j) = obj.outputs.Rp_start(i) + obj.outputs.elemDeltaL(i)/2*tan(obj.outputs.gamma(i));
-                else
-                    obj.outputs.Rp(i,j) = obj.outputs.Rp(i,j-1) + obj.outputs.elemDeltaL(i)*tan(obj.outputs.gamma(i));
-                end
+                % Discretizing the reel-out length in chosen number of elements
+                % Found to be not highly sensitive to the number of elements
+                outputs.elemDeltaL = outputs.deltaL/numDeltaLelems;
                 
-                if ~obj.inputs.doUseReferenceWindProfile
-                    % Modelled
-                    obj.outputs.vw(i,j) = obj.inputs.windSpeedReference(i)*((obj.outputs.h_inCycle(i,j))/obj.inputs.heightWindReference)^obj.inputs.windShearExp;
-                else
-                    % Extrapolated from dataset
-                    obj.outputs.vw(i,j) = obj.inputs.windSpeedReference(i)*interp1(obj.inputs.windProfile_h, obj.inputs.windProfile_vw, (obj.outputs.h_inCycle(i,j)), 'linear', 'extrap');
+                % Assigning and evaluating a single flight state equilibrium for each length element for reel-out and reel-in phase
+                for j = 1:numDeltaLelems
+                    % Reel-out phase:
+                    % Tether length at jth element
+                    if j == 1
+                        outputs.l_t_inCycle(1,j) = outputs.l_t_min + outputs.elemDeltaL/2/cos(outputs.gamma);
+                    else
+                        outputs.l_t_inCycle(1,j) = outputs.l_t_inCycle(1,j-1) + outputs.elemDeltaL/cos(outputs.gamma);
+                    end
+                    
+                    % Pattern ground clearance
+                    outputs.pattGrClr(1,j) = outputs.l_t_inCycle(1,j)*sin(outputs.beta-outputs.gamma);
+                
+                    % Effective mass lumped at kite point (Kite + tether)
+                    outputs.m_t(1,j) = inputs.densityTether*pi/4*outputs.d_t^2*outputs.l_t_inCycle(1,j);
+                    outputs.m_eff(1,j) = kiteMass + 0.5*outputs.m_t(1,j);
+                
+                    % Coordinates of the Kite's position and orientation in the Spherical ref. frame
+                    % Center point (representative point)
+                    outputs.theta(1,j) = pi/2 - (outputs.beta);
+                    outputs.phi(1,j) = 0;
+                    outputs.chi(1,j) = deg2rad(90);
+                
+                    % Effective CD
+                    outputs.CD_k(1,j) = inputs.Cd0 + (outputs.CL(1,j)-inputs.Cl0_airfoil)^2/(pi*inputs.aspectRatio*inputs.e);
+                    outputs.CD_t(1,j) = (1/4)*inputs.Cd_cylinder*outputs.d_t*outputs.l_t_inCycle(1,j)/inputs.areaWing;
+                    outputs.CD(1,j) = outputs.CD_k(1,j) + outputs.CD_t(1,j);
+                
+                    % Effective Glide ratio
+                    outputs.E(1,j) = outputs.CL(1,j)/outputs.CD(1,j);
+                
+                    % Average pattern height at point of interest on deltaL
+                    if j == 1
+                        outputs.h_inCycle(1,j) = outputs.h_cycleStart + outputs.elemDeltaL/2*sin(outputs.beta);
+                    else
+                        outputs.h_inCycle(1,j) = outputs.h_inCycle(1,j-1) + outputs.elemDeltaL*sin(outputs.beta);
+                    end
+                
+                    % Pattern radius at point of interest on deltaL
+                    if j == 1
+                        outputs.Rp(1,j) = outputs.Rp_start + outputs.elemDeltaL/2*tan(outputs.gamma);
+                    else
+                        outputs.Rp(1,j) = outputs.Rp(1,j-1) + outputs.elemDeltaL*tan(outputs.gamma);
+                    end
+                    
+                    if ~inputs.doUseReferenceWindProfile
+                        % Modelled
+                        outputs.vw(1,j) = windSpeedReference*((outputs.h_inCycle(1,j))/inputs.heightWindReference)^inputs.windShearExp;
+                    else
+                        % Extrapolated from dataset
+                        outputs.vw(1,j) = windSpeedReference*interp1(inputs.windProfile_h, inputs.windProfile_vw, (outputs.h_inCycle(1,j)), 'linear', 'extrap');
+                    end
+                
+                    % Wind velocity vector
+                    outputs.vw_r(1,j) = outputs.vw(1,j)*sin(outputs.theta(1,j))*cos(outputs.phi(1,j));
+                    outputs.vw_theta(1,j) = outputs.vw(1,j)*cos(outputs.theta(1,j))*cos(outputs.phi(1,j));
+                    outputs.vw_phi(1,j) = -outputs.vw(1,j)*sin(outputs.phi(1,j));
+                
+                    % Reel-out factor
+                    outputs.f(1,j) = outputs.vk_r(1,j)/outputs.vw(1,j);
+                
+                    % Apparent wind velocity magnitude
+                    outputs.va(1,j) = (outputs.vw_r(1,j)-outputs.vk_r(1,j))*sqrt(1+outputs.kRatio(1,j)^2);
+                
+                    % Aerodynamic force magnitude
+                    outputs.Fa(1,j) = halfRhoS*sqrt(outputs.CL(1,j)^2+outputs.CD(1,j)^2)*outputs.va(1,j)^2;
+                
+                    % Tangential kite velocity factor
+                    a = cos(outputs.theta(1,j))*cos(outputs.phi(1,j))*cos(outputs.chi(1,j))-sin(outputs.phi(1,j))*sin(outputs.chi(1,j));
+                    b = sin(outputs.theta(1,j))*cos(outputs.phi(1,j));
+                    outputs.lambda(1,j) = a + sqrt(a^2 + b^2 - 1 + outputs.kRatio(1,j)^2*(b - outputs.f(1,j))^2);
+                    % Tangential kite velocity
+                    outputs.vk_tau(1,j) = outputs.lambda(1,j)*outputs.vw(1,j);
+                    % Tangential kite velocity components in theta and phi directions
+                    outputs.vk_theta(1,j) = outputs.vk_tau(1,j)*cos(outputs.chi(1,j));
+                    outputs.vk_phi(1,j) = outputs.vk_tau(1,j)*sin(outputs.chi(1,j));
+                
+                    % Gravity toggle
+                    if inputs.doIncludeGravity
+                        outputs.W(1,j) = outputs.m_eff(1,j)*inputs.accGravity;
+                    else
+                        outputs.W(1,j) = 0;
+                    end
+                
+                    % Gravitational force vector (kite + tether)
+                    outputs.Fg_r(1,j) = -outputs.W(1,j)*cos(outputs.theta(1,j));
+                    outputs.Fg_theta(1,j) = outputs.W(1,j)*sin(outputs.theta(1,j));
+                    outputs.Fg_phi(1,j) = 0;
+                
+                    % Aerodynamic force vector
+                    outputs.Fa_theta(1,j) = -outputs.Fg_theta(1,j);
+                    outputs.Fa_phi(1,j) = -outputs.Fg_phi(1,j);
+                    outputs.Fa_r(1,j) = sqrt(outputs.Fa(1,j)^2-outputs.Fa_theta(1,j)^2-outputs.Fa_phi(1,j)^2);
+                
+                    % Roll angle in case of Gravity (N.A when CF is included)
+                    outputs.rollAngle(1,j) = atan(outputs.Fa_theta(1,j)/outputs.Fa_r(1,j));
+                
+                    % Apparent wind velocity vector
+                    outputs.va_r(1,j) = outputs.vw(1,j)*(sin(outputs.theta(1,j))*cos(outputs.phi(1,j))-outputs.f(1,j));
+                    outputs.va_theta(1,j) = outputs.vw(1,j)*(cos(outputs.theta(1,j))*cos(outputs.phi(1,j))-outputs.lambda(1,j)*cos(outputs.chi(1,j)));
+                    outputs.va_phi(1,j) = outputs.vw(1,j)*(-sin(outputs.phi(1,j))-outputs.lambda(1,j)*sin(outputs.chi(1,j)));
+                
+                    % Dot product F_a*v_a;
+                    outputs.F_dot_v(1,j) = outputs.Fa_r(1,j)*outputs.va_r(1,j) + outputs.Fa_theta(1,j)*outputs.va_theta(1,j) + outputs.Fa_phi(1,j)*outputs.va_phi(1,j);
+                
+                    % Drag vector from dot product
+                    outputs.D_r(1,j) = (outputs.F_dot_v(1,j)/outputs.va(1,j)^2)*outputs.va_r(1,j);
+                    outputs.D_theta(1,j) = (outputs.F_dot_v(1,j)/outputs.va(1,j)^2)*outputs.va_theta(1,j);
+                    outputs.D_phi(1,j) = (outputs.F_dot_v(1,j)/outputs.va(1,j)^2)*outputs.va_phi(1,j);
+                
+                    % Lift vector
+                    outputs.L_r(1,j) = outputs.Fa_r(1,j) - outputs.D_r(1,j);
+                    outputs.L_theta(1,j) = outputs.Fa_theta(1,j) - outputs.D_theta(1,j);
+                    outputs.L_phi(1,j) = outputs.Fa_phi(1,j) - outputs.D_phi(1,j);
+                
+                    % Drag magnitude
+                    outputs.D(1,j) = sqrt(outputs.D_r(1,j)^2 + outputs.D_theta(1,j)^2 + outputs.D_phi(1,j)^2);
+                
+                    % Lift magnitude
+                    outputs.L(1,j) = sqrt(outputs.L_r(1,j)^2 + outputs.L_theta(1,j)^2 + outputs.L_phi(1,j)^2);
+                
+                    % Straight-tether force
+                    outputs.Ft(1,j) = outputs.Fa_r(1,j) + outputs.Fg_r(1,j);
+                
+                    % Lift-to-drag ratio that follows from the chosen kinematic ratio
+                    outputs.E_result(1,j) = sqrt(((outputs.Fa(1,j)*outputs.va(1,j))/outputs.F_dot_v(1,j))^2-1);
+                
+                    % Ratio of Kinemactic Ratio and Glide Ratio
+                    outputs.kByE(1,j) = outputs.kRatio(1,j)/outputs.E_result(1,j);
+                
+                    % Effective mechanical reel-out power
+                    outputs.P_m_o_eff(1,j) = outputs.Ft(1,j)*outputs.vk_r(1,j); %[W]
+                
+                    outputs.zetaMech(1,j) = outputs.P_m_o_eff(1,j)/(halfRhoS*outputs.vw(1,j)^3);
+                
+                    % Effective electrical reel-out power
+                    % Generator efficiency. As a function of RPM/RPM_max, where RPM_max is driven by winch
+                    vkr_ratio = outputs.vk_r(1,j)/inputs.speedGeneratorReelout_max;
+                    outputs.etaGen_o(1,j) = inputs.etaGen_param(1)*vkr_ratio^3 + ...
+                        inputs.etaGen_param(2)*vkr_ratio^2 + ...
+                        inputs.etaGen_param(3)*vkr_ratio+inputs.etaGen_param(4);
+                    outputs.P_e_o_eff(1,j) = outputs.P_m_o_eff(1,j)*inputs.efficiency_Gearbox*outputs.etaGen_o(1,j)*inputs.efficiency_PowerElectronics;
+                
+                    %% Retraction Phase
+                    % Kite position in spherical coordinates
+                    % Reel-in is assumed to start from the top of the pattern
+                    outputs.theta_i(1,j) = pi/2 - (outputs.beta+outputs.gamma);
+                    outputs.phi_i(1,j) = 0;
+                
+                    if ~inputs.doUseReferenceWindProfile
+                        % Modelled
+                        outputs.vw_i(1,j) = windSpeedReference*((outputs.h_inCycle(1,j) + outputs.Rp(1,j)*cos(outputs.beta))/inputs.heightWindReference)^inputs.windShearExp;
+                    else
+                        % Extrapolated from dataset
+                        outputs.vw_i(1,j) = windSpeedReference*interp1(inputs.windProfile_h, inputs.windProfile_vw, (outputs.h_inCycle(1,j) + outputs.Rp(1,j)*cos(outputs.beta)), 'linear', 'extrap');
+                    end
+                
+                    % Wind velocity vector
+                    outputs.vw_r_i(1,j) = outputs.vw_i(1,j)*sin(outputs.theta_i(1,j))*cos(outputs.phi_i(1,j));
+                    outputs.vw_theta_i(1,j) = outputs.vw_i(1,j)*cos(outputs.theta_i(1,j))*cos(outputs.phi_i(1,j));
+                    outputs.vw_phi_i(1,j) = -outputs.vw_i(1,j)*sin(outputs.phi_i(1,j)); %
+                
+                    % Reel-in factor
+                    outputs.f_i(1,j) = outputs.vk_r_i(1,j)/outputs.vw_i(1,j);
+                
+                    % Apparent speed vector
+                    outputs.va_r_i(1,j) = outputs.vw_r_i(1,j) - (-outputs.vk_r_i(1,j)); % Reel-in speed direction is in the negative radial direction)
+                    outputs.va_theta_i(1,j) = outputs.vw_theta_i(1,j) - 0;
+                    outputs.va_phi_i(1,j) = outputs.vw_phi_i(1,j) - 0;
+                
+                    % Apparent wind velocity magnitude
+                    outputs.va_i(1,j) = sqrt(outputs.va_r_i(1,j)^2 + outputs.va_theta_i(1,j)^2); % Wind has components only in r and theta directions
+                
+                    % Aerodynamic force magnitude
+                    outputs.CD_k_i(1,j) = inputs.Cd0+(outputs.CL_i(1,j)- inputs.Cl0_airfoil)^2/(pi*inputs.aspectRatio*inputs.e);
+                    outputs.CD_i(1,j) = outputs.CD_k_i(1,j) + outputs.CD_t(1,j);
+                    outputs.E_i(1,j) = outputs.CL_i(1,j)/outputs.CD_i(1,j);
+                    outputs.Fa_i(1,j) = halfRhoS*sqrt(outputs.CL_i(1,j)^2+outputs.CD_i(1,j)^2)*outputs.va_i(1,j)^2;
+                
+                    % Gravitational force vector (kite + tether)
+                    outputs.Fg_r_i(1,j) = -outputs.W(1,j)*cos(outputs.theta_i(1,j));
+                    outputs.Fg_theta_i(1,j) = outputs.W(1,j)*sin(outputs.theta_i(1,j));
+                    outputs.Fg_phi_i(1,j) = 0;
+                
+                    % Aerodynamic force vector
+                    outputs.Fa_theta_i(1,j) = -outputs.Fg_theta_i(1,j);
+                    outputs.Fa_phi_i(1,j) = -outputs.Fg_phi_i(1,j);
+                    outputs.Fa_r_i(1,j) = sqrt(outputs.Fa_i(1,j)^2-outputs.Fa_theta_i(1,j)^2-outputs.Fa_phi_i(1,j)^2);
+                
+                    % Dot product F_a*v_a;
+                    outputs.F_dot_v_i(1,j) = outputs.Fa_r_i(1,j)*outputs.va_r_i(1,j) + outputs.Fa_theta_i(1,j)*outputs.va_theta_i(1,j) + outputs.Fa_phi_i(1,j)*outputs.va_phi_i(1,j);
+                
+                    % Drag vector from dot product
+                    outputs.D_r_i(1,j) = (outputs.F_dot_v_i(1,j)/outputs.va_i(1,j)^2)*outputs.va_r_i(1,j);
+                    outputs.D_theta_i(1,j) = (outputs.F_dot_v_i(1,j)/outputs.va_i(1,j)^2)*outputs.va_theta_i(1,j);
+                    outputs.D_phi_i(1,j) = (outputs.F_dot_v_i(1,j)/outputs.va_i(1,j)^2)*outputs.va_phi_i(1,j);
+                
+                    % Lift vector
+                    outputs.L_r_i(1,j) = outputs.Fa_r_i(1,j) - outputs.D_r_i(1,j);
+                    outputs.L_theta_i(1,j) = outputs.Fa_theta_i(1,j) - outputs.D_theta_i(1,j);
+                    outputs.L_phi_i(1,j) = outputs.Fa_phi_i(1,j) - outputs.D_phi_i(1,j);
+                
+                    % Drag magnitude
+                    outputs.D_i(1,j) = sqrt(outputs.D_r_i(1,j)^2 + outputs.D_theta_i(1,j)^2 + outputs.D_phi_i(1,j)^2);
+                
+                    % Lift magnitude
+                    outputs.L_i(1,j) = sqrt(outputs.L_r_i(1,j)^2 + outputs.L_theta_i(1,j)^2 + outputs.L_phi_i(1,j)^2);
+                
+                    % Lift-to-drag ratio that follows from the chosen kinematic ratio
+                    outputs.E_result_i(1,j) = sqrt(((outputs.Fa_i(1,j)*outputs.va_i(1,j))/outputs.F_dot_v_i(1,j))^2-1);
+                
+                    % Straight-tether force
+                    outputs.Ft_i(1,j) = outputs.Fa_r_i(1,j) + outputs.Fg_r_i(1,j);
+                
+                    % Effective mechanical reel-out power
+                    outputs.P_m_i_eff(1,j) = outputs.Ft_i(1,j)*outputs.vk_r_i(1,j); %[W]
+                
+                    % Generator efficiency during RI: As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
+                    vkri_ratio = outputs.vk_r_i(1,j)/inputs.speedGeneratorReelout_max;
+                    outputs.etaGen_i = inputs.etaGen_param(1)*vkri_ratio^3 + ...
+                        inputs.etaGen_param(2)*vkri_ratio^2 + ...
+                        inputs.etaGen_param(3)*vkri_ratio+inputs.etaGen_param(4);
+                
+                    % Effective electrical reel-in power
+                    outputs.P_e_i_eff(1,j) = outputs.P_m_i_eff(1,j)/inputs.efficiency_Gearbox/inputs.efficiency_Storage/outputs.etaGen_i/inputs.efficiency_PowerElectronics;
+                
                 end
-            
-                % Wind velocity vector
-                obj.outputs.vw_r(i,j) = obj.outputs.vw(i,j)*sin(obj.outputs.theta(i,j))*cos(obj.outputs.phi(i,j));
-                obj.outputs.vw_theta(i,j) = obj.outputs.vw(i,j)*cos(obj.outputs.theta(i,j))*cos(obj.outputs.phi(i,j));
-                obj.outputs.vw_phi(i,j) = -obj.outputs.vw(i,j)*sin(obj.outputs.phi(i,j));
-            
-                % Reel-out factor
-                obj.outputs.f(i,j) = obj.outputs.vk_r(i,j)/obj.outputs.vw(i,j);
-            
-                % Apparent wind velocity magnitude
-                obj.outputs.va(i,j) = (obj.outputs.vw_r(i,j)-obj.outputs.vk_r(i,j))*sqrt(1+obj.outputs.kRatio(i,j)^2);
-            
-                % Aerodynamic force magnitude
-                obj.outputs.Fa(i,j) = obj.outputs.halfRhoS*sqrt(obj.outputs.CL(i,j)^2+obj.outputs.CD(i,j)^2)*obj.outputs.va(i,j)^2;
-            
-                % Tangential kite velocity factor
-                a = cos(obj.outputs.theta(i,j))*cos(obj.outputs.phi(i,j))*cos(obj.outputs.chi(i,j))-sin(obj.outputs.phi(i,j))*sin(obj.outputs.chi(i,j));
-                b = sin(obj.outputs.theta(i,j))*cos(obj.outputs.phi(i,j));
-                obj.outputs.lambda(i,j) = a + sqrt(a^2 + b^2 - 1 + obj.outputs.kRatio(i,j)^2*(b - obj.outputs.f(i,j))^2);
-                % Tangential kite velocity
-                obj.outputs.vk_tau(i,j) = obj.outputs.lambda(i,j)*obj.outputs.vw(i,j);
-                % Tangential kite velocity components in theta and phi directions
-                obj.outputs.vk_theta(i,j) = obj.outputs.vk_tau(i,j)*cos(obj.outputs.chi(i,j));
-                obj.outputs.vk_phi(i,j) = obj.outputs.vk_tau(i,j)*sin(obj.outputs.chi(i,j));
-            
-                % Gravity toggle
-                if obj.inputs.doIncludeGravity
-                    obj.outputs.W(i,j) = obj.outputs.m_eff(i,j)*obj.inputs.accGravity;
-                else
-                    obj.outputs.W(i,j) = 0;
-                end
-            
-                % Gravitational force vector (kite + tether)
-                obj.outputs.Fg_r(i,j) = -obj.outputs.W(i,j)*cos(obj.outputs.theta(i,j));
-                obj.outputs.Fg_theta(i,j) = obj.outputs.W(i,j)*sin(obj.outputs.theta(i,j));
-                obj.outputs.Fg_phi(i,j) = 0;
-            
-                % Aerodynamic force vector
-                obj.outputs.Fa_theta(i,j) = -obj.outputs.Fg_theta(i,j);
-                obj.outputs.Fa_phi(i,j) = -obj.outputs.Fg_phi(i,j);
-                obj.outputs.Fa_r(i,j) = sqrt(obj.outputs.Fa(i,j)^2-obj.outputs.Fa_theta(i,j)^2-obj.outputs.Fa_phi(i,j)^2);
-            
-                % Roll angle in case of Gravity (N.A when CF is included)
-                obj.outputs.rollAngle(i,j) = atan(obj.outputs.Fa_theta(i,j)/obj.outputs.Fa_r(i,j));
-            
-                % Apparent wind velocity vector
-                obj.outputs.va_r(i,j) = obj.outputs.vw(i,j)*(sin(obj.outputs.theta(i,j))*cos(obj.outputs.phi(i,j))-obj.outputs.f(i,j));
-                obj.outputs.va_theta(i,j) = obj.outputs.vw(i,j)*(cos(obj.outputs.theta(i,j))*cos(obj.outputs.phi(i,j))-obj.outputs.lambda(i,j)*cos(obj.outputs.chi(i,j)));
-                obj.outputs.va_phi(i,j) = obj.outputs.vw(i,j)*(-sin(obj.outputs.phi(i,j))-obj.outputs.lambda(i,j)*sin(obj.outputs.chi(i,j)));
-            
-                % Dot product F_a*v_a;
-                obj.outputs.F_dot_v(i,j) = obj.outputs.Fa_r(i,j)*obj.outputs.va_r(i,j) + obj.outputs.Fa_theta(i,j)*obj.outputs.va_theta(i,j) + obj.outputs.Fa_phi(i,j)*obj.outputs.va_phi(i,j);
-            
-                % Drag vector from dot product
-                obj.outputs.D_r(i,j) = (obj.outputs.F_dot_v(i,j)/obj.outputs.va(i,j)^2)*obj.outputs.va_r(i,j);
-                obj.outputs.D_theta(i,j) = (obj.outputs.F_dot_v(i,j)/obj.outputs.va(i,j)^2)*obj.outputs.va_theta(i,j);
-                obj.outputs.D_phi(i,j) = (obj.outputs.F_dot_v(i,j)/obj.outputs.va(i,j)^2)*obj.outputs.va_phi(i,j);
-            
-                % Lift vector
-                obj.outputs.L_r(i,j) = obj.outputs.Fa_r(i,j) - obj.outputs.D_r(i,j);
-                obj.outputs.L_theta(i,j) = obj.outputs.Fa_theta(i,j) - obj.outputs.D_theta(i,j);
-                obj.outputs.L_phi(i,j) = obj.outputs.Fa_phi(i,j) - obj.outputs.D_phi(i,j);
-            
-                % Drag magnitude
-                obj.outputs.D(i,j) = sqrt(obj.outputs.D_r(i,j)^2 + obj.outputs.D_theta(i,j)^2 + obj.outputs.D_phi(i,j)^2);
-            
-                % Lift magnitude
-                obj.outputs.L(i,j) = sqrt(obj.outputs.L_r(i,j)^2 + obj.outputs.L_theta(i,j)^2 + obj.outputs.L_phi(i,j)^2);
-            
-                % Straight-tether force
-                obj.outputs.Ft(i,j) = obj.outputs.Fa_r(i,j) + obj.outputs.Fg_r(i,j);
-            
-                % Lift-to-drag ratio that follows from the chosen kinematic ratio
-                obj.outputs.E_result(i,j) = sqrt(((obj.outputs.Fa(i,j)*obj.outputs.va(i,j))/obj.outputs.F_dot_v(i,j))^2-1);
-            
-                % Ratio of Kinemactic Ratio and Glide Ratio
-                obj.outputs.kByE(i,j) = obj.outputs.kRatio(i,j)/obj.outputs.E_result(i,j);
-            
-                % Effective mechanical reel-out power
-                obj.outputs.P_m_o_eff(i,j) = obj.outputs.Ft(i,j)*obj.outputs.vk_r(i,j); %[W]
-            
-                obj.outputs.zetaMech(i,j) = obj.outputs.P_m_o_eff(i,j)/(obj.outputs.halfRhoS*obj.outputs.vw(i,j)^3);
-            
-                % Effective electrical reel-out power
-                % Generator efficiency. As a function of RPM/RPM_max, where RPM_max is driven by winch
-                vkr_ratio = obj.outputs.vk_r(i,j)/obj.inputs.speedGeneratorReelout_max;
-                obj.outputs.etaGen_o(i,j) = obj.inputs.etaGen_param(1)*vkr_ratio^3 + ...
-                    obj.inputs.etaGen_param(2)*vkr_ratio^2 + ...
-                    obj.inputs.etaGen_param(3)*vkr_ratio+obj.inputs.etaGen_param(4);
-                obj.outputs.P_e_o_eff(i,j) = obj.outputs.P_m_o_eff(i,j)*obj.inputs.efficiency_Gearbox*obj.outputs.etaGen_o(i,j)*obj.inputs.efficiency_PowerElectronics;
-            
-                %% Retraction Phase
-                % Kite position in spherical coordinates
-                % Reel-in is assumed to start from the top of the pattern
-                obj.outputs.theta_i(i,j) = pi/2 - (obj.outputs.beta(i)+obj.outputs.gamma(i));
-                obj.outputs.phi_i(i,j) = 0;
-            
-                if ~obj.inputs.doUseReferenceWindProfile
-                    % Modelled
-                    obj.outputs.vw_i(i,j) = obj.inputs.windSpeedReference(i)*((obj.outputs.h_inCycle(i,j) + obj.outputs.Rp(i,j)*cos(obj.outputs.beta(i)))/obj.inputs.heightWindReference)^obj.inputs.windShearExp;
-                else
-                    % Extrapolated from dataset
-                    obj.outputs.vw_i(i,j) = obj.inputs.windSpeedReference(i)*interp1(obj.inputs.windProfile_h, obj.inputs.windProfile_vw, (obj.outputs.h_inCycle(i,j) + obj.outputs.Rp(i,j)*cos(obj.outputs.beta(i))), 'linear', 'extrap');
-                end
-            
-                % Wind velocity vector
-                obj.outputs.vw_r_i(i,j) = obj.outputs.vw_i(i,j)*sin(obj.outputs.theta_i(i,j))*cos(obj.outputs.phi_i(i,j));
-                obj.outputs.vw_theta_i(i,j) = obj.outputs.vw_i(i,j)*cos(obj.outputs.theta_i(i,j))*cos(obj.outputs.phi_i(i,j));
-                obj.outputs.vw_phi_i(i,j) = -obj.outputs.vw_i(i,j)*sin(obj.outputs.phi_i(i,j)); %
-            
-                % Reel-in factor
-                obj.outputs.f_i(i,j) = obj.outputs.vk_r_i(i,j)/obj.outputs.vw_i(i,j);
-            
-                % Apparent speed vector
-                obj.outputs.va_r_i(i,j) = obj.outputs.vw_r_i(i,j) - (-obj.outputs.vk_r_i(i,j)); % Reel-in speed direction is in the negative radial direction)
-                obj.outputs.va_theta_i(i,j) = obj.outputs.vw_theta_i(i,j) - 0;
-                obj.outputs.va_phi_i(i,j) = obj.outputs.vw_phi_i(i,j) - 0;
-            
-                % Apparent wind velocity magnitude
-                obj.outputs.va_i(i,j) = sqrt(obj.outputs.va_r_i(i,j)^2 + obj.outputs.va_theta_i(i,j)^2); % Wind has components only in r and theta directions
-            
-                % Aerodynamic force magnitude
-                obj.outputs.CD_k_i(i,j) = obj.inputs.Cd0+(obj.outputs.CL_i(i,j)- obj.inputs.Cl0_airfoil)^2/(pi*obj.inputs.aspectRatio*obj.inputs.e);
-                obj.outputs.CD_i(i,j) = obj.outputs.CD_k_i(i,j) + obj.outputs.CD_t(i,j);
-                obj.outputs.E_i(i,j) = obj.outputs.CL_i(i,j)/obj.outputs.CD_i(i,j);
-                obj.outputs.Fa_i(i,j) = obj.outputs.halfRhoS*sqrt(obj.outputs.CL_i(i,j)^2+obj.outputs.CD_i(i,j)^2)*obj.outputs.va_i(i,j)^2;
-            
-                % Gravitational force vector (kite + tether)
-                obj.outputs.Fg_r_i(i,j) = -obj.outputs.W(i,j)*cos(obj.outputs.theta_i(i,j));
-                obj.outputs.Fg_theta_i(i,j) = obj.outputs.W(i,j)*sin(obj.outputs.theta_i(i,j));
-                obj.outputs.Fg_phi_i(i,j) = 0;
-            
-                % Aerodynamic force vector
-                obj.outputs.Fa_theta_i(i,j) = -obj.outputs.Fg_theta_i(i,j);
-                obj.outputs.Fa_phi_i(i,j) = -obj.outputs.Fg_phi_i(i,j);
-                obj.outputs.Fa_r_i(i,j) = sqrt(obj.outputs.Fa_i(i,j)^2-obj.outputs.Fa_theta_i(i,j)^2-obj.outputs.Fa_phi_i(i,j)^2);
-            
-                % Dot product F_a*v_a;
-                obj.outputs.F_dot_v_i(i,j) = obj.outputs.Fa_r_i(i,j)*obj.outputs.va_r_i(i,j) + obj.outputs.Fa_theta_i(i,j)*obj.outputs.va_theta_i(i,j) + obj.outputs.Fa_phi_i(i,j)*obj.outputs.va_phi_i(i,j);
-            
-                % Drag vector from dot product
-                obj.outputs.D_r_i(i,j) = (obj.outputs.F_dot_v_i(i,j)/obj.outputs.va_i(i,j)^2)*obj.outputs.va_r_i(i,j);
-                obj.outputs.D_theta_i(i,j) = (obj.outputs.F_dot_v_i(i,j)/obj.outputs.va_i(i,j)^2)*obj.outputs.va_theta_i(i,j);
-                obj.outputs.D_phi_i(i,j) = (obj.outputs.F_dot_v_i(i,j)/obj.outputs.va_i(i,j)^2)*obj.outputs.va_phi_i(i,j);
-            
-                % Lift vector
-                obj.outputs.L_r_i(i,j) = obj.outputs.Fa_r_i(i,j) - obj.outputs.D_r_i(i,j);
-                obj.outputs.L_theta_i(i,j) = obj.outputs.Fa_theta_i(i,j) - obj.outputs.D_theta_i(i,j);
-                obj.outputs.L_phi_i(i,j) = obj.outputs.Fa_phi_i(i,j) - obj.outputs.D_phi_i(i,j);
-            
-                % Drag magnitude
-                obj.outputs.D_i(i,j) = sqrt(obj.outputs.D_r_i(i,j)^2 + obj.outputs.D_theta_i(i,j)^2 + obj.outputs.D_phi_i(i,j)^2);
-            
-                % Lift magnitude
-                obj.outputs.L_i(i,j) = sqrt(obj.outputs.L_r_i(i,j)^2 + obj.outputs.L_theta_i(i,j)^2 + obj.outputs.L_phi_i(i,j)^2);
-            
-                % Lift-to-drag ratio that follows from the chosen kinematic ratio
-                obj.outputs.E_result_i(i,j) = sqrt(((obj.outputs.Fa_i(i,j)*obj.outputs.va_i(i,j))/obj.outputs.F_dot_v_i(i,j))^2-1);
-            
-                % Straight-tether force
-                obj.outputs.Ft_i(i,j) = obj.outputs.Fa_r_i(i,j) + obj.outputs.Fg_r_i(i,j);
-            
-                % Effective mechanical reel-out power
-                obj.outputs.P_m_i_eff(i,j) = obj.outputs.Ft_i(i,j)*obj.outputs.vk_r_i(i,j); %[W]
-            
-                % Generator efficiency during RI: As a function of RPM/RPM_max, where RPM_max is driven by winch i.e Max VRI
-                vkri_ratio = obj.outputs.vk_r_i(i)/obj.inputs.speedGeneratorReelout_max;
-                obj.outputs.etaGen_i(i) = obj.inputs.etaGen_param(1)*vkri_ratio^3 + ...
-                    obj.inputs.etaGen_param(2)*vkri_ratio^2 + ...
-                    obj.inputs.etaGen_param(3)*vkri_ratio+obj.inputs.etaGen_param(4);
-            
-                % Effective electrical reel-in power
-                obj.outputs.P_e_i_eff(i,j) = obj.outputs.P_m_i_eff(i,j)/obj.inputs.efficiency_Gearbox/obj.inputs.efficiency_Storage/obj.outputs.etaGen_i(i)/obj.inputs.efficiency_PowerElectronics;
-            
+    
+                
+                %% Cycle calculation
+                % Reel-out time
+                outputs.t1       = outputs.vk_r(1)/inputs.accReel_max;
+                outputs.to_eff = outputs.elemDeltaL./outputs.vk_r;
+                outputs.to       = outputs.t1 + sum(outputs.to_eff);
+                
+                % Reel-out power during transition
+                outputs.P1_m_o = outputs.P_m_o_eff(1)/2;
+                outputs.P1_e_o = outputs.P_e_o_eff(1)/2;
+                
+                % Reel-out power 
+                outputs.P_m_o = (sum(outputs.P_m_o_eff.*outputs.to_eff) + outputs.P1_m_o*outputs.t1)/outputs.to;
+                outputs.P_e_o = (sum(outputs.P_e_o_eff.*outputs.to_eff) + outputs.P1_e_o*outputs.t1)/outputs.to;
+                
+                % Reel-in time
+                outputs.t2       = outputs.vk_r_i/inputs.accReel_max;
+                outputs.ti_eff = outputs.elemDeltaL./outputs.vk_r_i;
+                outputs.ti       = outputs.t2 + sum(outputs.ti_eff);
+                
+                % Reel-in power during transition
+                outputs.P2_m_i     = outputs.P_m_i_eff(1)/2;
+                outputs.P2_e_i     = outputs.P_e_i_eff(1)/2;
+                
+                % Reel-in power 
+                outputs.P_m_i = (sum(outputs.P_m_i_eff.*outputs.ti_eff) + outputs.P2_m_i*outputs.t2)/outputs.ti;
+                outputs.P_e_i = (sum(outputs.P_e_i_eff.*outputs.ti_eff) + outputs.P2_e_i*outputs.t2)/outputs.ti;
+                
+                % Cycle time
+                outputs.tCycle = outputs.to+outputs.ti;
+                
+                % Time for one pattern revolution and number of patterns in the cycle
+                outputs.tPatt = 2*pi*outputs.Rp./outputs.vk_phi;
+                outputs.numOfPatt = outputs.to./outputs.tPatt;
+                
+                % Electrical cycle power
+                outputs.P_e_avg = (sum(outputs.to_eff.*outputs.P_e_o_eff) + outputs.t1*outputs.P1_e_o - ...
+                                           sum(outputs.ti_eff.*outputs.P_e_i_eff) - outputs.t2*outputs.P2_e_i)/outputs.tCycle;
+                
+                % Mechanical cycle power - without drivetrain eff
+                outputs.P_m_avg = (sum(outputs.to_eff.*outputs.P_m_o_eff) + outputs.t1*outputs.P1_m_o - ...
+                                           sum(outputs.ti_eff.*outputs.P_m_i_eff) - outputs.t2*outputs.P2_m_i)/outputs.tCycle;
+    
+                fval = -outputs.P_e_avg;
+
             end
-
-            
-            %% Cycle calculation
-            % Reel-out time
-            obj.outputs.t1(i)       = obj.outputs.vk_r(i,1)/obj.inputs.accReel_max;
-            obj.outputs.to_eff(i,:) = obj.outputs.elemDeltaL(i)./obj.outputs.vk_r(i,:);
-            obj.outputs.to(i)       = obj.outputs.t1(i) + sum(obj.outputs.to_eff(i,:));
-            
-            % Reel-out power during transition
-            obj.outputs.P1_m_o(i) = obj.outputs.P_m_o_eff(i,1)/2;
-            obj.outputs.P1_e_o(i) = obj.outputs.P_e_o_eff(i,1)/2;
-            
-            % Reel-out power 
-            obj.outputs.P_m_o(i) = (sum(obj.outputs.P_m_o_eff(i,:).*obj.outputs.to_eff(i,:)) + obj.outputs.P1_m_o(i)*obj.outputs.t1(i))/obj.outputs.to(i);
-            obj.outputs.P_e_o(i) = (sum(obj.outputs.P_e_o_eff(i,:).*obj.outputs.to_eff(i,:)) + obj.outputs.P1_e_o(i)*obj.outputs.t1(i))/obj.outputs.to(i);
-            
-            % Reel-in time
-            obj.outputs.t2(i)       = obj.outputs.vk_r_i(i)/obj.inputs.accReel_max;
-            obj.outputs.ti_eff(i,:) = obj.outputs.elemDeltaL(i)./obj.outputs.vk_r_i(i,:);
-            obj.outputs.ti(i)       = obj.outputs.t2(i) + sum(obj.outputs.ti_eff(i,:));
-            
-            % Reel-in power during transition
-            obj.outputs.P2_m_i(i)     = obj.outputs.P_m_i_eff(i,1)/2;
-            obj.outputs.P2_e_i(i)     = obj.outputs.P_e_i_eff(i,1)/2;
-            
-            % Reel-in power 
-            obj.outputs.P_m_i(i) = (sum(obj.outputs.P_m_i_eff(i,:).*obj.outputs.ti_eff(i,:)) + obj.outputs.P2_m_i(i)*obj.outputs.t2(i))/obj.outputs.ti(i);
-            obj.outputs.P_e_i(i) = (sum(obj.outputs.P_e_i_eff(i,:).*obj.outputs.ti_eff(i,:)) + obj.outputs.P2_e_i(i)*obj.outputs.t2(i))/obj.outputs.ti(i);
-            
-            % Cycle time
-            obj.outputs.tCycle(i) = obj.outputs.to(i)+obj.outputs.ti(i);
-            
-            % Time for one pattern revolution and number of patterns in the cycle
-            obj.outputs.tPatt(i,:) = 2*pi*obj.outputs.Rp(i,:)./obj.outputs.vk_phi(i,:);
-            obj.outputs.numOfPatt(i,:) = obj.outputs.to(i)./obj.outputs.tPatt(i,:);
-            
-            % Electrical cycle power
-            obj.outputs.P_e_avg(i) = (sum(obj.outputs.to_eff(i,:).*obj.outputs.P_e_o_eff(i,:)) + obj.outputs.t1(i)*obj.outputs.P1_e_o(i) - ...
-                                       sum(obj.outputs.ti_eff(i,:).*obj.outputs.P_e_i_eff(i,:)) - obj.outputs.t2(i)*obj.outputs.P2_e_i(i))/obj.outputs.tCycle(i);
-            
-            % Mechanical cycle power - without drivetrain eff
-            obj.outputs.P_m_avg(i) = (sum(obj.outputs.to_eff(i,:).*obj.outputs.P_m_o_eff(i,:)) + obj.outputs.t1(i)*obj.outputs.P1_m_o(i) - ...
-                                       sum(obj.outputs.ti_eff(i,:).*obj.outputs.P_m_i_eff(i,:)) - obj.outputs.t2(i)*obj.outputs.P2_m_i(i))/obj.outputs.tCycle(i);
-
+            function [c, ceq] = constraints(x, inputs) %#ok<INUSD>
+                numDeltaLelems = inputs.numDeltaLelems;
+                % Inequality constraints
+    
+                % Min clearance between ground and bottom point of pattern
+                c(1)   = (inputs.minGroundClear - outputs.pattStartGrClr);
+                c(2)   = (inputs.minGroundClear - outputs.pattEndGrClr);
+    
+                % Capping for requested electrical rated power
+                c(3)   = (outputs.P_e_avg - inputs.P_ratedElec); 
+    
+                % Tether length limit
+                c(4) = (outputs.l_t_max - inputs.maxTeLen); 
+    
+                % Min number of patterns to get into transition 
+                c(5) = (1 - mean(outputs.numOfPatt));
+    
+                % Max. cycle avg height
+                c(6) = (outputs.h_cycleEnd - inputs.maxHeight);
+    
+                % Peak mechanical power limit
+                c(7:numDeltaLelems+6) = (outputs.P_m_o_eff - inputs.peakM2E_F*inputs.P_ratedElec);
+    
+                % Maximum tether force
+                c(7+numDeltaLelems:2*numDeltaLelems+6) = (outputs.Ft - inputs.forceTether_max*inputs.safetyFactor_forceTetherMax);
+    
+                % Apparent speed cannot be negative
+                c(7+2*numDeltaLelems:3*numDeltaLelems+6) = (0 - outputs.va);
+    
+                % Tangential velocity factor cannot be negative
+                c(7+3*numDeltaLelems:4*numDeltaLelems+6) = (0 - outputs.lambda);
+    
+                % Tether force during reel-in cannot be negative
+                c(7+4*numDeltaLelems:5*numDeltaLelems+6) = (0 - outputs.Ft_i);  
+    
+                %% Equality constraints
+                % Glide ratio during reel-out
+                ceq(0*numDeltaLelems+1:1*numDeltaLelems) = (outputs.E_result - outputs.E);
+    
+                % Glide ratio during reel-in
+                ceq(1*numDeltaLelems+1:2*numDeltaLelems) = (outputs.E_result_i - outputs.E_i);
+    
+            end
         end
         
         function [inputs, outputs, optimDetails, processedOutputs] = getresult(obj)
@@ -584,11 +616,16 @@ classdef KiteQSMsimulation < handle
             processedOutputs = obj.processedOutputs;
         end
         
-        function obj = plotresults(obj)
-                        
+        function obj = plotresults(obj, inputs, processedOutputs)
+            if nargin<2
+                inputs = obj.inputs;
+                processedOutputs = obj.processedOutputs;
+            elseif nargin<3
+                processedOutputs = obj.processedOutputs;
+            end
             %% Plot settings
-            vw = obj.inputs.windSpeedReference;
-            x_axis_limit = [0 obj.processedOutputs.vw_100m_operRange(end)];
+            vw = inputs.windSpeedReference;
+            x_axis_limit = [0 processedOutputs.vw_100m_operRange(end)];
             
             newcolors = [ % 0.25, 0.25, 0.25
                 0 0.4470 0.7410
@@ -602,46 +639,46 @@ classdef KiteQSMsimulation < handle
             % % Plots
 
             % Plots showing the per element results for rated wind speed
-            ws = obj.processedOutputs.ratedWind;
+            ws = processedOutputs.ratedWind;
             fig = figure();
             colororder(newcolors)
             % Lengths
             subplot(2,2,1)
             hold on; grid on; box on
-            plot(obj.processedOutputs.Rp(ws,:),':o','linewidth',1,'markersize',3);
-            plot(obj.processedOutputs.l_t_inCycle(ws,:),':^','linewidth',1,'markersize',3);
-            plot(obj.processedOutputs.h_inCycle(ws,:),':s','linewidth',1,'markersize',3);
+            plot(processedOutputs.Rp(ws,:),':o','linewidth',1,'markersize',3);
+            plot(processedOutputs.l_t_inCycle(ws,:),':^','linewidth',1,'markersize',3);
+            plot(processedOutputs.h_inCycle(ws,:),':s','linewidth',1,'markersize',3);
             ylabel('(m)');
             legend('R_{p}','l_{t}','h_{p}','location','northwest');
             hold off
             % Speeds
             subplot(2,2,2); hold on; grid on; box on; 
             yyaxis left
-            plot(obj.processedOutputs.lambda(ws,:),':o','linewidth',1,'markersize',3);
-            plot(obj.processedOutputs.f(ws,:),':s','linewidth',1,'markersize',3);
-            plot(obj.processedOutputs.f_i(ws,:),':v','linewidth',1,'markersize',3);
+            plot(processedOutputs.lambda(ws,:),':o','linewidth',1,'markersize',3);
+            plot(processedOutputs.f(ws,:),':s','linewidth',1,'markersize',3);
+            plot(processedOutputs.f_i(ws,:),':v','linewidth',1,'markersize',3);
             ylabel('(-)');
             yyaxis right
-            plot(obj.processedOutputs.vw(ws,:),':s','linewidth',1,'markersize',3);
-            plot(obj.processedOutputs.vw_i(ws,:),':v','linewidth',1,'markersize',3);
+            plot(processedOutputs.vw(ws,:),':s','linewidth',1,'markersize',3);
+            plot(processedOutputs.vw_i(ws,:),':v','linewidth',1,'markersize',3);
             ylabel('(m/s)');
             legend('λ','f_o','f_i','v_{w,o}','v_{w,i}','location','northwest');
             hold off
             % Glide ratios
             subplot(2,2,3); hold on; grid on; box on
-            plot(obj.processedOutputs.E(ws,:),':s','linewidth',1,'markersize',3);
-            plot(obj.processedOutputs.E_i(ws,:),':v','linewidth',1,'markersize',3);
+            plot(processedOutputs.E(ws,:),':s','linewidth',1,'markersize',3);
+            plot(processedOutputs.E_i(ws,:),':v','linewidth',1,'markersize',3);
             % ylim([0 2.5]);
             ylabel('(-)');
             legend('E_o','E_i','location','northwest');
             hold off
             % Forces
             subplot(2,2,4); hold on; grid on; box on
-            plot(obj.processedOutputs.Fa(ws,:)/1e3,':^','linewidth',1,'markersize',3);
-            plot(obj.processedOutputs.Fa_i(ws,:)/1e3,':o','linewidth',1,'markersize',3);
-            plot(obj.processedOutputs.Ft(ws,:)/1e3,':s','linewidth',1,'markersize',3);
-            plot(obj.processedOutputs.Ft_i(ws,:)/1e3,':v','linewidth',1,'markersize',3);
-            plot(obj.processedOutputs.W(ws,:)/1e3,':x','linewidth',1,'markersize',3);
+            plot(processedOutputs.Fa(ws,:)/1e3,':^','linewidth',1,'markersize',3);
+            plot(processedOutputs.Fa_i(ws,:)/1e3,':o','linewidth',1,'markersize',3);
+            plot(processedOutputs.Ft(ws,:)/1e3,':s','linewidth',1,'markersize',3);
+            plot(processedOutputs.Ft_i(ws,:)/1e3,':v','linewidth',1,'markersize',3);
+            plot(processedOutputs.W(ws,:)/1e3,':x','linewidth',1,'markersize',3);
             legend('F_{a,o}','F_{a,i}','F_{t,o}','F_{t,i}','W','location','northwest');
             ylabel('(kN)');
             hold off
@@ -657,9 +694,9 @@ classdef KiteQSMsimulation < handle
             hold on
             grid on
             box on
-            plot(vw, mean(obj.processedOutputs.lambda,2),':o','linewidth',1,'markersize',3);
-            plot(vw, mean(obj.processedOutputs.f,2),':s','linewidth',1,'markersize',3);
-            plot(vw, mean(obj.processedOutputs.f_i,2),':v','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.lambda,2),':o','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.f,2),':s','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.f_i,2),':v','linewidth',1,'markersize',3);
             ylabel('(-)');
             legend('λ','f_{o}','f_{i}','location','northwest');
             xlabel('Wind speed at 100m height (m/s)');
@@ -670,8 +707,8 @@ classdef KiteQSMsimulation < handle
             % CL
             figure('units','inch','Position', [4.2 0.5 3.5 2.2]); hold on; grid on; box on
             colororder(newcolors)
-            plot(vw, mean(obj.processedOutputs.CL,2),'o:','linewidth',1,'markersize',3);
-            plot(vw, mean(obj.processedOutputs.CL_i,2),'d:','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.CL,2),'o:','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.CL_i,2),'d:','linewidth',1,'markersize',3);
             ylabel('(-)');
             legend('C_{L,o}','C_{L,i}','location','northwest','Orientation','vertical');
             xlabel('Wind speed at 100m height (m/s)');
@@ -682,11 +719,11 @@ classdef KiteQSMsimulation < handle
             % CD
             figure('units','inch','Position', [8.2 0.5 3.5 2.2]); hold on; grid on; box on
             colororder(newcolors)
-            plot(vw, mean(obj.processedOutputs.CD,2),'o:','linewidth',1,'markersize',3);
-            plot(vw, mean(obj.processedOutputs.CD_i,2),'d:','linewidth',1,'markersize',3);
-            plot(vw, mean(obj.processedOutputs.CD_k,2),'^:','linewidth',1,'markersize',3);
-            plot(vw, mean(obj.processedOutputs.CD_k_i,2),'v:','linewidth',1,'markersize',3);
-            plot(vw, mean(obj.processedOutputs.CD_t,2),'s:','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.CD,2),'o:','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.CD_i,2),'d:','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.CD_k,2),'^:','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.CD_k_i,2),'v:','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.CD_t,2),'s:','linewidth',1,'markersize',3);
             ylabel('(-)');
             legend('C_{D,o}','C_{D,i}','C_{D,k,o}','C_{D,k,i}','C_{D,t}','location','northwest','Orientation','vertical');
             xlabel('Wind speed at 100m height (m/s)');
@@ -697,11 +734,11 @@ classdef KiteQSMsimulation < handle
             % Lengths
             figure('units','inch','Position', [12.2 0.5 3.5 2.2]); hold on; grid on; box on
             colororder(newcolors)
-            plot(vw, obj.processedOutputs.h_cycleAvg,'d:','linewidth',1,'markersize',3);
-            plot(vw, mean(obj.processedOutputs.Rp,2),'o:','linewidth',1,'markersize',3);
-            plot(vw, obj.processedOutputs.deltaL,'^:','linewidth',1,'markersize',3);
-            plot(vw, obj.processedOutputs.l_t_max,'s:','linewidth',1,'markersize',3);
-            plot(vw, obj.processedOutputs.l_t_min,'x:','linewidth',1,'markersize',3);
+            plot(vw, processedOutputs.h_cycleAvg,'d:','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.Rp,2),'o:','linewidth',1,'markersize',3);
+            plot(vw, processedOutputs.deltaL,'^:','linewidth',1,'markersize',3);
+            plot(vw, processedOutputs.l_t_max,'s:','linewidth',1,'markersize',3);
+            plot(vw, processedOutputs.l_t_min,'x:','linewidth',1,'markersize',3);
             ylabel('(m)');
             legend('h_{p,avg}','R_{p,avg}','Δl','l_{t,max}','l_{t,min}','location','northwest','Orientation','vertical');
             xlabel('Wind speed at 100m height (m/s)');
@@ -712,9 +749,9 @@ classdef KiteQSMsimulation < handle
             % Roll angle, avg patt elevation
             figure('units','inch','Position', [16.2 0.5 3.5 2.2]); hold on; grid on; box on
             colororder(newcolors)
-            plot(vw, mean(obj.processedOutputs.rollAngle,2),'s:','linewidth',1,'markersize',3);
-            plot(vw, obj.processedOutputs.beta,'o:','linewidth',1,'markersize',3);
-            plot(vw, obj.processedOutputs.gamma,'d:','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.rollAngle,2),'s:','linewidth',1,'markersize',3);
+            plot(vw, processedOutputs.beta,'o:','linewidth',1,'markersize',3);
+            plot(vw, processedOutputs.gamma,'d:','linewidth',1,'markersize',3);
             ylabel('(deg)');
             legend('$$\Psi$$','$$\overline{\beta}$$','$$\gamma$$','location','northwest','Orientation','vertical','Interpreter','latex');
             xlabel('Wind speed at 100m height (m/s)');
@@ -725,9 +762,9 @@ classdef KiteQSMsimulation < handle
             % Reel-out forces
             figure('units','inch','Position', [0.2 3.5 3.5 2.2]); hold on; grid on; box on
             colororder(newcolors)
-            plot(vw, mean(obj.processedOutputs.W,2)./10^3,':o','markersize',3)
-            plot(vw, mean(obj.processedOutputs.Fa,2)./10^3,':s','linewidth',1,'markersize',3);
-            plot(vw, mean(obj.processedOutputs.Ft,2)./10^3,':^','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.W,2)./10^3,':o','markersize',3)
+            plot(vw, mean(processedOutputs.Fa,2)./10^3,':s','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.Ft,2)./10^3,':^','linewidth',1,'markersize',3);
             ylabel('(kN)');
             legend('W','F_{a,o}','F_{t,o}','location','northwest');
             xlabel('Wind speed at 100m height (m/s)');
@@ -738,9 +775,9 @@ classdef KiteQSMsimulation < handle
             % Reel-in forces
             figure('units','inch','Position', [4.2 3.5 3.5 2.2]); hold on; grid on; box on
             colororder(newcolors)
-            plot(vw, mean(obj.processedOutputs.W,2)./10^3,':o','markersize',3)
-            plot(vw, mean(obj.processedOutputs.Fa_i,2)./10^3,':s','linewidth',1,'markersize',3);
-            plot(vw, mean(obj.processedOutputs.Ft_i,2)./10^3,':^','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.W,2)./10^3,':o','markersize',3)
+            plot(vw, mean(processedOutputs.Fa_i,2)./10^3,':s','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.Ft_i,2)./10^3,':^','linewidth',1,'markersize',3);
             ylabel('(kN)');
             legend('W','F_{a,i}','F_{t,i}','location','northwest');
             xlabel('Wind speed at 100m height (m/s)');
@@ -751,12 +788,12 @@ classdef KiteQSMsimulation < handle
             figure('units','inch','Position', [8.2 3.5 3.5 2.2]); hold on; grid on; box on
             colororder(newcolors)
             yyaxis left
-            plot(vw, obj.processedOutputs.to,':s','linewidth',1,'markersize',3);
-            plot(vw, obj.processedOutputs.ti,':d','linewidth',1,'markersize',3);
-            plot(vw, mean(obj.processedOutputs.tPatt,2),':o','linewidth',1,'markersize',3);
+            plot(vw, processedOutputs.to,':s','linewidth',1,'markersize',3);
+            plot(vw, processedOutputs.ti,':d','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.tPatt,2),':o','linewidth',1,'markersize',3);
             ylabel('(s)');
             yyaxis right
-            plot(vw, mean(obj.processedOutputs.numOfPatt,2),':^','linewidth',1,'markersize',3);
+            plot(vw, mean(processedOutputs.numOfPatt,2),':^','linewidth',1,'markersize',3);
             ylabel('(-)');
             xlabel('Wind speed at 100m height (m/s)');
             legend('t_{o}','t_{i}','t_{patt,avg}','N_{p}','location','northwest');
@@ -766,9 +803,9 @@ classdef KiteQSMsimulation < handle
             % Reel-out power
             figure('units','inch','Position', [12.2 3.5 3.5 2.2]); hold on; grid on; box on
             colororder(newcolors)
-            plot(vw, obj.processedOutputs.P_m_o./10^3,':o','linewidth',1,'markersize',3);
-            plot(vw, obj.processedOutputs.P_e_o./10^3,':s','linewidth',1,'markersize',3);
-            plot(vw, obj.processedOutputs.P_e_avg./10^3,':x','linewidth',1,'markersize',5);
+            plot(vw, processedOutputs.P_m_o./10^3,':o','linewidth',1,'markersize',3);
+            plot(vw, processedOutputs.P_e_o./10^3,':s','linewidth',1,'markersize',3);
+            plot(vw, processedOutputs.P_e_avg./10^3,':x','linewidth',1,'markersize',5);
             ylabel('(kW)');
             %title('Cycle averages');
             legend('P_{m,o}','P_{e,o}','P_{e,avg}','location','northwest');
@@ -779,8 +816,8 @@ classdef KiteQSMsimulation < handle
             % Reel-in power
             figure('units','inch','Position', [16.2 3.5 3.5 2.2]); hold on; grid on; box on
             colororder(newcolors)
-            plot(vw, obj.processedOutputs.P_m_i./10^3,':o','linewidth',1,'markersize',3);
-            plot(vw, obj.processedOutputs.P_e_i./10^3,':s','linewidth',1,'markersize',3);
+            plot(vw, processedOutputs.P_m_i./10^3,':o','linewidth',1,'markersize',3);
+            plot(vw, processedOutputs.P_e_i./10^3,':s','linewidth',1,'markersize',3);
             ylabel('(kW)');
             %title('Cycle averages');
             legend('P_{m,i}','P_{e,i}','location','northwest');
@@ -791,12 +828,12 @@ classdef KiteQSMsimulation < handle
             % Power curve comparison plot
             % Loyd
             P_Loyd = zeros(1,length(vw));
-            CL_loyd = obj.inputs.Cl_maxAirfoil * obj.inputs.Cl_eff_F;
-            CD_loyd = obj.inputs.Cd0 + (CL_loyd - obj.inputs.Cl0_airfoil)^2 / (pi * obj.inputs.aspectRatio * obj.inputs.e);
+            CL_loyd = inputs.Cl_maxAirfoil * inputs.Cl_eff_F;
+            CD_loyd = inputs.Cd0 + (CL_loyd - inputs.Cl0_airfoil)^2 / (pi * inputs.aspectRatio * inputs.e);
             for i = 1:length(vw)
-                P_Loyd(i) = (4/27) * (CL_loyd^3 / CD_loyd^2) * (1/2) * obj.inputs.densityAir * obj.inputs.areaWing * (vw(i)^3);
-                if P_Loyd(i) > obj.inputs.P_ratedElec
-                    P_Loyd(i) = obj.inputs.P_ratedElec;
+                P_Loyd(i) = (4/27) * (CL_loyd^3 / CD_loyd^2) * (1/2) * inputs.densityAir * inputs.areaWing * (vw(i)^3);
+                if P_Loyd(i) > inputs.P_ratedElec
+                    P_Loyd(i) = inputs.P_ratedElec;
                 end 
             end
             
@@ -809,7 +846,7 @@ classdef KiteQSMsimulation < handle
             figure('units','inch','Position', [0.2 6.5 3.5 2.2]); hold on; grid on; box on
             colororder(newcolors)
             plot(vw, P_Loyd./10^3,'-','linewidth',1);
-            plot(vw, obj.processedOutputs.P_e_avg./10^3,':s','linewidth',1,'MarkerSize',3);
+            plot(vw, processedOutputs.P_e_avg./10^3,':s','linewidth',1,'MarkerSize',3);
             plot(AP3_PC_ws, AP3_PC_power,':^k','linewidth',1,'MarkerSize',3);
             ylabel('Power (kW)');
             legend('Ideal Reel-out','QSM','6-DOF','location','southeast');
@@ -818,7 +855,7 @@ classdef KiteQSMsimulation < handle
             hold off
 
             % Cycle timeseries plots: Pattern averages
-            windSpeeds = [obj.processedOutputs.cutIn, obj.processedOutputs.ratedWind, obj.processedOutputs.cutOut];
+            windSpeeds = [processedOutputs.cutIn, processedOutputs.ratedWind, processedOutputs.cutOut];
             for i = windSpeeds
                 idx = find(vw == i);
                 figure('units','inch','Position', [4.2 6.5 3.5 2.2])
@@ -826,9 +863,9 @@ classdef KiteQSMsimulation < handle
                 grid on
                 box on
                 % Plot your data
-                plot(obj.processedOutputs.cyclePowerRep(i).t_inst, obj.processedOutputs.cyclePowerRep(i).P_e_inst,'linewidth',1.5, 'DisplayName', 'P_{e}');
-                plot(obj.processedOutputs.cyclePowerRep(i).t_inst, obj.processedOutputs.cyclePowerRep(i).P_m_inst,'--','linewidth',1.5, 'DisplayName', 'P_{m}');
-                yline(obj.processedOutputs.P_e_avg(idx)/10^3, ':', 'linewidth',1.2, 'DisplayName', 'P_{e,avg}');
+                plot(processedOutputs.cyclePowerRep(i).t_inst, processedOutputs.cyclePowerRep(i).P_e_inst,'linewidth',1.5, 'DisplayName', 'P_{e}');
+                plot(processedOutputs.cyclePowerRep(i).t_inst, processedOutputs.cyclePowerRep(i).P_m_inst,'--','linewidth',1.5, 'DisplayName', 'P_{m}');
+                yline(processedOutputs.P_e_avg(idx)/10^3, ':', 'linewidth',1.2, 'DisplayName', 'P_{e,avg}');
                 % Set yline positions within the range of your data
                 yline(0, '-', 'linewidth', 1, 'HandleVisibility', 'off');      
                 ylabel('(kW)');
@@ -837,17 +874,17 @@ classdef KiteQSMsimulation < handle
                 legend('Location', 'Best');      
                 % Customize legend colors
                 legend('TextColor', 'k', 'Color', 'w'); % 'TextColor' sets the text color, 'Color' sets the background color      
-                xlim([0 obj.processedOutputs.cyclePowerRep(i).t_inst(end)]);
-                ylim([1.5*min(obj.processedOutputs.cyclePowerRep(i).P_e_inst) 1.05*max(obj.processedOutputs.cyclePowerRep(i).P_m_inst)]);
-                title(strcat('Wind speed at 100m:', num2str(obj.processedOutputs.cyclePowerRep(idx).ws), ' m/s'));      
+                xlim([0 processedOutputs.cyclePowerRep(i).t_inst(end)]);
+                ylim([1.5*min(processedOutputs.cyclePowerRep(i).P_e_inst) 1.05*max(processedOutputs.cyclePowerRep(i).P_m_inst)]);
+                title(strcat('Wind speed at 100m:', num2str(processedOutputs.cyclePowerRep(idx).ws), ' m/s'));      
                 hold off
             end
             
             % Wind profile
-            if ~obj.inputs.doUseReferenceWindProfile
+            if ~inputs.doUseReferenceWindProfile
                 Vref = 10; % m/s
                 z = 10:10:600; % m
-                V = Vref * (z/obj.inputs.heightWindReference).^obj.inputs.windShearExp/Vref;
+                V = Vref * (z/inputs.heightWindReference).^inputs.windShearExp/Vref;
                 %   MegAWES Onshore location Cabauw. Wind speeds normalized with value at 100m. Profiles from: https://doi.org/10.1016/j.renene.2022.06.094
                 z_MegAWES = [10,20,40,60,80,100,120,140,150,160,180,200,220,250,300,500,600];
                 V_MegAWES_Cabauw = [0.541219682843206,0.607355091566827,0.768630154201962,0.868484406441142,0.941395360902529,1,1.04810058627160,1.08638854381156,1.10277338731106,1.11715868927737,1.14412258234309,1.16573551308321,1.18394938534465,1.20653423381438,1.23266397972046,1.26662287360302,1.26414483994687];
@@ -871,13 +908,13 @@ classdef KiteQSMsimulation < handle
                 % Define the heights at which you want to interpolate
                 heights = (0:10:1000); % Adjust the desired height values as needed
                 % Interpolate at the specified heights
-                V_interpolated = interp1(obj.inputs.windProfile_h, obj.inputs.windProfile_vw, heights, 'linear', 'extrap');
+                V_interpolated = interp1(inputs.windProfile_h, inputs.windProfile_vw, heights, 'linear', 'extrap');
                 % Plot the interpolated function
                 figure('units','inch','Position', [15 6 2 2.2])
                 hold on 
                 box on
                 grid on
-                plot(obj.inputs.windProfile_vw, obj.inputs.windProfile_h, 'o', V_interpolated, heights, '-');
+                plot(inputs.windProfile_vw, inputs.windProfile_h, 'o', V_interpolated, heights, '-');
                 xlabel('Wind speed (m/s)');
                 ylabel('Height (m)');
                 xlim([0.5 1.5])
@@ -888,269 +925,286 @@ classdef KiteQSMsimulation < handle
 
 
         end
-        
-        function obj = processoutputs(obj)
+                
+        function obj = processoutputs(obj, inputs, outputs)
+            if nargin<2
+                inputs = obj.inputs;
+                outputs = obj.outputs;
+            elseif nargin<3
+                outputs = obj.outputs;
+            end
             %% Post processing
-            vw = obj.inputs.windSpeedReference; % Wind speed at ref. height
+            vw = inputs.windSpeedReference; % Wind speed at ref. height
             
             %% Cut-in wind speed
             % Glide ratio constraint violation acceptance for feasible solution
-            temp1                  = vw(abs(mean((obj.outputs.E_result - obj.outputs.E),2)) < 0.01); %0.01
-            obj.processedOutputs.cutIn = max(temp1(1));
+            temp1                  = vw(abs(mean((outputs.E_result - outputs.E),2)) < 0.01); %0.01
+            processedOutputs.cutIn = max(temp1(1)); %#ok<*PROPLC>
             
             %% Rated wind and power
-            temp3                       = round(obj.outputs.P_e_avg./max(obj.outputs.P_e_avg),2);
+            temp3                       = round(outputs.P_e_avg./max(outputs.P_e_avg),2);
             temp4                       = vw(temp3>=0.99);
-            obj.processedOutputs.ratedWind  = temp4(1); % At Reference height 
-            obj.processedOutputs.ratedPower = obj.outputs.P_e_avg(vw==temp4(1));
+            processedOutputs.ratedWind  = temp4(1); % At Reference height 
+            processedOutputs.ratedPower = outputs.P_e_avg(vw==temp4(1));
             
             %% Cut-out wind speed
-            obj.processedOutputs.cutOut   = 25; % At operational height (Assumption)
+            processedOutputs.cutOut   = 25; % At operational height (Assumption)
             % Operating range traslated to wind speed at ref. height
-            obj.processedOutputs.vw_100m_operRange = vw(mean(obj.outputs.vw,2)<=obj.processedOutputs.cutOut);
+            processedOutputs.vw_100m_operRange = vw(mean(outputs.vw,2)<=processedOutputs.cutOut);
             
             %% Extract feasible results in the operational range
-            obj.processedOutputs.Dia_te = obj.outputs.d_t;
+            processedOutputs.Dia_te = outputs.d_t;
             for i=1:length(vw)
-                if vw(i)>=obj.processedOutputs.cutIn && vw(i)<= obj.processedOutputs.cutOut
-                    obj.processedOutputs.vw(i,:)           = obj.outputs.vw(i,:);
-                    obj.processedOutputs.vw_i(i,:)         = obj.outputs.vw_i(i,:);
-                    obj.processedOutputs.m_k               = obj.outputs.m_k;  
-                    obj.processedOutputs.P1_m_o(i)         = obj.outputs.P1_m_o(i);
-                    obj.processedOutputs.P2_m_i(i)         = obj.outputs.P2_m_i(i); 
-                    obj.processedOutputs.P_m_o_eff(i,:)    = obj.outputs.P_m_o_eff(i,:);
-                    obj.processedOutputs.P_m_i_eff(i,:)    = obj.outputs.P_m_i_eff(i,:);  
-                    obj.processedOutputs.P1_e_o(i)         = obj.outputs.P1_e_o(i);
-                    obj.processedOutputs.P2_e_i(i)         = obj.outputs.P2_e_i(i); 
-                    obj.processedOutputs.P_e_o_eff(i,:)    = obj.outputs.P_e_o_eff(i,:);
-                    obj.processedOutputs.P_e_i_eff(i,:)    = obj.outputs.P_e_i_eff(i,:);
-                    obj.processedOutputs.P_m_o(i)          = obj.outputs.P_m_o(i);
-                    obj.processedOutputs.P_m_i(i)          = obj.outputs.P_m_i(i);
-                    obj.processedOutputs.P_e_o(i)          = obj.outputs.P_e_o(i);
-                    obj.processedOutputs.P_e_i(i)          = obj.outputs.P_e_i(i);
-                    obj.processedOutputs.deltaL(i)         = obj.outputs.deltaL(i);
-                    obj.processedOutputs.t1(i)             = obj.outputs.t1(i);
-                    obj.processedOutputs.t2(i)             = obj.outputs.t2(i);
-                    obj.processedOutputs.to_eff(i,:)       = obj.outputs.to_eff(i,:);
-                    obj.processedOutputs.ti_eff(i,:)       = obj.outputs.ti_eff(i,:);
-                    obj.processedOutputs.to(i)             = obj.outputs.to(i);
-                    obj.processedOutputs.ti(i)             = obj.outputs.ti(i);
-                    obj.processedOutputs.tCycle(i)         = obj.outputs.tCycle(i);
-                    obj.processedOutputs.Ft(i,:)           = obj.outputs.Ft(i,:);
-                    obj.processedOutputs.Ft_i(i,:)         = obj.outputs.Ft_i(i,:);
-                    obj.processedOutputs.Fa(i,:)           = obj.outputs.Fa(i,:);
-                    obj.processedOutputs.Fa_i(i,:)         = obj.outputs.Fa_i(i,:);
-                    obj.processedOutputs.W(i,:)            = obj.outputs.W(i,:);
-                    obj.processedOutputs.vo(i,:)           = obj.outputs.vk_r(i,:);
-                    obj.processedOutputs.vk_tau(i,:)       = obj.outputs.vk_tau(i,:);
-                    obj.processedOutputs.vi(i,:)           = obj.outputs.vk_r_i(i,:);
-                    obj.processedOutputs.P_e_avg(i)        = obj.outputs.P_e_avg(i);
-                    obj.processedOutputs.P_m_avg(i)        = obj.outputs.P_m_avg(i);
-                    obj.processedOutputs.Rp(i,:)           = obj.outputs.Rp(i,:);
-                    obj.processedOutputs.h_cycleStart(i)   = obj.outputs.h_cycleStart(i);
-                    obj.processedOutputs.h_cycleAvg(i)     = obj.outputs.h_cycleAvg(i);
-                    obj.processedOutputs.l_t_max(i)        = obj.outputs.l_t_max(i);
-                    obj.processedOutputs.l_t_min(i)        = obj.outputs.l_t_min(i);
-                    obj.processedOutputs.l_t_inCycle(i,:)  = obj.outputs.l_t_inCycle(i,:);
-                    obj.processedOutputs.h_inCycle(i,:)    = obj.outputs.h_inCycle(i,:); 
-                    obj.processedOutputs.va(i,:)           = obj.outputs.va(i,:);
-                    obj.processedOutputs.beta(i)           = rad2deg(obj.outputs.beta(i));
-                    obj.processedOutputs.rollAngle(i,:)    = rad2deg(-obj.outputs.rollAngle(i,:));
-                    obj.processedOutputs.gamma(i)          = rad2deg(obj.outputs.gamma(i));
-                    obj.processedOutputs.CL(i,:)           = obj.outputs.CL(i,:);
-                    obj.processedOutputs.CD(i,:)           = obj.outputs.CD(i,:);
-                    obj.processedOutputs.CD_k(i,:)         = obj.outputs.CD_k(i,:);
-                    obj.processedOutputs.CD_k_i(i,:)       = obj.outputs.CD_k_i(i,:);
-                    obj.processedOutputs.CD_t(i,:)         = obj.outputs.CD_t(i,:);
-                    obj.processedOutputs.CL_i(i,:)         = obj.outputs.CL_i(i,:);
-                    obj.processedOutputs.CD_i(i,:)         = obj.outputs.CD_i(i,:);
-                    obj.processedOutputs.E(i,:)            = obj.outputs.E(i,:);
-                    obj.processedOutputs.E_i(i,:)          = obj.outputs.E_i(i,:);
-                    obj.processedOutputs.numOfPatt(i,:)    = obj.outputs.numOfPatt(i,:);
-                    obj.processedOutputs.lambda(i,:)       = obj.outputs.lambda(i,:); 
-                    obj.processedOutputs.f(i,:)            = obj.outputs.f(i,:); 
-                    obj.processedOutputs.f_i(i,:)          = obj.outputs.f_i(i,:); 
-                    obj.processedOutputs.tPatt(i,:)        = obj.outputs.tPatt(i,:);
-                    obj.processedOutputs.dutyCycle(i)      = obj.processedOutputs.to(i)/obj.processedOutputs.tCycle(i);
-                    obj.processedOutputs.zetaMech(i,:)     = obj.outputs.zetaMech(i,:);  
-                    obj.processedOutputs.d_te              = obj.outputs.d_t;  
+                if vw(i)>=processedOutputs.cutIn && vw(i)<= processedOutputs.cutOut
+                    processedOutputs.vw(i,:)           = outputs.vw(i,:);
+                    processedOutputs.vw_i(i,:)         = outputs.vw_i(i,:);
+                    processedOutputs.P1_m_o(i)         = outputs.P1_m_o(i);
+                    processedOutputs.P2_m_i(i)         = outputs.P2_m_i(i); 
+                    processedOutputs.P_m_o_eff(i,:)    = outputs.P_m_o_eff(i,:);
+                    processedOutputs.P_m_i_eff(i,:)    = outputs.P_m_i_eff(i,:);  
+                    processedOutputs.P1_e_o(i)         = outputs.P1_e_o(i);
+                    processedOutputs.P2_e_i(i)         = outputs.P2_e_i(i); 
+                    processedOutputs.P_e_o_eff(i,:)    = outputs.P_e_o_eff(i,:);
+                    processedOutputs.P_e_i_eff(i,:)    = outputs.P_e_i_eff(i,:);
+                    processedOutputs.P_m_o(i)          = outputs.P_m_o(i);
+                    processedOutputs.P_m_i(i)          = outputs.P_m_i(i);
+                    processedOutputs.P_e_o(i)          = outputs.P_e_o(i);
+                    processedOutputs.P_e_i(i)          = outputs.P_e_i(i);
+                    processedOutputs.deltaL(i)         = outputs.deltaL(i);
+                    processedOutputs.t1(i)             = outputs.t1(i);
+                    processedOutputs.t2(i)             = outputs.t2(i);
+                    processedOutputs.to_eff(i,:)       = outputs.to_eff(i,:);
+                    processedOutputs.ti_eff(i,:)       = outputs.ti_eff(i,:);
+                    processedOutputs.to(i)             = outputs.to(i);
+                    processedOutputs.ti(i)             = outputs.ti(i);
+                    processedOutputs.tCycle(i)         = outputs.tCycle(i);
+                    processedOutputs.Ft(i,:)           = outputs.Ft(i,:);
+                    processedOutputs.Ft_i(i,:)         = outputs.Ft_i(i,:);
+                    processedOutputs.Fa(i,:)           = outputs.Fa(i,:);
+                    processedOutputs.Fa_i(i,:)         = outputs.Fa_i(i,:);
+                    processedOutputs.W(i,:)            = outputs.W(i,:);
+                    processedOutputs.vo(i,:)           = outputs.vk_r(i,:);
+                    processedOutputs.vk_tau(i,:)       = outputs.vk_tau(i,:);
+                    processedOutputs.vi(i,:)           = outputs.vk_r_i(i,:);
+                    processedOutputs.P_e_avg(i)        = outputs.P_e_avg(i);
+                    processedOutputs.P_m_avg(i)        = outputs.P_m_avg(i);
+                    processedOutputs.Rp(i,:)           = outputs.Rp(i,:);
+                    processedOutputs.h_cycleStart(i)   = outputs.h_cycleStart(i);
+                    processedOutputs.h_cycleAvg(i)     = outputs.h_cycleAvg(i);
+                    processedOutputs.l_t_max(i)        = outputs.l_t_max(i);
+                    processedOutputs.l_t_min(i)        = outputs.l_t_min(i);
+                    processedOutputs.l_t_inCycle(i,:)  = outputs.l_t_inCycle(i,:);
+                    processedOutputs.h_inCycle(i,:)    = outputs.h_inCycle(i,:); 
+                    processedOutputs.va(i,:)           = outputs.va(i,:);
+                    processedOutputs.beta(i)           = rad2deg(outputs.beta(i));
+                    processedOutputs.rollAngle(i,:)    = rad2deg(-outputs.rollAngle(i,:));
+                    processedOutputs.gamma(i)          = rad2deg(outputs.gamma(i));
+                    processedOutputs.CL(i,:)           = outputs.CL(i,:);
+                    processedOutputs.CD(i,:)           = outputs.CD(i,:);
+                    processedOutputs.CD_k(i,:)         = outputs.CD_k(i,:);
+                    processedOutputs.CD_k_i(i,:)       = outputs.CD_k_i(i,:);
+                    processedOutputs.CD_t(i,:)         = outputs.CD_t(i,:);
+                    processedOutputs.CL_i(i,:)         = outputs.CL_i(i,:);
+                    processedOutputs.CD_i(i,:)         = outputs.CD_i(i,:);
+                    processedOutputs.E(i,:)            = outputs.E(i,:);
+                    processedOutputs.E_i(i,:)          = outputs.E_i(i,:);
+                    processedOutputs.numOfPatt(i,:)    = outputs.numOfPatt(i,:);
+                    processedOutputs.lambda(i,:)       = outputs.lambda(i,:); 
+                    processedOutputs.f(i,:)            = outputs.f(i,:); 
+                    processedOutputs.f_i(i,:)          = outputs.f_i(i,:); 
+                    processedOutputs.tPatt(i,:)        = outputs.tPatt(i,:);
+                    processedOutputs.dutyCycle(i)      = processedOutputs.to(i)/processedOutputs.tCycle(i);
+                    processedOutputs.zetaMech(i,:)     = outputs.zetaMech(i,:);  
+                    processedOutputs.d_te              = outputs.d_t;  
                     
                     % Cycle efficiency
-                    obj.processedOutputs.cycleEff_elec(i)  = (obj.processedOutputs.P_e_avg(i)*obj.processedOutputs.tCycle(i))/...
-                                                            (obj.processedOutputs.P_e_o(i)*obj.processedOutputs.to(i));
-                    obj.processedOutputs.cycleEff_mech(i)  = (obj.processedOutputs.P_m_avg(i)*obj.processedOutputs.tCycle(i))/...
-                                                            (obj.processedOutputs.P_m_o(i)*obj.processedOutputs.to(i));
+                    processedOutputs.cycleEff_elec(i)  = (processedOutputs.P_e_avg(i)*processedOutputs.tCycle(i))/...
+                                                            (processedOutputs.P_e_o(i)*processedOutputs.to(i));
+                    processedOutputs.cycleEff_mech(i)  = (processedOutputs.P_m_avg(i)*processedOutputs.tCycle(i))/...
+                                                            (processedOutputs.P_m_o(i)*processedOutputs.to(i));
                     
                     % Coefficient of power (Cp) as defined for HAWTs
-                    obj.processedOutputs.sweptArea(i,:)     = pi.*((obj.outputs.Rp(i,:)+obj.inputs.span/2).^2 - (obj.outputs.Rp(i,:)-obj.inputs.span/2).^2);
-                    obj.processedOutputs.Cp_m_o(i,:)        = obj.outputs.P_m_o(i)./(0.5.*obj.inputs.densityAir.*obj.processedOutputs.sweptArea(i,:).*obj.outputs.vw(i,:).^3);
-                    obj.processedOutputs.Cp_e_avg(i,:)      = obj.outputs.P_e_avg(i)./(0.5.*obj.inputs.densityAir.*obj.processedOutputs.sweptArea(i,:).*obj.outputs.vw(i,:).^3);
+                    processedOutputs.sweptArea(i,:)     = pi.*((outputs.Rp(i,:)+inputs.span/2).^2 - (outputs.Rp(i,:)-inputs.span/2).^2);
+                    processedOutputs.Cp_m_o(i,:)        = outputs.P_m_o(i)./(0.5.*inputs.densityAir.*processedOutputs.sweptArea(i,:).*outputs.vw(i,:).^3);
+                    processedOutputs.Cp_e_avg(i,:)      = outputs.P_e_avg(i)./(0.5.*inputs.densityAir.*processedOutputs.sweptArea(i,:).*outputs.vw(i,:).^3);
                 end
             end
             
             %% Cycle power representation for wind speeds in the operational range
-            for vw_i = vw(vw>=obj.processedOutputs.cutIn&vw<=obj.processedOutputs.cutOut)
-                obj.processedOutputs.cyclePowerRep(vw_i) = obj.createCyclePowerRep(vw_i); 
+            for vw_i = vw(vw>=processedOutputs.cutIn&vw<=processedOutputs.cutOut)
+                processedOutputs.cyclePowerRep(vw_i) = createCyclePowerRep(vw_i,...
+                    inputs.windSpeedReference, processedOutputs.t1, ...
+                    processedOutputs.to_eff, processedOutputs.t2,...
+                    processedOutputs.ti_eff, processedOutputs.P_e_o_eff,...
+                    processedOutputs.P_e_i_eff, processedOutputs.P_m_o_eff, ...
+                    processedOutputs.P_m_i_eff); 
+            end
+
+            obj.processedOutputs = processedOutputs;
+
+            function cyclePowerRep = createCyclePowerRep(vw_i, ...
+                    windSpeedReference, t1, to_eff, t2, ti_eff, P_e_o_eff, ...
+                    P_e_i_eff, P_m_o_eff, P_m_i_eff)
+                cyclePowerRep.ws     = vw_i;
+                cyclePowerRep.idx    = find(windSpeedReference==vw_i);
+                cyclePowerRep.t1     = round(t1(cyclePowerRep.idx),2);
+                cyclePowerRep.to_eff = round(sum(to_eff(cyclePowerRep.idx,:),2),2);
+                cyclePowerRep.t2     = round(t2(cyclePowerRep.idx),2);
+                cyclePowerRep.ti_eff = round(sum(ti_eff(cyclePowerRep.idx,:),2),2);
+                cyclePowerRep.to     = cyclePowerRep.t1 + cyclePowerRep.to_eff; %[s]
+                cyclePowerRep.ti     = cyclePowerRep.t2 + cyclePowerRep.ti_eff; %[s]
+                cyclePowerRep.tCycle = cyclePowerRep.to + cyclePowerRep.to; %[s]
+                
+                cyclePowerRep.t_inst   = cumsum([0 cyclePowerRep.t1 (cyclePowerRep.to_eff-cyclePowerRep.t1) cyclePowerRep.t1 ...
+                                      cyclePowerRep.t2 (cyclePowerRep.ti_eff-cyclePowerRep.t2) cyclePowerRep.t2]);
+                
+                cyclePowerRep.P_e_inst = [0, P_e_o_eff(cyclePowerRep.idx,1), P_e_o_eff(cyclePowerRep.idx,end), 0, ...
+                                      -P_e_i_eff(cyclePowerRep.idx,end), -P_e_i_eff(cyclePowerRep.idx,1), 0]./10^3;
+                
+                cyclePowerRep.P_m_inst = [0 P_m_o_eff(cyclePowerRep.idx,1), P_m_o_eff(cyclePowerRep.idx,end), 0, ...
+                                      -P_m_i_eff(cyclePowerRep.idx,end), -P_m_i_eff(cyclePowerRep.idx,1), 0]./10^3;
             end
         end
 
-        function cyclePowerRep = createCyclePowerRep(obj, vw_i)
-            cyclePowerRep.ws     = vw_i;
-            cyclePowerRep.idx    = find(obj.inputs.windSpeedReference==vw_i);
-            cyclePowerRep.t1     = round(obj.processedOutputs.t1(cyclePowerRep.idx),2);
-            cyclePowerRep.to_eff = round(sum(obj.processedOutputs.to_eff(cyclePowerRep.idx,:),2),2);
-            cyclePowerRep.t2     = round(obj.processedOutputs.t2(cyclePowerRep.idx),2);
-            cyclePowerRep.ti_eff = round(sum(obj.processedOutputs.ti_eff(cyclePowerRep.idx,:),2),2);
-            cyclePowerRep.to     = cyclePowerRep.t1 + cyclePowerRep.to_eff; %[s]
-            cyclePowerRep.ti     = cyclePowerRep.t2 + cyclePowerRep.ti_eff; %[s]
-            cyclePowerRep.tCycle = cyclePowerRep.to + cyclePowerRep.to; %[s]
-            
-            cyclePowerRep.t_inst   = cumsum([0 cyclePowerRep.t1 (cyclePowerRep.to_eff-cyclePowerRep.t1) cyclePowerRep.t1 ...
-                                  cyclePowerRep.t2 (cyclePowerRep.ti_eff-cyclePowerRep.t2) cyclePowerRep.t2]);
-            
-            cyclePowerRep.P_e_inst = [0 obj.processedOutputs.P_e_o_eff(cyclePowerRep.idx,1) obj.processedOutputs.P_e_o_eff(cyclePowerRep.idx,end) 0 ...
-                                  -obj.processedOutputs.P_e_i_eff(cyclePowerRep.idx,end) -obj.processedOutputs.P_e_i_eff(cyclePowerRep.idx,1) 0]./10^3;
-            
-            cyclePowerRep.P_m_inst = [0 obj.processedOutputs.P_m_o_eff(cyclePowerRep.idx,1) obj.processedOutputs.P_m_o_eff(cyclePowerRep.idx,end) 0 ...
-                                  -obj.processedOutputs.P_m_i_eff(cyclePowerRep.idx,end) -obj.processedOutputs.P_m_i_eff(cyclePowerRep.idx,1) 0]./10^3;
-        end
+        
 
         function obj = initialise_outputs_to_zero(obj)
             % Initialize all obj.outputs fields with zeros
             num_ref = length(obj.inputs.windSpeedReference);
-            num_elems = obj.inputs.numDeltaLelems;
+            % num_elems = obj.inputs.numDeltaLelems;
 
-            obj.outputs.halfRhoS = 0;
-            obj.outputs.m_k = 0;
+            obj.kiteMass = 0;
             
             % Single-column variables
-            obj.outputs.l_t_min = zeros(1, num_ref);
-            obj.outputs.pattStartGrClr = zeros(1, num_ref);
-            obj.outputs.h_cycleStart = zeros(1, num_ref);
-            obj.outputs.l_t_max = zeros(1, num_ref);
-            obj.outputs.pattEndGrClr = zeros(1, num_ref);
-            obj.outputs.l_t_avg = zeros(1, num_ref);
-            obj.outputs.h_cycleAvg = zeros(1, num_ref);
-            obj.outputs.h_cycleEnd = zeros(1, num_ref);
-            obj.outputs.d_t = zeros(1, num_ref);
-            obj.outputs.deltaLelems = zeros(1, num_ref);
-            obj.outputs.elemDeltaL = zeros(1, num_ref);
-            obj.outputs.t1 = zeros(1, num_ref);
-            obj.outputs.P1_m_o = zeros(1, num_ref);
-            obj.outputs.P1_e_o = zeros(1, num_ref);
-            obj.outputs.P_m_o = zeros(1, num_ref);
-            obj.outputs.P_e_o = zeros(1, num_ref);
-            obj.outputs.t2 = zeros(1, num_ref);
-            obj.outputs.P2_m_i = zeros(1, num_ref);
-            obj.outputs.P2_e_i = zeros(1, num_ref);
-            obj.outputs.P_m_i = zeros(1, num_ref);
-            obj.outputs.P_e_i = zeros(1, num_ref);
-            obj.outputs.tCycle = zeros(1, num_ref);
-            obj.outputs.tPatt = zeros(num_ref, num_elems);
-            obj.outputs.numOfPatt = zeros(num_ref, num_elems);
-            obj.outputs.P_e_avg = zeros(1, num_ref);
-            obj.outputs.P_m_avg = zeros(1, num_ref);
-            obj.outputs.deltaL = zeros(1, num_ref);
-            obj.outputs.beta = zeros(1, num_ref);
-            obj.outputs.gamma = zeros(1, num_ref);
-            obj.outputs.Rp_start = zeros(1, num_ref);
-            obj.outputs.etaGen_i = zeros(1, num_ref);
-            obj.outputs.to = zeros(1, num_ref);
-            obj.outputs.ti = zeros(1, num_ref);
+            outputs(num_ref).l_t_min = []; %#ok<*PROP>
+            outputs(num_ref).pattStartGrClr = [];
+            outputs(num_ref).h_cycleStart = [];
+            outputs(num_ref).l_t_max = [];
+            outputs(num_ref).pattEndGrClr = [];
+            outputs(num_ref).l_t_avg = [];
+            outputs(num_ref).h_cycleAvg = [];
+            outputs(num_ref).h_cycleEnd = [];
+            outputs(num_ref).d_t = [];
+            outputs(num_ref).deltaLelems = [];
+            outputs(num_ref).elemDeltaL = [];
+            outputs(num_ref).t1 = [];
+            outputs(num_ref).P1_m_o = [];
+            outputs(num_ref).P1_e_o = [];
+            outputs(num_ref).P_m_o = [];
+            outputs(num_ref).P_e_o = [];
+            outputs(num_ref).t2 = [];
+            outputs(num_ref).P2_m_i = [];
+            outputs(num_ref).P2_e_i = [];
+            outputs(num_ref).P_m_i = [];
+            outputs(num_ref).P_e_i = [];
+            outputs(num_ref).tCycle = [];
+            outputs(num_ref).tPatt = [];
+            outputs(num_ref).numOfPatt = [];
+            outputs(num_ref).P_e_avg = [];
+            outputs(num_ref).P_m_avg = [];
+            outputs(num_ref).deltaL = [];
+            outputs(num_ref).beta = [];
+            outputs(num_ref).gamma = [];
+            outputs(num_ref).Rp_start = [];
+            outputs(num_ref).etaGen_i = [];
+            outputs(num_ref).to = [];
+            outputs(num_ref).ti = [];
             
             % Variables with multiple columns
-            obj.outputs.l_t_inCycle = zeros(num_ref, num_elems);
-            obj.outputs.pattGrClr = zeros(num_ref, num_elems);
-            obj.outputs.m_t = zeros(num_ref, num_elems);
-            obj.outputs.m_eff = zeros(num_ref, num_elems);
-            obj.outputs.theta = zeros(num_ref, num_elems);
-            obj.outputs.phi = zeros(num_ref, num_elems);
-            obj.outputs.chi = zeros(num_ref, num_elems);
-            obj.outputs.CD_k = zeros(num_ref, num_elems);
-            obj.outputs.CD_t = zeros(num_ref, num_elems);
-            obj.outputs.CD = zeros(num_ref, num_elems);
-            obj.outputs.E = zeros(num_ref, num_elems);
-            obj.outputs.h_inCycle = zeros(num_ref, num_elems);
-            obj.outputs.Rp = zeros(num_ref, num_elems);
-            obj.outputs.vw = zeros(num_ref, num_elems);
-            obj.outputs.vw_r = zeros(num_ref, num_elems);
-            obj.outputs.vw_theta = zeros(num_ref, num_elems);
-            obj.outputs.vw_phi = zeros(num_ref, num_elems);
-            obj.outputs.f = zeros(num_ref, num_elems);
-            obj.outputs.va = zeros(num_ref, num_elems);
-            obj.outputs.lambda = zeros(num_ref, num_elems);
-            obj.outputs.vk_tau = zeros(num_ref, num_elems);
-            obj.outputs.vk_theta = zeros(num_ref, num_elems);
-            obj.outputs.vk_phi = zeros(num_ref, num_elems);
-            obj.outputs.W = zeros(num_ref, num_elems);
-            obj.outputs.Fg_r = zeros(num_ref, num_elems);
-            obj.outputs.Fg_theta = zeros(num_ref, num_elems);
-            obj.outputs.Fg_phi = zeros(num_ref, num_elems);
-            obj.outputs.Fa_theta = zeros(num_ref, num_elems);
-            obj.outputs.Fa_phi = zeros(num_ref, num_elems);
-            obj.outputs.Fa_r = zeros(num_ref, num_elems);
-            obj.outputs.Fa = zeros(num_ref, num_elems);
-            obj.outputs.va_r = zeros(num_ref, num_elems);
-            obj.outputs.va_theta = zeros(num_ref, num_elems);
-            obj.outputs.va_phi = zeros(num_ref, num_elems);
-            obj.outputs.F_dot_v = zeros(num_ref, num_elems);
-            obj.outputs.D_r = zeros(num_ref, num_elems);
-            obj.outputs.D_theta = zeros(num_ref, num_elems);
-            obj.outputs.D_phi = zeros(num_ref, num_elems);
-            obj.outputs.L_r = zeros(num_ref, num_elems);
-            obj.outputs.L_theta = zeros(num_ref, num_elems);
-            obj.outputs.L_phi = zeros(num_ref, num_elems);
-            obj.outputs.D = zeros(num_ref, num_elems);
-            obj.outputs.L = zeros(num_ref, num_elems);
-            obj.outputs.Ft = zeros(num_ref, num_elems);
-            obj.outputs.E_result = zeros(num_ref, num_elems);
-            obj.outputs.kByE = zeros(num_ref, num_elems);
-            obj.outputs.P_m_o_eff = zeros(num_ref, num_elems);
-            obj.outputs.zetaMech = zeros(num_ref, num_elems);
-            obj.outputs.etaGen_o = zeros(num_ref, num_elems);
-            obj.outputs.P_e_o_eff = zeros(num_ref, num_elems);
-            obj.outputs.theta_i = zeros(num_ref, num_elems);
-            obj.outputs.phi_i = zeros(num_ref, num_elems);
-            obj.outputs.vw_i = zeros(num_ref, num_elems);
-            obj.outputs.vw_r_i = zeros(num_ref, num_elems);
-            obj.outputs.vw_theta_i = zeros(num_ref, num_elems);
-            obj.outputs.vw_phi_i = zeros(num_ref, num_elems);
-            obj.outputs.f_i = zeros(num_ref, num_elems);
-            obj.outputs.va_r_i = zeros(num_ref, num_elems);
-            obj.outputs.va_theta_i = zeros(num_ref, num_elems);
-            obj.outputs.va_phi_i = zeros(num_ref, num_elems);
-            obj.outputs.va_i = zeros(num_ref, num_elems);
-            obj.outputs.CD_k_i = zeros(num_ref, num_elems);
-            obj.outputs.CD_i = zeros(num_ref, num_elems);
-            obj.outputs.E_i = zeros(num_ref, num_elems);
-            obj.outputs.Fa_i = zeros(num_ref, num_elems);
-            obj.outputs.Fg_r_i = zeros(num_ref, num_elems);
-            obj.outputs.Fg_theta_i = zeros(num_ref, num_elems);
-            obj.outputs.Fg_phi_i = zeros(num_ref, num_elems);
-            obj.outputs.Fa_theta_i = zeros(num_ref, num_elems);
-            obj.outputs.Fa_phi_i = zeros(num_ref, num_elems);
-            obj.outputs.Fa_r_i = zeros(num_ref, num_elems);
-            obj.outputs.F_dot_v_i = zeros(num_ref, num_elems);
-            obj.outputs.D_r_i = zeros(num_ref, num_elems);
-            obj.outputs.D_theta_i = zeros(num_ref, num_elems);
-            obj.outputs.D_phi_i = zeros(num_ref, num_elems);
-            obj.outputs.L_r_i = zeros(num_ref, num_elems);
-            obj.outputs.L_theta_i = zeros(num_ref, num_elems);
-            obj.outputs.L_phi_i = zeros(num_ref, num_elems);
-            obj.outputs.D_i = zeros(num_ref, num_elems);
-            obj.outputs.L_i = zeros(num_ref, num_elems);
-            obj.outputs.Ft_i = zeros(num_ref, num_elems);
-            obj.outputs.E_result_i = zeros(num_ref, num_elems);
-            obj.outputs.P_m_i_eff = zeros(num_ref, num_elems);
-            obj.outputs.P_e_i_eff = zeros(num_ref, num_elems);
-            obj.outputs.vk_r_i = zeros(num_ref, num_elems);
-            obj.outputs.CL_i = zeros(num_ref, num_elems);
-            obj.outputs.vk_r = zeros(num_ref, num_elems);
-            obj.outputs.kRatio = zeros(num_ref, num_elems);
-            obj.outputs.CL = zeros(num_ref, num_elems);
-            obj.outputs.ti_eff = zeros(num_ref, num_elems);
-            obj.outputs.to_eff = zeros(num_ref, num_elems);
-            obj.outputs.rollAngle = zeros(num_ref, num_elems);
+            outputs(num_ref).l_t_inCycle = [];
+            outputs(num_ref).pattGrClr = [];
+            outputs(num_ref).m_t = [];
+            outputs(num_ref).m_eff = [];
+            outputs(num_ref).theta = [];
+            outputs(num_ref).phi = [];
+            outputs(num_ref).chi = [];
+            outputs(num_ref).CD_k = [];
+            outputs(num_ref).CD_t = [];
+            outputs(num_ref).CD = [];
+            outputs(num_ref).E = [];
+            outputs(num_ref).h_inCycle = [];
+            outputs(num_ref).Rp = [];
+            outputs(num_ref).vw = [];
+            outputs(num_ref).vw_r = [];
+            outputs(num_ref).vw_theta = [];
+            outputs(num_ref).vw_phi = [];
+            outputs(num_ref).f = [];
+            outputs(num_ref).va = [];
+            outputs(num_ref).lambda = [];
+            outputs(num_ref).vk_tau = [];
+            outputs(num_ref).vk_theta = [];
+            outputs(num_ref).vk_phi = [];
+            outputs(num_ref).W = [];
+            outputs(num_ref).Fg_r = [];
+            outputs(num_ref).Fg_theta = [];
+            outputs(num_ref).Fg_phi = [];
+            outputs(num_ref).Fa_theta = [];
+            outputs(num_ref).Fa_phi = [];
+            outputs(num_ref).Fa_r = [];
+            outputs(num_ref).Fa = [];
+            outputs(num_ref).va_r = [];
+            outputs(num_ref).va_theta = [];
+            outputs(num_ref).va_phi = [];
+            outputs(num_ref).F_dot_v = [];
+            outputs(num_ref).D_r = [];
+            outputs(num_ref).D_theta = [];
+            outputs(num_ref).D_phi = [];
+            outputs(num_ref).L_r = [];
+            outputs(num_ref).L_theta = [];
+            outputs(num_ref).L_phi = [];
+            outputs(num_ref).D = [];
+            outputs(num_ref).L = [];
+            outputs(num_ref).Ft = [];
+            outputs(num_ref).E_result = [];
+            outputs(num_ref).kByE = [];
+            outputs(num_ref).P_m_o_eff = [];
+            outputs(num_ref).zetaMech = [];
+            outputs(num_ref).etaGen_o = [];
+            outputs(num_ref).P_e_o_eff = [];
+            outputs(num_ref).theta_i = [];
+            outputs(num_ref).phi_i = [];
+            outputs(num_ref).vw_i = [];
+            outputs(num_ref).vw_r_i = [];
+            outputs(num_ref).vw_theta_i = [];
+            outputs(num_ref).vw_phi_i = [];
+            outputs(num_ref).f_i = [];
+            outputs(num_ref).va_r_i = [];
+            outputs(num_ref).va_theta_i = [];
+            outputs(num_ref).va_phi_i = [];
+            outputs(num_ref).va_i = [];
+            outputs(num_ref).CD_k_i = [];
+            outputs(num_ref).CD_i = [];
+            outputs(num_ref).E_i = [];
+            outputs(num_ref).Fa_i = [];
+            outputs(num_ref).Fg_r_i = [];
+            outputs(num_ref).Fg_theta_i = [];
+            outputs(num_ref).Fg_phi_i = [];
+            outputs(num_ref).Fa_theta_i = [];
+            outputs(num_ref).Fa_phi_i = [];
+            outputs(num_ref).Fa_r_i = [];
+            outputs(num_ref).F_dot_v_i = [];
+            outputs(num_ref).D_r_i = [];
+            outputs(num_ref).D_theta_i = [];
+            outputs(num_ref).D_phi_i = [];
+            outputs(num_ref).L_r_i = [];
+            outputs(num_ref).L_theta_i = [];
+            outputs(num_ref).L_phi_i = [];
+            outputs(num_ref).D_i = [];
+            outputs(num_ref).L_i = [];
+            outputs(num_ref).Ft_i = [];
+            outputs(num_ref).E_result_i = [];
+            outputs(num_ref).P_m_i_eff = [];
+            outputs(num_ref).P_e_i_eff = [];
+            outputs(num_ref).vk_r_i = [];
+            outputs(num_ref).CL_i = [];
+            outputs(num_ref).vk_r = [];
+            outputs(num_ref).kRatio = [];
+            outputs(num_ref).CL = [];
+            outputs(num_ref).ti_eff = [];
+            outputs(num_ref).to_eff = [];
+            outputs(num_ref).rollAngle = [];
+
+            obj.outputs = outputs;
         end
     end
 end

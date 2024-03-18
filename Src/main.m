@@ -36,7 +36,6 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs, inputS
    con = @(x) constraints(i,inputs);
    obj = @(x) objective(x,i,inputs);
 
-    
     [x,~,exitflag(i),optHist(i),lambda(i)] = fmincon(obj,x0,[],[],[],[],lb,ub,con,options);
 
     % Storing final results
@@ -56,7 +55,7 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs, inputS
   optimDetails.optHist  = optHist;
   optimDetails.exitflag = exitflag;
   optimDetails.lambda   = lambda;
-
+  
   %% Post processing
   vw = inputs.vw_ref; % Wind speed at ref. height
 

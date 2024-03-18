@@ -1,7 +1,7 @@
 % Input Sheet Example
 inputs                = struct();
 
-inputs.numDeltaLelems  = 5; %[num]
+inputs.numDeltaLelems  = 2; %[num]
 inputs.FgToggle        = 1; % 0 = No, 1 = Yes
 inputs.vertWindProfile = 0; % 0 = Modelled, 1 = From dataset 
 
