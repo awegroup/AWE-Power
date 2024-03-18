@@ -20,7 +20,7 @@ inputs.kiteMass         = 600; %[kg]
 inputs.numDeltaLelems   = 2; %[num]
 
 %% Create class
-simulationQSM = KiteQSMsimulation2(inputs);
+simulationQSM = KiteQSMsimulation(inputs);
 
 options                           = optimoptions('fmincon');
 options.Display                   = 'none'; %'iter-detailed', 'notify-detailed'

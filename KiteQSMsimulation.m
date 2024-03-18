@@ -146,6 +146,20 @@ classdef KiteQSMsimulation < handle
                 obj.inputs = setfield(obj.inputs, f{i}, p3.Results.(f{i}));
             end
 
+            % Kite mass 
+            if inputs.doMassOverride == 1
+                obj.kiteMass = inputs.kiteMass;
+            else
+                % Vincent Bonnin's simple mass model developed at Ampyx Power. Based on AP3 data and projected data for larger systems (AP4-AP5)      
+                a1     = 0.002415;       a2     = 0.0090239;       b1     = 0.17025;       b2     = 3.2493;
+                k1     = 5;              c1     = 0.46608;         d1     = 0.65962;       k2     = 1.1935;
+                AR_ref = 12;
+                a_massCalc = a1*(inputs.forceTether_max/1000/inputs.areaWing) + a2;
+                b_massCalc = b1*(inputs.forceTether_max/1000/inputs.areaWing) + b2;
+                obj.kiteMass = 10*(a_massCalc*inputs.areaWing^2 +b_massCalc*inputs.areaWing-k1)...
+                    *(c1*(obj.inputs.aspectRatio/AR_ref)^2-d1*(obj.inputs.aspectRatio/AR_ref)+k2); 
+            end
+
         end
         
         function obj = runsimulation(obj, inputs, optionsFMINCON)
@@ -210,20 +224,6 @@ classdef KiteQSMsimulation < handle
 
             % obj.initialise_outputs_to_zero();
             halfRhoS = 0.5*inputs.densityAir*inputs.areaWing;
-
-            % Kite mass 
-            if inputs.doMassOverride == 1
-                obj.kiteMass = inputs.kiteMass;
-            else
-                % Vincent Bonnin's simple mass model developed at Ampyx Power. Based on AP3 data and projected data for larger systems (AP4-AP5)      
-                a1     = 0.002415;       a2     = 0.0090239;       b1     = 0.17025;       b2     = 3.2493;
-                k1     = 5;              c1     = 0.46608;         d1     = 0.65962;       k2     = 1.1935;
-                AR_ref = 12;
-                a_massCalc = a1*(inputs.forceTether_max/1000/inputs.areaWing) + a2;
-                b_massCalc = b1*(inputs.forceTether_max/1000/inputs.areaWing) + b2;
-                obj.kiteMass = 10*(a_massCalc*inputs.areaWing^2 +b_massCalc*inputs.areaWing-k1)...
-                    *(c1*(inputs.aspectRatio/AR_ref)^2-d1*(inputs.aspectRatio/AR_ref)+k2); 
-            end
 
             % Optimize operation for every wind speed
             for i = 1:length(inputs.windSpeedReference)
