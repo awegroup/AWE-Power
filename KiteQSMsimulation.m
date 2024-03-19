@@ -9,6 +9,45 @@ classdef KiteQSMsimulation < handle
     
     methods
         function obj = KiteQSMsimulation(inputs)
+            % Class Constructor for KiteQSMsimulation class
+            %   obj = KiteQSMsimulation(inputs)
+            %
+            %   Required Parameters in inputs structure:
+            %   - windSpeedReference: Wind speed at reference height (m/s)
+            %   - heightWindReference: Height at which wind speed is measured (m)
+            %   - areaWing: Area of the wing (m^2)
+            %   - span: Wing span (m)
+            %   - forceTether_max: Maximum tether force (N)
+            %   - P_ratedElec: Rated electrical power (W)
+            %   - Cl_maxAirfoil: Maximum coefficient of lift of the airfoil
+            %   - Cl_eff_F: Effective lift coefficient factor
+            %   - Cl0_airfoil: Lift coefficient at zero angle of attack
+            %   - Cd0: Zero-lift drag coefficient
+            %
+            %   Optional Parameters in inputs structure:
+            %   - aspectRatio: Aspect ratio of the wing (span^2/areaWing)
+            %   - numDeltaLelems: Number of delta elements (5)
+            %   - doIncludeGravity: Include gravity effect (true)
+            %   - doMassOverride: Mass override flag (false)
+            %   - maxTeLen: Maximum tether length (1000 m)
+            %   - maxHeight: Maximum height (1000 m)
+            %   - minGroundClear: Minimum ground clearance (100 m)
+            %   - safetyFactor_forceTetherMax: Safety factor for maximum tether force (0.8)
+            %   - peakM2E_F: Peak moment-to-energy factor (2.5)
+            %   - maxStrengthTether: Maximum strength of the tether (7e8 Pa)
+            %   - densityTether: Density of the tether material (980 kg/m^3)
+            %   - speedReelout_max: Maximum reel-out speed (25 m/s)
+            %   - accReel_max: Maximum reel-out acceleration (5 m/s^2)
+            %   - e: Oswald efficiency or lifting line span efficiency (0.6)
+            %   - Cd_cylinder: Coefficient of drag for the cylinder (1.2)
+            %   - etaGen_param: Generator efficiency parameters ([0.671, -1.4141, 0.9747, 0.7233])
+            %   - speedGeneratorReelout_max: Maximum generator reel-out speed (same as speedReelout_max)
+            %   - efficiency_Gearbox: Efficiency of the gearbox (0.9)
+            %   - efficiency_Storage: Efficiency of the energy storage system (0.9)
+            %   - efficiency_PowerElectronics: Efficiency of power electronics (0.95)
+            %   - accGravity: Acceleration due to gravity (9.81 m/s^2)
+            %   - densityAir: Density of air (1.225 kg/m^3)
+
             % Constructor
             p = inputParser;
             p.KeepUnmatched = true;

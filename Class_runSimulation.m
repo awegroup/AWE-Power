@@ -20,6 +20,10 @@ inputs.kiteMass         = 600; %[kg]
 inputs.numDeltaLelems   = 2; %[num]
 
 %% Create class
+
+% To see the parameters that are used by KiteQSMsimulation:
+% help KiteQSMsimulation
+
 simulationQSM = KiteQSMsimulation(inputs);
 
 options                           = optimoptions('fmincon');
