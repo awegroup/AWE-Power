@@ -163,7 +163,7 @@ classdef KiteQSMsimulation < handle
         end
         
         function obj = runsimulation(obj, inputs, optionsFMINCON)
-            persistent outputs;
+            persistent outputs; % Without specifying outputs as persistent it works slower
             if nargin<2
                 optionsFMINCON                      = optimoptions('fmincon');
                 optionsFMINCON.Display              = 'none';

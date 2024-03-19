@@ -42,6 +42,8 @@ options.ScaleProblem              = true;
 simulationQSM = simulationQSM.runsimulation(simulationQSM.inputs, options);
 
 %% Post processing
+% Accessing class properties here once and let matlab make a deep-copy is
+% faster than accessing each variable separately inside the class method.
 simulationQSM = simulationQSM.processoutputs(simulationQSM.inputs, simulationQSM.outputs);
 
 %% Plotting
