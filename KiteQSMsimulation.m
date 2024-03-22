@@ -5,10 +5,12 @@ classdef KiteQSMsimulation < handle
         optimDetails
         processedOutputs
         kiteMass
+        logger
+        validationFcn
     end
     
     methods
-        function obj = KiteQSMsimulation(inputs)
+        function obj = KiteQSMsimulation(inputs, loggerIdentifyer)
             % Class Constructor for KiteQSMsimulation class
             %   obj = KiteQSMsimulation(inputs)
             %
@@ -47,99 +49,177 @@ classdef KiteQSMsimulation < handle
             %   - efficiency_PowerElectronics: Efficiency of power electronics (0.95)
             %   - accGravity: Acceleration due to gravity (9.81 m/s^2)
             %   - densityAir: Density of air (1.225 kg/m^3)
+            if nargin<2
+                obj.logger = mlog.Logger('loggerQSM');
+            else
+                obj.logger = mlog.Logger(loggerIdentifyer);
+            end
 
-            % Constructor
-            p = inputParser;
-            p.KeepUnmatched = true;
-            validationFcnFloatPositive = @(x) assert(isnumeric(x) && isscalar(x) ...
-                && (x > 0), 'Value must be positive, scalar, and numeric.');
-            validationFcnInt = @(x) assert(isnumeric(x) && isscalar(x) ...
-                && (x > 0) && mod(x,1)==0, 'Value must be positive, integer.');
-            validationFcnBool = @(x) assert(islogical(x) || x==0 ...
-                || x==1, 'Value must be boolean or 0/1.');
-            validationFcnArrayFloatPositive = @(x) assert(isnumeric(x) ...
-                && all(x > 0), 'Value must be positive, scalar, and numeric.');
+            obj.set_inputvalidation_functions();
+            
+            p = inputParser; p.KeepUnmatched = true;
 
             % List of required parameters
-            requiredParams = {'windSpeedReference', 'heightWindReference', 'areaWing', 'span', 'forceTether_max', ...
-                'P_ratedElec', 'Cl_maxAirfoil', 'Cl_eff_F', 'Cl0_airfoil', ...
-                'Cd0'}; % Add all required parameters
+            requiredParams = {'windSpeedReference', 'heightWindReference', ...
+                'areaWing', 'span', 'forceTether_max', 'P_ratedElec', ...
+                'Cl_maxAirfoil', 'Cl_eff_F', 'Cl0_airfoil', ...
+                'Cd0'};
             
-            % Loop through required parameters and add them
+            obj.add_required_parameters(p, inputs, requiredParams);
+            
+            obj.add_mass_parameter(inputs);
+            
+            % Optional parameters with defaults if not provided
+            % Parameter name, default value, Validation function to use
+            parametersWithDefaults = {
+                'aspectRatio', (inputs.span^2/inputs.areaWing), obj.validationFcn.FloatPositive;
+                'numDeltaLelems', 5, obj.validationFcn.Int;
+                'doIncludeGravity', true, obj.validationFcn.Bool;
+                'doMassOverride', false, obj.validationFcn.Bool;
+                'maxTeLen', 1000, obj.validationFcn.FloatPositive;
+                'maxHeight', 1000, obj.validationFcn.FloatPositive;
+                'minGroundClear', 100, obj.validationFcn.FloatPositive;
+                'safetyFactor_forceTetherMax', 0.8, obj.validationFcn.FloatPositive;
+                'peakM2E_F', 2.5, obj.validationFcn.FloatPositive;
+                'maxStrengthTether', 7e8, obj.validationFcn.FloatPositive;
+                'densityTether', 980, obj.validationFcn.FloatPositive;
+                'speedReelout_max', 25, obj.validationFcn.FloatPositive;
+                'accReel_max', 5, obj.validationFcn.FloatPositive;
+                'e', 0.6, obj.validationFcn.FloatPositive;
+                'Cd_cylinder', 1.2, obj.validationFcn.FloatPositive;
+                'etaGen_param', [0.671, -1.4141, 0.9747, 0.7233], obj.validationFcn.etaGen_param;
+                'speedGeneratorReelout_max', 25, obj.validationFcn.FloatPositive;
+                'efficiency_Gearbox', 0.9, obj.validationFcn.FloatPositive;
+                'efficiency_Storage', 0.9, obj.validationFcn.FloatPositive;
+                'efficiency_PowerElectronics', 0.95, obj.validationFcn.FloatPositive;
+                'accGravity', 9.81, obj.validationFcn.FloatPositive;
+                'densityAir', 1.225, obj.validationFcn.FloatPositive;
+                'doUseReferenceWindProfile', false, obj.validationFcn.Bool;
+            };
+
+            obj.add_parameters_withdefaults(p, parametersWithDefaults);
+
+            obj.add_windprofile_withdefaults(p, inputs);
+
+            parse(p, inputs);
+            
+            p2 = inputParser; p2.KeepUnmatched = true;
+            p3 = inputParser; p3.KeepUnmatched = true;
+
+            obj.set_optimization_defaults_and_parse(inputs, p, p2, p3);
+
+            % Write inputs to class property
+            obj.add_inputparserresults_to_property(p);
+            obj.add_inputparserresults_to_property(p2);
+            obj.add_inputparserresults_to_property(p3);
+            
+            % Log default values if used
+            obj.write_inputparserdefaults_to_logger(obj.logger, p, obj.inputs)
+            obj.write_inputparserdefaults_to_logger(obj.logger, p2, obj.inputs)
+            obj.write_inputparserdefaults_to_logger(obj.logger, p3, obj.inputs)
+        end
+        %
+        function obj = add_required_parameters(obj, p, inputs, requiredParams)
             for i = 1:numel(requiredParams)
                 param = requiredParams{i};
                 if isfield(inputs, param)
-                    addParameter(p, param, inputs.(param)); % Add parameter with value from input structure
+                    p.addParameter(param, inputs.(param)); % Add parameter with value from input structure
                 else
-                    error(['KiteQSMsimulation:constructor Input parameter ', param, ' is required.']);
-                end
-            end
-
-            if isfield(inputs,'doMassOverride')
-                if inputs.doMassOverride
-                    if isfield(inputs, 'kiteMass')
-                        addParameter(p, 'kiteMass', 0, validationFcnFloatPositive);
-                    else
-                        error('KiteQSMsimulation:constructor Input parameter kiteMass is required when doMassOverride is true.');
+                    try
+                        error('KiteQSMsimulation:constructor', ['Input parameter ', param, ' is required.']);
+                    catch err
+                        obj.logger.write(err);
                     end
                 end
             end
+        end
+        %
+        function obj = add_parameters_withdefaults(obj, p, parametersWithDefaults)
+            for i = 1:size(parametersWithDefaults, 1)
+                param = parametersWithDefaults{i, 1};
+                defaultVal = parametersWithDefaults{i, 2};
+                validationFcn = parametersWithDefaults{i, 3};
 
-            % Optional parameters with defaults if not provided
-            addParameter(p, 'aspectRatio', (inputs.span^2/inputs.areaWing), validationFcnFloatPositive);
-            addParameter(p, 'numDeltaLelems', 5, validationFcnInt); 
-            addParameter(p, 'doIncludeGravity', true, validationFcnBool); % false = No, true = Yes
-            addParameter(p, 'doMassOverride', false, validationFcnBool);
-            addParameter(p, 'maxTeLen', 1000, validationFcnFloatPositive); %[m]
-            addParameter(p, 'maxHeight', 1000, validationFcnFloatPositive); %[m]
-            addParameter(p, 'minGroundClear', 100, validationFcnFloatPositive); %[m]
-            addParameter(p, 'safetyFactor_forceTetherMax', 0.8, validationFcnFloatPositive); % [-] 0.8 for gust margin
-            addParameter(p, 'peakM2E_F', 2.5, validationFcnFloatPositive); % [-]
-            addParameter(p, 'maxStrengthTether', 7e8, validationFcnFloatPositive); % [Pa]
-            addParameter(p, 'densityTether', 980, validationFcnFloatPositive); %[kg/m^3] 
-            addParameter(p, 'speedReelout_max', 25, validationFcnFloatPositive); %[m/s]
-            addParameter(p, 'accReel_max', 5, validationFcnFloatPositive); %[m/s^2]
-            addParameter(p, 'e', 0.6, validationFcnFloatPositive); %[-] % oswald efficiency or lifting line span efficiency?
-            addParameter(p, 'Cd_cylinder', 1.2, validationFcnFloatPositive); %[-]
-            addParameter(p, 'etaGen_param', [0.671, -1.4141, 0.9747, 0.7233], ...
-                @(x) assert(isnumeric(x) && numel(x) == 4, ...
-                'Parameter must be a numeric array with 4 elements.')); %[-]
-            addParameter(p, 'speedGeneratorReelout_max', 25, validationFcnFloatPositive); % Assuming speedReelout_max is the default
-            addParameter(p, 'efficiency_Gearbox', 0.9, validationFcnFloatPositive); %[-]
-            addParameter(p, 'efficiency_Storage', 0.9, validationFcnFloatPositive); %[-]
-            addParameter(p, 'efficiency_PowerElectronics', 0.95, validationFcnFloatPositive); %[-]
-            addParameter(p, 'accGravity', 9.81, validationFcnFloatPositive); %[m/s^2]
-            addParameter(p, 'densityAir', 1.225, validationFcnFloatPositive); %[kg/m^3]  
-            
-            addParameter(p, 'doUseReferenceWindProfile', false, validationFcnBool); % false = Modelled, true = From dataset 
-            if isfield(inputs,'doUseReferenceWindProfile')
+                addParameter(p, param, defaultVal, validationFcn);
+            end
+        end
+        %
+        function obj = set_inputvalidation_functions(obj)
+            obj.validationFcn.FloatPositive = @(x) assert(isnumeric(x) && isscalar(x) ...
+                && (x > 0), 'Value must be positive, scalar, and numeric.');
+            obj.validationFcn.Int = @(x) assert(isnumeric(x) && isscalar(x) ...
+                && (x > 0) && mod(x,1)==0, 'Value must be positive, integer.');
+            obj.validationFcn.Bool = @(x) assert(islogical(x) || x==0 ...
+                || x==1, 'Value must be boolean or 0/1.');
+            obj.validationFcn.ArrayFloatPositive = @(x) assert(isnumeric(x) ...
+                && all(x > 0), 'Value must be positive, scalar, and numeric.');
+            obj.validationFcn.etaGen_param= @(x) assert(isnumeric(x) && numel(x) == 4, ...
+                'Parameter must be a numeric array with 4 elements.');
+        end
+        %
+        function obj = add_mass_parameter(obj, inputs)
+            if isfield(inputs,'doMassOverride')
+                if inputs.doMassOverride
+                    if isfield(inputs, 'kiteMass')
+                        try
+                            obj.validationFcn.FloatPositive(inputs.kiteMass);
+                        catch err
+                            obj.logger.error('error in value of kiteMass');
+                            obj.logger.write(err);
+                        end
+                        obj.kiteMass = inputs.kiteMass;
+                    else
+                        try
+                            error('KiteQSMsimulation:constructor', 'Input parameter kiteMass is required when doMassOverride is true.');
+                        catch err
+                            obj.logger.write(err);
+                        end
+                    end
+                else
+                    % Vincent Bonnin's simple mass model developed at Ampyx Power. Based on AP3 data and projected data for larger systems (AP4-AP5)      
+                    a1     = 0.002415;       a2     = 0.0090239;       b1     = 0.17025;       b2     = 3.2493;
+                    k1     = 5;              c1     = 0.46608;         d1     = 0.65962;       k2     = 1.1935;
+                    AR_ref = 12;
+                    a_massCalc = a1*(inputs.forceTether_max/1000/inputs.areaWing) + a2;
+                    b_massCalc = b1*(inputs.forceTether_max/1000/inputs.areaWing) + b2;
+                    obj.kiteMass = 10*(a_massCalc*inputs.areaWing^2 +b_massCalc*inputs.areaWing-k1)...
+                        *(c1*(obj.inputs.aspectRatio/AR_ref)^2-d1*(obj.inputs.aspectRatio/AR_ref)+k2); 
+                end
+            end
+        end
+        %
+        function obj = add_windprofile_withdefaults(obj, p, inputs)
+            if isfield(inputs, 'doUseReferenceWindProfile')
                 if inputs.doUseReferenceWindProfile
                     % Sample vertical wind profile datasets (i.e. for inputs.doUseReferenceWindProfile = true)
                     % Profiles from: https://doi.org/10.1016/j.renene.2022.06.094. Wind speeds normalized with value at 100m. 
                     h_windDataset          = [10,20,40,60,80,100,120,140,150,160,180,200,220,250,300,500,600]; % [m]
                     v_windDataset_Cabauw   = [0.541219682843206,0.607355091566827,0.768630154201962,0.868484406441142,0.941395360902529,1,1.04810058627160,1.08638854381156,1.10277338731106,1.11715868927737,1.14412258234309,1.16573551308321,1.18394938534465,1.20653423381438,1.23266397972046,1.26662287360302,1.26414483994687];
                     v_windDataset_Ijmuiden = [0.847612611633547,0.870603040595613,0.927240267828556,0.959346286990695,0.982291573490674,1,1.01377720773809,1.02356771954493,1.02766760602000,1.03079423355205,1.03659625208888,1.04025827758100,1.04284618416620,1.04496440015282,1.04461712713371,1.02473617783789,1.01076976884552]; %#ok<NASGU>
-    
-                    addParameter(p, 'windProfile_h', h_windDataset, validationFcnArrayFloatPositive);
-                    addParameter(p, 'windProfile_vw', v_windDataset_Cabauw, validationFcnArrayFloatPositive);
+        
+                    addParameter(p, 'windProfile_h', h_windDataset, obj.validationFcn.ArrayFloatPositive);
+                    addParameter(p, 'windProfile_vw', v_windDataset_Cabauw, obj.validationFcn.ArrayFloatPositive);
                 else
-                    addParameter(p, 'windShearExp', 0.143, validationFcnFloatPositive); %[-] % 0.143 over land, 0.11 over sea
+                    addParameter(p, 'windShearExp', 0.143, obj.validationFcn.FloatPositive); %[-] % 0.143 over land, 0.11 over sea
                 end
             else
-                addParameter(p, 'windShearExp', 0.143, validationFcnFloatPositive); %[-] % 0.143 over land, 0.11 over sea
+                addParameter(p, 'windShearExp', 0.143, obj.validationFcn.FloatPositive); %[-] % 0.143 over land, 0.11 over sea
             end
-
-            parse(p, inputs);
-            
-            
-            p2 = inputParser;
-            p2.KeepUnmatched = true;
-            % Optimisation problem data
-            addParameter(p2, 'nx', ones(1,p.Results.numDeltaLelems), validationFcnArrayFloatPositive);
+        end
+        %
+        function obj = add_inputparserresults_to_property(obj, p)
+            f = fieldnames(p.Results);
+            for i = 1:length(f)
+                obj.inputs = setfield(obj.inputs, f{i}, p.Results.(f{i}));
+            end
+        end
+        %
+        function obj = set_optimization_defaults_and_parse(obj, inputs, p, p2, p3)
+            % Setting defaults for p2
+            addParameter(p2, 'nx', ones(1,p.Results.numDeltaLelems), obj.validationFcn.ArrayFloatPositive);
             parse(p2, inputs);
-
-            p3 = inputParser;
-            p3.KeepUnmatched = true;
+            
+            % Setting defaults for p3
             addParameter(p3, 'x0', [200, ... % deltaL
                 deg2rad(30), ... % avgPattEle
                 deg2rad(5), ... % coneAngle
@@ -149,7 +229,8 @@ classdef KiteQSMsimulation < handle
                 0.8*p2.Results.nx, ... % v_o
                 90*p2.Results.nx, ... % kinematicRatio
                 p.Results.Cl_maxAirfoil*p.Results.Cl_eff_F*p2.Results.nx], ... % CL
-                validationFcnArrayFloatPositive);
+                obj.validationFcn.ArrayFloatPositive);
+            
             addParameter(p3, 'lb', [50, ...
                 deg2rad(1), ...
                 deg2rad(1), ...
@@ -158,7 +239,8 @@ classdef KiteQSMsimulation < handle
                 0.1*p2.Results.nx, ...
                 0.8*p2.Results.nx, ...
                 1*p2.Results.nx, ...
-                0.1*p2.Results.nx], validationFcnArrayFloatPositive);
+                0.1*p2.Results.nx], obj.validationFcn.ArrayFloatPositive);
+            
             addParameter(p3, 'ub', [500, ...
                 deg2rad(90), ...
                 deg2rad(60), ...
@@ -168,39 +250,11 @@ classdef KiteQSMsimulation < handle
                 p.Results.speedReelout_max*p2.Results.nx, ...
                 200*p2.Results.nx, ...
                 p.Results.Cl_maxAirfoil*p.Results.Cl_eff_F*p2.Results.nx], ...
-                validationFcnArrayFloatPositive);
+                obj.validationFcn.ArrayFloatPositive);
+            
             parse(p3, inputs);
-
-            % write inputs to class property
-            f = fieldnames(p.Results);
-            for i = 1:length(f)
-                obj.inputs = setfield(obj.inputs, f{i}, p.Results.(f{i}));
-            end
-            f = fieldnames(p2.Results);
-            for i = 1:length(f)
-                obj.inputs = setfield(obj.inputs, f{i}, p2.Results.(f{i}));
-            end
-            f = fieldnames(p3.Results);
-            for i = 1:length(f)
-                obj.inputs = setfield(obj.inputs, f{i}, p3.Results.(f{i}));
-            end
-
-            % Kite mass 
-            if inputs.doMassOverride == 1
-                obj.kiteMass = inputs.kiteMass;
-            else
-                % Vincent Bonnin's simple mass model developed at Ampyx Power. Based on AP3 data and projected data for larger systems (AP4-AP5)      
-                a1     = 0.002415;       a2     = 0.0090239;       b1     = 0.17025;       b2     = 3.2493;
-                k1     = 5;              c1     = 0.46608;         d1     = 0.65962;       k2     = 1.1935;
-                AR_ref = 12;
-                a_massCalc = a1*(inputs.forceTether_max/1000/inputs.areaWing) + a2;
-                b_massCalc = b1*(inputs.forceTether_max/1000/inputs.areaWing) + b2;
-                obj.kiteMass = 10*(a_massCalc*inputs.areaWing^2 +b_massCalc*inputs.areaWing-k1)...
-                    *(c1*(obj.inputs.aspectRatio/AR_ref)^2-d1*(obj.inputs.aspectRatio/AR_ref)+k2); 
-            end
-
         end
-        
+        %
         function obj = runsimulation(obj, inputs, optionsFMINCON)
             persistent outputs; % Without specifying outputs as persistent it works slower
             if nargin<2
@@ -642,31 +696,15 @@ classdef KiteQSMsimulation < handle
     
             end
         end
-        
-        function [inputs, outputs, optimDetails, processedOutputs] = getresult(obj)
-            % Post processing and saving outputs
-            % Define processedOutputs and other processing tasks here
-            % ...
-
-            % Return results
+        %
+        function obj = plot_all_results(obj)
             inputs = obj.inputs;
-            outputs = obj.outputs;
-            optimDetails = obj.optimDetails;
             processedOutputs = obj.processedOutputs;
-        end
-        
-        function obj = plotresults(obj, inputs, processedOutputs)
-            if nargin<2
-                inputs = obj.inputs;
-                processedOutputs = obj.processedOutputs;
-            elseif nargin<3
-                processedOutputs = obj.processedOutputs;
-            end
+
             %% Plot settings
-            vw = inputs.windSpeedReference;
             x_axis_limit = [0 processedOutputs.vw_100m_operRange(end)];
             
-            newcolors = [ % 0.25, 0.25, 0.25
+            colorOrderList = [ % 0.25, 0.25, 0.25
                 0 0.4470 0.7410
                 0.8500 0.3250 0.0980
                 0.4660, 0.6740, 0.1880
@@ -675,303 +713,57 @@ classdef KiteQSMsimulation < handle
                 0.6350 0.0780 0.1840
                 0.3010 0.7450 0.9330];
 
-            % % Plots
-
             % Plots showing the per element results for rated wind speed
-            ws = processedOutputs.ratedWind;
-            fig = figure();
-            colororder(newcolors)
-            % Lengths
-            subplot(2,2,1)
-            hold on; grid on; box on
-            plot(processedOutputs.Rp(ws,:),':o','linewidth',1,'markersize',3);
-            plot(processedOutputs.l_t_inCycle(ws,:),':^','linewidth',1,'markersize',3);
-            plot(processedOutputs.h_inCycle(ws,:),':s','linewidth',1,'markersize',3);
-            ylabel('(m)');
-            legend('R_{p}','l_{t}','h_{p}','location','northwest');
-            hold off
+            obj.per_element_results_for_rated_windspeed(colorOrderList);
+
             % Speeds
-            subplot(2,2,2); hold on; grid on; box on; 
-            yyaxis left
-            plot(processedOutputs.lambda(ws,:),':o','linewidth',1,'markersize',3);
-            plot(processedOutputs.f(ws,:),':s','linewidth',1,'markersize',3);
-            plot(processedOutputs.f_i(ws,:),':v','linewidth',1,'markersize',3);
-            ylabel('(-)');
-            yyaxis right
-            plot(processedOutputs.vw(ws,:),':s','linewidth',1,'markersize',3);
-            plot(processedOutputs.vw_i(ws,:),':v','linewidth',1,'markersize',3);
-            ylabel('(m/s)');
-            legend('λ','f_o','f_i','v_{w,o}','v_{w,i}','location','northwest');
-            hold off
-            % Glide ratios
-            subplot(2,2,3); hold on; grid on; box on
-            plot(processedOutputs.E(ws,:),':s','linewidth',1,'markersize',3);
-            plot(processedOutputs.E_i(ws,:),':v','linewidth',1,'markersize',3);
-            % ylim([0 2.5]);
-            ylabel('(-)');
-            legend('E_o','E_i','location','northwest');
-            hold off
-            % Forces
-            subplot(2,2,4); hold on; grid on; box on
-            plot(processedOutputs.Fa(ws,:)/1e3,':^','linewidth',1,'markersize',3);
-            plot(processedOutputs.Fa_i(ws,:)/1e3,':o','linewidth',1,'markersize',3);
-            plot(processedOutputs.Ft(ws,:)/1e3,':s','linewidth',1,'markersize',3);
-            plot(processedOutputs.Ft_i(ws,:)/1e3,':v','linewidth',1,'markersize',3);
-            plot(processedOutputs.W(ws,:)/1e3,':x','linewidth',1,'markersize',3);
-            legend('F_{a,o}','F_{a,i}','F_{t,o}','F_{t,i}','W','location','northwest');
-            ylabel('(kN)');
-            hold off
-            han=axes(fig,'visible','off'); 
-            han.Title.Visible='on'; han.XLabel.Visible='on'; han.YLabel.Visible='off';
-            ylabel(han,'yourYLabel');
-            xlabel(han,'Discretized reeling distance over cycle');
-            title(han,['Wind speed at 100m = ' num2str(ws) 'm/s']);
-            
-            % Speeds
-            figure('units','inch','Position', [0.2 0.5 3.5 2.2])
-            colororder(newcolors)
-            hold on
-            grid on
-            box on
-            plot(vw, mean(processedOutputs.lambda,2),':o','linewidth',1,'markersize',3);
-            plot(vw, mean(processedOutputs.f,2),':s','linewidth',1,'markersize',3);
-            plot(vw, mean(processedOutputs.f_i,2),':v','linewidth',1,'markersize',3);
-            ylabel('(-)');
-            legend('λ','f_{o}','f_{i}','location','northwest');
-            xlabel('Wind speed at 100m height (m/s)');
-            xlim(x_axis_limit);
-            %ylim([0 160]);
-            hold off
+            obj.plot_speed_results(colorOrderList, x_axis_limit);
         
             % CL
-            figure('units','inch','Position', [4.2 0.5 3.5 2.2]); hold on; grid on; box on
-            colororder(newcolors)
-            plot(vw, mean(processedOutputs.CL,2),'o:','linewidth',1,'markersize',3);
-            plot(vw, mean(processedOutputs.CL_i,2),'d:','linewidth',1,'markersize',3);
-            ylabel('(-)');
-            legend('C_{L,o}','C_{L,i}','location','northwest','Orientation','vertical');
-            xlabel('Wind speed at 100m height (m/s)');
-            xlim(x_axis_limit);
-            %ylim([0 160]);
-            hold off
+            obj.plot_cl_results(colorOrderList, x_axis_limit);
         
             % CD
-            figure('units','inch','Position', [8.2 0.5 3.5 2.2]); hold on; grid on; box on
-            colororder(newcolors)
-            plot(vw, mean(processedOutputs.CD,2),'o:','linewidth',1,'markersize',3);
-            plot(vw, mean(processedOutputs.CD_i,2),'d:','linewidth',1,'markersize',3);
-            plot(vw, mean(processedOutputs.CD_k,2),'^:','linewidth',1,'markersize',3);
-            plot(vw, mean(processedOutputs.CD_k_i,2),'v:','linewidth',1,'markersize',3);
-            plot(vw, mean(processedOutputs.CD_t,2),'s:','linewidth',1,'markersize',3);
-            ylabel('(-)');
-            legend('C_{D,o}','C_{D,i}','C_{D,k,o}','C_{D,k,i}','C_{D,t}','location','northwest','Orientation','vertical');
-            xlabel('Wind speed at 100m height (m/s)');
-            xlim(x_axis_limit);
-            %ylim([0 160]);
-            hold off
+            obj.plot_cd_results(colorOrderList, x_axis_limit);
             
             % Lengths
-            figure('units','inch','Position', [12.2 0.5 3.5 2.2]); hold on; grid on; box on
-            colororder(newcolors)
-            plot(vw, processedOutputs.h_cycleAvg,'d:','linewidth',1,'markersize',3);
-            plot(vw, mean(processedOutputs.Rp,2),'o:','linewidth',1,'markersize',3);
-            plot(vw, processedOutputs.deltaL,'^:','linewidth',1,'markersize',3);
-            plot(vw, processedOutputs.l_t_max,'s:','linewidth',1,'markersize',3);
-            plot(vw, processedOutputs.l_t_min,'x:','linewidth',1,'markersize',3);
-            ylabel('(m)');
-            legend('h_{p,avg}','R_{p,avg}','Δl','l_{t,max}','l_{t,min}','location','northwest','Orientation','vertical');
-            xlabel('Wind speed at 100m height (m/s)');
-            xlim(x_axis_limit);
-            %ylim([0 160]);
-            hold off
+            obj.plot_tether_lengths(colorOrderList, x_axis_limit);
         
             % Roll angle, avg patt elevation
-            figure('units','inch','Position', [16.2 0.5 3.5 2.2]); hold on; grid on; box on
-            colororder(newcolors)
-            plot(vw, mean(processedOutputs.rollAngle,2),'s:','linewidth',1,'markersize',3);
-            plot(vw, processedOutputs.beta,'o:','linewidth',1,'markersize',3);
-            plot(vw, processedOutputs.gamma,'d:','linewidth',1,'markersize',3);
-            ylabel('(deg)');
-            legend('$$\Psi$$','$$\overline{\beta}$$','$$\gamma$$','location','northwest','Orientation','vertical','Interpreter','latex');
-            xlabel('Wind speed at 100m height (m/s)');
-            xlim(x_axis_limit);
-            %ylim([0 160]);
-            hold off
+            obj.plot_roll_avg_pattern(colorOrderList, x_axis_limit);
         
             % Reel-out forces
-            figure('units','inch','Position', [0.2 3.5 3.5 2.2]); hold on; grid on; box on
-            colororder(newcolors)
-            plot(vw, mean(processedOutputs.W,2)./10^3,':o','markersize',3)
-            plot(vw, mean(processedOutputs.Fa,2)./10^3,':s','linewidth',1,'markersize',3);
-            plot(vw, mean(processedOutputs.Ft,2)./10^3,':^','linewidth',1,'markersize',3);
-            ylabel('(kN)');
-            legend('W','F_{a,o}','F_{t,o}','location','northwest');
-            xlabel('Wind speed at 100m height (m/s)');
-            xlim(x_axis_limit);
-            %ylim([0 160]);
-            hold off
+            obj.plot_reel_out_forces(colorOrderList, x_axis_limit);
         
             % Reel-in forces
-            figure('units','inch','Position', [4.2 3.5 3.5 2.2]); hold on; grid on; box on
-            colororder(newcolors)
-            plot(vw, mean(processedOutputs.W,2)./10^3,':o','markersize',3)
-            plot(vw, mean(processedOutputs.Fa_i,2)./10^3,':s','linewidth',1,'markersize',3);
-            plot(vw, mean(processedOutputs.Ft_i,2)./10^3,':^','linewidth',1,'markersize',3);
-            ylabel('(kN)');
-            legend('W','F_{a,i}','F_{t,i}','location','northwest');
-            xlabel('Wind speed at 100m height (m/s)');
-            xlim(x_axis_limit);
-            hold off
+            obj.plot_reel_in_forces(colorOrderList, x_axis_limit);
         
             % Time, num of patterns
-            figure('units','inch','Position', [8.2 3.5 3.5 2.2]); hold on; grid on; box on
-            colororder(newcolors)
-            yyaxis left
-            plot(vw, processedOutputs.to,':s','linewidth',1,'markersize',3);
-            plot(vw, processedOutputs.ti,':d','linewidth',1,'markersize',3);
-            plot(vw, mean(processedOutputs.tPatt,2),':o','linewidth',1,'markersize',3);
-            ylabel('(s)');
-            yyaxis right
-            plot(vw, mean(processedOutputs.numOfPatt,2),':^','linewidth',1,'markersize',3);
-            ylabel('(-)');
-            xlabel('Wind speed at 100m height (m/s)');
-            legend('t_{o}','t_{i}','t_{patt,avg}','N_{p}','location','northwest');
-            xlim(x_axis_limit);
-            hold off
+            obj.plot_time_num_patterns(colorOrderList, x_axis_limit);
         
             % Reel-out power
-            figure('units','inch','Position', [12.2 3.5 3.5 2.2]); hold on; grid on; box on
-            colororder(newcolors)
-            plot(vw, processedOutputs.P_m_o./10^3,':o','linewidth',1,'markersize',3);
-            plot(vw, processedOutputs.P_e_o./10^3,':s','linewidth',1,'markersize',3);
-            plot(vw, processedOutputs.P_e_avg./10^3,':x','linewidth',1,'markersize',5);
-            ylabel('(kW)');
-            %title('Cycle averages');
-            legend('P_{m,o}','P_{e,o}','P_{e,avg}','location','northwest');
-            xlabel('Wind speed at 100m height (m/s)');
-            xlim(x_axis_limit);
-            hold off
+            obj.plot_reel_out_power(colorOrderList, x_axis_limit);
         
             % Reel-in power
-            figure('units','inch','Position', [16.2 3.5 3.5 2.2]); hold on; grid on; box on
-            colororder(newcolors)
-            plot(vw, processedOutputs.P_m_i./10^3,':o','linewidth',1,'markersize',3);
-            plot(vw, processedOutputs.P_e_i./10^3,':s','linewidth',1,'markersize',3);
-            ylabel('(kW)');
-            %title('Cycle averages');
-            legend('P_{m,i}','P_{e,i}','location','northwest');
-            xlabel('Wind speed at 100m height (m/s)');
-            xlim(x_axis_limit);
-            hold off
+            obj.plot_reel_in_power(colorOrderList, x_axis_limit);
 
             % Power curve comparison plot
             % Loyd
-            P_Loyd = zeros(1,length(vw));
-            CL_loyd = inputs.Cl_maxAirfoil * inputs.Cl_eff_F;
-            CD_loyd = inputs.Cd0 + (CL_loyd - inputs.Cl0_airfoil)^2 / (pi * inputs.aspectRatio * inputs.e);
-            for i = 1:length(vw)
-                P_Loyd(i) = (4/27) * (CL_loyd^3 / CD_loyd^2) * (1/2) * inputs.densityAir * inputs.areaWing * (vw(i)^3);
-                if P_Loyd(i) > inputs.P_ratedElec
-                    P_Loyd(i) = inputs.P_ratedElec;
-                end 
-            end
-            
-            % AP3 6DoF simulation results
-            AP3_PC_ws = [7.32E+00, 8.02E+00, 9.05E+00, 1.00E+01, 1.10E+01, 1.20E+01, ...
-              1.30E+01, 1.41E+01, 1.50E+01, 1.60E+01, 1.70E+01, 1.80E+01, 1.90E+01]; %[m/s]
-            AP3_PC_power = [0.00E+00, 7.01E+03, 2.37E+04, 4.31E+04, 6.47E+04, 8.46E+04, ...
-              1.02E+05, 1.20E+05, 1.34E+05, 1.49E+05, 1.50E+05, 1.50E+05, 1.50E+05]./10^3; %[kW]
-            
-            figure('units','inch','Position', [0.2 6.5 3.5 2.2]); hold on; grid on; box on
-            colororder(newcolors)
-            plot(vw, P_Loyd./10^3,'-','linewidth',1);
-            plot(vw, processedOutputs.P_e_avg./10^3,':s','linewidth',1,'MarkerSize',3);
-            plot(AP3_PC_ws, AP3_PC_power,':^k','linewidth',1,'MarkerSize',3);
-            ylabel('Power (kW)');
-            legend('Ideal Reel-out','QSM','6-DOF','location','southeast');
-            xlabel('Wind speed at 100m height (m/s)');
-            xlim(x_axis_limit);
-            hold off
+            obj.plot_power_curve_comparisonLoydAP3(colorOrderList, x_axis_limit);
 
             % Cycle timeseries plots: Pattern averages
-            windSpeeds = [processedOutputs.cutIn, processedOutputs.ratedWind, processedOutputs.cutOut];
-            for i = windSpeeds
-                idx = find(vw == i);
-                figure('units','inch','Position', [4.2 6.5 3.5 2.2])
-                hold on
-                grid on
-                box on
-                % Plot your data
-                plot(processedOutputs.cyclePowerRep(i).t_inst, processedOutputs.cyclePowerRep(i).P_e_inst,'linewidth',1.5, 'DisplayName', 'P_{e}');
-                plot(processedOutputs.cyclePowerRep(i).t_inst, processedOutputs.cyclePowerRep(i).P_m_inst,'--','linewidth',1.5, 'DisplayName', 'P_{m}');
-                yline(processedOutputs.P_e_avg(idx)/10^3, ':', 'linewidth',1.2, 'DisplayName', 'P_{e,avg}');
-                % Set yline positions within the range of your data
-                yline(0, '-', 'linewidth', 1, 'HandleVisibility', 'off');      
-                ylabel('(kW)');
-                xlabel('Time (s)');      
-                % Create a custom legend with 'Data1' and 'Data2' only
-                legend('Location', 'Best');      
-                % Customize legend colors
-                legend('TextColor', 'k', 'Color', 'w'); % 'TextColor' sets the text color, 'Color' sets the background color      
-                xlim([0 processedOutputs.cyclePowerRep(i).t_inst(end)]);
-                ylim([1.5*min(processedOutputs.cyclePowerRep(i).P_e_inst) 1.05*max(processedOutputs.cyclePowerRep(i).P_m_inst)]);
-                title(strcat('Wind speed at 100m:', num2str(processedOutputs.cyclePowerRep(idx).ws), ' m/s'));      
-                hold off
-            end
-            
-            % Wind profile
-            if ~inputs.doUseReferenceWindProfile
-                Vref = 10; % m/s
-                z = 10:10:600; % m
-                V = Vref * (z/inputs.heightWindReference).^inputs.windShearExp/Vref;
-                %   MegAWES Onshore location Cabauw. Wind speeds normalized with value at 100m. Profiles from: https://doi.org/10.1016/j.renene.2022.06.094
-                z_MegAWES = [10,20,40,60,80,100,120,140,150,160,180,200,220,250,300,500,600];
-                V_MegAWES_Cabauw = [0.541219682843206,0.607355091566827,0.768630154201962,0.868484406441142,0.941395360902529,1,1.04810058627160,1.08638854381156,1.10277338731106,1.11715868927737,1.14412258234309,1.16573551308321,1.18394938534465,1.20653423381438,1.23266397972046,1.26662287360302,1.26414483994687];
-                V_MegAWES_Ijmuiden = [0.847612611633547,0.870603040595613,0.927240267828556,0.959346286990695,0.982291573490674,1,1.01377720773809,1.02356771954493,1.02766760602000,1.03079423355205,1.03659625208888,1.04025827758100,1.04284618416620,1.04496440015282,1.04461712713371,1.02473617783789,1.01076976884552];
-                figure('units','inch','Position', [8.2 6.5 2 2.2])
-                hold on
-                box on
-                grid on
-                plot(V,z,'linewidth',1.2)
-                plot(V_MegAWES_Cabauw,z_MegAWES,'--','linewidth',1.2)
-                plot(V_MegAWES_Ijmuiden,z_MegAWES,'-.','linewidth',1.2)
-                legend('α = 0.143','Cabauw,NL','Ijmuiden,NL');
-                xlim([0.5 1.5])
-                xlabel('Wind Speed (-)')
-                ylabel('Height (m)')
-                % saveas(gcf, fullfile(directory, ['vert_wind_prof', '.fig']));
-                % print(gcf, fullfile(directory, ['vert_wind_prof', '.eps']), '-depsc2');
-                hold off
-            else
-                % Continuous function from vertical wind profile
-                % Define the heights at which you want to interpolate
-                heights = (0:10:1000); % Adjust the desired height values as needed
-                % Interpolate at the specified heights
-                V_interpolated = interp1(inputs.windProfile_h, inputs.windProfile_vw, heights, 'linear', 'extrap');
-                % Plot the interpolated function
-                figure('units','inch','Position', [15 6 2 2.2])
-                hold on 
-                box on
-                grid on
-                plot(inputs.windProfile_vw, inputs.windProfile_h, 'o', V_interpolated, heights, '-');
-                xlabel('Wind speed (m/s)');
-                ylabel('Height (m)');
-                xlim([0.5 1.5])
-                title('Wind profile');
-                legend('Data', 'Interpolated', 'Location', 'Best');
-                hold off
-            end
+            obj.plot_cycle_timeseries(colorOrderList);
 
+            % Wind profile
+            obj.plot_wind_profile(colorOrderList);
 
         end
-                
-        function obj = processoutputs(obj, inputs, outputs)
-            if nargin<2
-                inputs = obj.inputs;
-                outputs = obj.outputs;
-            elseif nargin<3
-                outputs = obj.outputs;
-            end
+        %       
+        function obj = processoutputs(obj)
+
+            inputs = obj.inputs;
+            outputs = obj.outputs;
+            
+            processedOutputs = struct();
             %% Post processing
             vw = inputs.windSpeedReference; % Wind speed at ref. height
             
@@ -993,68 +785,30 @@ classdef KiteQSMsimulation < handle
             
             %% Extract feasible results in the operational range
             processedOutputs.Dia_te = outputs.d_t;
+
+            variableNamesToCopy = {'vw','vw_i','P1_m_o','P2_m_i','P_m_o_eff',...
+                        'P_m_i_eff','P1_e_o', 'P2_e_i','P_e_o_eff','P_e_i_eff',...
+                        'P_m_o','P_m_i','P_e_o','P_e_i','deltaL','t1','t2',...
+                        'to_eff','ti_eff','to','ti','tCycle','Ft','Ft_i','Fa',...
+                        'Fa_i','W','vk_r','vk_tau','vk_r_i','P_e_avg','P_m_avg','Rp',...
+                        'h_cycleStart','h_cycleAvg','l_t_max','l_t_min','l_t_inCycle',...
+                        'h_inCycle','va','beta','rollAngle','gamma','CL','CD',...
+                        'CD_k','CD_k_i','CD_t','CL_i','CD_i','E','E_i','numOfPatt',...
+                        'lambda','f','f_i','tPatt','zetaMech','d_t'};
+
             for i=1:length(vw)
                 if vw(i)>=processedOutputs.cutIn && vw(i)<= processedOutputs.cutOut
-                    processedOutputs.vw(i,:)           = outputs.vw(i,:);
-                    processedOutputs.vw_i(i,:)         = outputs.vw_i(i,:);
-                    processedOutputs.P1_m_o(i)         = outputs.P1_m_o(i);
-                    processedOutputs.P2_m_i(i)         = outputs.P2_m_i(i); 
-                    processedOutputs.P_m_o_eff(i,:)    = outputs.P_m_o_eff(i,:);
-                    processedOutputs.P_m_i_eff(i,:)    = outputs.P_m_i_eff(i,:);  
-                    processedOutputs.P1_e_o(i)         = outputs.P1_e_o(i);
-                    processedOutputs.P2_e_i(i)         = outputs.P2_e_i(i); 
-                    processedOutputs.P_e_o_eff(i,:)    = outputs.P_e_o_eff(i,:);
-                    processedOutputs.P_e_i_eff(i,:)    = outputs.P_e_i_eff(i,:);
-                    processedOutputs.P_m_o(i)          = outputs.P_m_o(i);
-                    processedOutputs.P_m_i(i)          = outputs.P_m_i(i);
-                    processedOutputs.P_e_o(i)          = outputs.P_e_o(i);
-                    processedOutputs.P_e_i(i)          = outputs.P_e_i(i);
-                    processedOutputs.deltaL(i)         = outputs.deltaL(i);
-                    processedOutputs.t1(i)             = outputs.t1(i);
-                    processedOutputs.t2(i)             = outputs.t2(i);
-                    processedOutputs.to_eff(i,:)       = outputs.to_eff(i,:);
-                    processedOutputs.ti_eff(i,:)       = outputs.ti_eff(i,:);
-                    processedOutputs.to(i)             = outputs.to(i);
-                    processedOutputs.ti(i)             = outputs.ti(i);
-                    processedOutputs.tCycle(i)         = outputs.tCycle(i);
-                    processedOutputs.Ft(i,:)           = outputs.Ft(i,:);
-                    processedOutputs.Ft_i(i,:)         = outputs.Ft_i(i,:);
-                    processedOutputs.Fa(i,:)           = outputs.Fa(i,:);
-                    processedOutputs.Fa_i(i,:)         = outputs.Fa_i(i,:);
-                    processedOutputs.W(i,:)            = outputs.W(i,:);
-                    processedOutputs.vo(i,:)           = outputs.vk_r(i,:);
-                    processedOutputs.vk_tau(i,:)       = outputs.vk_tau(i,:);
-                    processedOutputs.vi(i,:)           = outputs.vk_r_i(i,:);
-                    processedOutputs.P_e_avg(i)        = outputs.P_e_avg(i);
-                    processedOutputs.P_m_avg(i)        = outputs.P_m_avg(i);
-                    processedOutputs.Rp(i,:)           = outputs.Rp(i,:);
-                    processedOutputs.h_cycleStart(i)   = outputs.h_cycleStart(i);
-                    processedOutputs.h_cycleAvg(i)     = outputs.h_cycleAvg(i);
-                    processedOutputs.l_t_max(i)        = outputs.l_t_max(i);
-                    processedOutputs.l_t_min(i)        = outputs.l_t_min(i);
-                    processedOutputs.l_t_inCycle(i,:)  = outputs.l_t_inCycle(i,:);
-                    processedOutputs.h_inCycle(i,:)    = outputs.h_inCycle(i,:); 
-                    processedOutputs.va(i,:)           = outputs.va(i,:);
-                    processedOutputs.beta(i)           = rad2deg(outputs.beta(i));
-                    processedOutputs.rollAngle(i,:)    = rad2deg(-outputs.rollAngle(i,:));
-                    processedOutputs.gamma(i)          = rad2deg(outputs.gamma(i));
-                    processedOutputs.CL(i,:)           = outputs.CL(i,:);
-                    processedOutputs.CD(i,:)           = outputs.CD(i,:);
-                    processedOutputs.CD_k(i,:)         = outputs.CD_k(i,:);
-                    processedOutputs.CD_k_i(i,:)       = outputs.CD_k_i(i,:);
-                    processedOutputs.CD_t(i,:)         = outputs.CD_t(i,:);
-                    processedOutputs.CL_i(i,:)         = outputs.CL_i(i,:);
-                    processedOutputs.CD_i(i,:)         = outputs.CD_i(i,:);
-                    processedOutputs.E(i,:)            = outputs.E(i,:);
-                    processedOutputs.E_i(i,:)          = outputs.E_i(i,:);
-                    processedOutputs.numOfPatt(i,:)    = outputs.numOfPatt(i,:);
-                    processedOutputs.lambda(i,:)       = outputs.lambda(i,:); 
-                    processedOutputs.f(i,:)            = outputs.f(i,:); 
-                    processedOutputs.f_i(i,:)          = outputs.f_i(i,:); 
-                    processedOutputs.tPatt(i,:)        = outputs.tPatt(i,:);
+                    % Define the list of variable names
+                    processedOutputs = obj.copy_ouputs_to_processedoutputs(...
+                        processedOutputs, outputs, variableNamesToCopy, i);
+                    
+                    %convert angles to degrees
+                    processedOutputs.beta(i)           = rad2deg(processedOutputs.beta(i));
+                    processedOutputs.rollAngle(i,:)    = rad2deg(-processedOutputs.rollAngle(i,:));
+                    processedOutputs.gamma(i)          = rad2deg(processedOutputs.gamma(i));
+
+                    % calculate dutycycle
                     processedOutputs.dutyCycle(i)      = processedOutputs.to(i)/processedOutputs.tCycle(i);
-                    processedOutputs.zetaMech(i,:)     = outputs.zetaMech(i,:);  
-                    processedOutputs.d_te              = outputs.d_t;  
                     
                     % Cycle efficiency
                     processedOutputs.cycleEff_elec(i)  = (processedOutputs.P_e_avg(i)*processedOutputs.tCycle(i))/...
@@ -1071,42 +825,24 @@ classdef KiteQSMsimulation < handle
             
             %% Cycle power representation for wind speeds in the operational range
             for vw_i = vw(vw>=processedOutputs.cutIn&vw<=processedOutputs.cutOut)
-                processedOutputs.cyclePowerRep(vw_i) = createCyclePowerRep(vw_i,...
-                    inputs.windSpeedReference, processedOutputs.t1, ...
-                    processedOutputs.to_eff, processedOutputs.t2,...
-                    processedOutputs.ti_eff, processedOutputs.P_e_o_eff,...
-                    processedOutputs.P_e_i_eff, processedOutputs.P_m_o_eff, ...
+                processedOutputs.cyclePowerRep(vw_i) = ...
+                    obj.createCyclePowerRep(vw_i, ...
+                    inputs.windSpeedReference, ...
+                    processedOutputs.t1, ...
+                    processedOutputs.to_eff, ...
+                    processedOutputs.t2,...
+                    processedOutputs.ti_eff, ...
+                    processedOutputs.P_e_o_eff,...
+                    processedOutputs.P_e_i_eff, ...
+                    processedOutputs.P_m_o_eff, ...
                     processedOutputs.P_m_i_eff); 
             end
 
             obj.processedOutputs = processedOutputs;
 
-            function cyclePowerRep = createCyclePowerRep(vw_i, ...
-                    windSpeedReference, t1, to_eff, t2, ti_eff, P_e_o_eff, ...
-                    P_e_i_eff, P_m_o_eff, P_m_i_eff)
-                cyclePowerRep.ws     = vw_i;
-                cyclePowerRep.idx    = find(windSpeedReference==vw_i);
-                cyclePowerRep.t1     = round(t1(cyclePowerRep.idx),2);
-                cyclePowerRep.to_eff = round(sum(to_eff(cyclePowerRep.idx,:),2),2);
-                cyclePowerRep.t2     = round(t2(cyclePowerRep.idx),2);
-                cyclePowerRep.ti_eff = round(sum(ti_eff(cyclePowerRep.idx,:),2),2);
-                cyclePowerRep.to     = cyclePowerRep.t1 + cyclePowerRep.to_eff; %[s]
-                cyclePowerRep.ti     = cyclePowerRep.t2 + cyclePowerRep.ti_eff; %[s]
-                cyclePowerRep.tCycle = cyclePowerRep.to + cyclePowerRep.to; %[s]
-                
-                cyclePowerRep.t_inst   = cumsum([0 cyclePowerRep.t1 (cyclePowerRep.to_eff-cyclePowerRep.t1) cyclePowerRep.t1 ...
-                                      cyclePowerRep.t2 (cyclePowerRep.ti_eff-cyclePowerRep.t2) cyclePowerRep.t2]);
-                
-                cyclePowerRep.P_e_inst = [0, P_e_o_eff(cyclePowerRep.idx,1), P_e_o_eff(cyclePowerRep.idx,end), 0, ...
-                                      -P_e_i_eff(cyclePowerRep.idx,end), -P_e_i_eff(cyclePowerRep.idx,1), 0]./10^3;
-                
-                cyclePowerRep.P_m_inst = [0 P_m_o_eff(cyclePowerRep.idx,1), P_m_o_eff(cyclePowerRep.idx,end), 0, ...
-                                      -P_m_i_eff(cyclePowerRep.idx,end), -P_m_i_eff(cyclePowerRep.idx,1), 0]./10^3;
-            end
+            
         end
-
-        
-
+        %
         function obj = initialise_outputs_to_zero(obj)
             % Initialize all obj.outputs fields with zeros
             num_ref = length(obj.inputs.windSpeedReference);
@@ -1244,6 +980,303 @@ classdef KiteQSMsimulation < handle
             outputs(num_ref).rollAngle = [];
 
             obj.outputs = outputs;
+        end
+        %
+        function obj = per_element_results_for_rated_windspeed(obj, colorOrderList)
+            ws = find(obj.processedOutputs.vw_100m_operRange == obj.processedOutputs.ratedWind);
+            subplotLayout = [2, 2];
+            yAxesOptions = {
+                struct('windIndex', ws, 'yData', {{'Rp', 'l_t_inCycle', 'h_inCycle'}}, 'yLabel', '(m)', 'Legend', {{'R_{p}', 'l_{t}', 'h_{p}'}});
+                struct('windIndex', ws, 'yData', {{'lambda', 'f', 'f_i'};{'vw','vw_i'}}, 'yLabel', {{'(-)'};{'(m/s)'}}, 'Legend', {{'λ','f_o','f_i'};{'v_{w,o}','v_{w,i}'}});
+                struct('windIndex', ws, 'yData', {{'E', 'E_i'}}, 'yLabel', '(-)', 'Legend', {{'E_o','E_i'}});
+                struct('windIndex', ws, 'yData', {{'Fa', 'Fa_i', 'Ft', 'Ft_i','W'}}, 'yFcn', @(x) x/1e3 , 'yLabel', '(kN)', 'Legend', {{'F_{a,o}','F_{a,i}','F_{t,o}','F_{t,i}','W'}});
+            };
+            plotOptions.colors = colorOrderList;
+            plotOptions.title = ['Wind speed at 100m = ' num2str(obj.processedOutputs.ratedWind) 'm/s'];
+            plotOptions.xLabel = 'Discretized reeling distance over cycle';
+            plotResults(obj.processedOutputs, yAxesOptions, subplotLayout, plotOptions)
+        end
+        %
+        function obj=plot_speed_results(obj, colorOrderList, x_axis_limit)
+            vw = obj.inputs.windSpeedReference;
+            yAxesOptions = {struct('xData', vw, ...
+                                    'yData', {{'lambda', 'f', 'f_i'}}, ...
+                                    'yFcn', @(x) mean(x,2) ,...
+                                    'yLabel', '(-)', ...
+                                    'xLabel', 'Wind speed at 100m height (m/s)', ...
+                                    'Legend', {{'λ','f_{o}','f_{i}'}}, ...
+                                    'xLim', x_axis_limit);};
+            plotOptions.colors = colorOrderList;
+            plotResults(obj.processedOutputs, yAxesOptions,[],plotOptions)
+        end
+        %
+        function obj=plot_cl_results(obj, colorOrderList, x_axis_limit)
+            vw = obj.inputs.windSpeedReference;
+            yAxesOptions = {struct('xData', vw, ...
+                                    'yData', {{'CL', 'CL_i'}}, ...
+                                    'yFcn', @(x) mean(x,2) ,...
+                                    'yLabel', '(-)', ...
+                                    'xLabel', 'Wind speed at 100m height (m/s)', ...
+                                    'Legend', {{'C_{L,o}','C_{L,i}'}}, ...
+                                    'xLim', x_axis_limit);};
+            plotOptions.colors = colorOrderList;
+            plotResults(obj.processedOutputs, yAxesOptions,[],plotOptions)
+        end
+        %
+        function obj = plot_cd_results(obj, colorOrderList, x_axis_limit)
+            vw = obj.inputs.windSpeedReference;
+            yAxesOptions = {struct('xData', vw, ...
+                                    'yData', {{'CD', 'CD_i', 'CD_k', 'CD_k_i', 'CD_t'}}, ...
+                                    'yFcn', @(x) mean(x,2), ...
+                                    'yLabel', '(-)', ...
+                                    'xLabel', 'Wind speed at 100m height (m/s)', ...
+                                    'Legend', {{'C_{D,o}','C_{D,i}','C_{D,k,o}','C_{D,k,i}','C_{D,t}'}}, ...
+                                    'xLim', x_axis_limit);};
+            plotOptions.colors = colorOrderList;
+            plotResults(obj.processedOutputs, yAxesOptions,[],plotOptions)
+        end
+        %
+        function obj = plot_tether_lengths(obj, colorOrderList, x_axis_limit)
+            vw = obj.inputs.windSpeedReference;
+            yAxesOptions = {struct('xData', vw, ...
+                                    'yData', {{'h_cycleAvg', 'Rp', 'deltaL', 'l_t_max', 'l_t_min'}}, ...
+                                    'yFcn', @(x) mean(x,2), ...
+                                    'yLabel', '(m)', ...
+                                    'xLabel', 'Wind speed at 100m height (m/s)', ...
+                                    'Legend', {{'h_{p,avg}','R_{p,avg}','Δl','l_{t,max}','l_{t,min}'}}, ...
+                                    'xLim', x_axis_limit);};
+            plotOptions.colors = colorOrderList;
+            plotResults(obj.processedOutputs, yAxesOptions,[],plotOptions)
+        end
+        %
+        function obj = plot_roll_avg_pattern(obj, colorOrderList, x_axis_limit)
+            vw = obj.inputs.windSpeedReference;
+            yAxesOptions = {struct('xData', vw, ...
+                                    'yData', {{'rollAngle', 'beta', 'gamma'}}, ...
+                                    'yFcn', @(x) mean(x,2), ...
+                                    'yLabel', '(deg)', ...
+                                    'xLabel', 'Wind speed at 100m height (m/s)', ...
+                                    'Legend', {{'$$\Psi$$','$$\overline{\beta}$$','$$\gamma$$'}}, ...
+                                    'xLim', x_axis_limit);};
+            plotOptions.colors = colorOrderList;
+            plotResults(obj.processedOutputs, yAxesOptions,[],plotOptions)
+        end
+        %
+        function obj = plot_reel_out_forces(obj, colorOrderList, x_axis_limit)
+            vw = obj.inputs.windSpeedReference;
+            yAxesOptions = {struct('xData', vw, ...
+                                    'yData', {{'W', 'Fa', 'Ft'}}, ...
+                                    'yFcn', @(x) mean(x,2)./1e3, ...
+                                    'yLabel', '(kN)', ...
+                                    'xLabel', 'Wind speed at 100m height (m/s)', ...
+                                    'Legend', {{'W','F_{a,o}','F_{t,o}'}}, ...
+                                    'xLim', x_axis_limit)};
+            plotOptions.colors = colorOrderList;
+            plotResults(obj.processedOutputs, yAxesOptions,[],plotOptions)
+        end
+        %
+        function obj = plot_reel_in_forces(obj, colorOrderList, x_axis_limit)
+            vw = obj.inputs.windSpeedReference;
+            yAxesOptions = {struct('xData', vw, ...
+                                    'yData', {{'W', 'Fa_i', 'Ft_i'}}, ...
+                                    'yFcn', @(x) mean(x,2)./10^3, ...
+                                    'yLabel', '(kN)', ...
+                                    'xLabel', 'Wind speed at 100m height (m/s)', ...
+                                    'Legend', {{'W','F_{a,i}','F_{t,i}'}}, ...
+                                    'xLim', x_axis_limit)};
+            plotOptions.colors = colorOrderList;
+            plotResults(obj.processedOutputs, yAxesOptions,[],plotOptions)
+        end
+        %
+        function obj = plot_time_num_patterns(obj, colorOrderList, x_axis_limit)
+            vw = obj.inputs.windSpeedReference;
+            yAxesOptions = {struct('xData', vw, ...
+                                    'yData', {{'to', 'ti', 'tPatt'};{'numOfPatt'}}, ...
+                                    'yFcn', @(x) mean(x,2), ...
+                                    'yLabel', {{'(s)'}; {'(-)'}}, ...
+                                    'XLabel', 'Wind speed at 100m height (m/s)', ...
+                                    'Legend', {{'t_{o}','t_{i}','t_{patt,avg}'};{'N_{p}'}}, ...
+                                    'xLim', x_axis_limit)};
+            plotOptions.colors = colorOrderList;
+            plotResults(obj.processedOutputs, yAxesOptions,[],plotOptions)
+        end
+        %
+        function obj = plot_reel_out_power(obj, colorOrderList, x_axis_limit)
+            vw = obj.inputs.windSpeedReference;
+            yAxesOptions = {struct('xData', vw, ...
+                                    'yData', {{'P_m_o', 'P_e_o', 'P_e_avg'}}, ...
+                                    'yFcn', @(x) x./10^3, ...
+                                    'yLabel', '(kW)', ...
+                                    'XLabel', 'Wind speed at 100m height (m/s)', ...
+                                    'Legend', {{'P_{m,o}','P_{e,o}','P_{e,avg}'}}, ...
+                                    'xLim', x_axis_limit)};
+            plotOptions.colors = colorOrderList;
+            plotResults(obj.processedOutputs, yAxesOptions,[],plotOptions)
+        end
+        %
+        function obj = plot_reel_in_power(obj, colorOrderList, x_axis_limit)
+            vw = obj.inputs.windSpeedReference;
+            yAxesOptions = {struct('xData', vw, ...
+                                    'yData', {{'P_m_i', 'P_e_i'}}, ...
+                                    'yFcn', @(x) x./10^3, ...
+                                    'yLabel', '(kW)', ...
+                                    'XLabel', 'Wind speed at 100m height (m/s)', ...
+                                    'Legend', {{'P_{m,i}','P_{e,i}'}}, ...
+                                    'xLim', x_axis_limit)};
+            plotOptions.colors = colorOrderList;
+            plotResults(obj.processedOutputs, yAxesOptions,[],plotOptions)
+        end
+        %
+        function obj = plot_power_curve_comparisonLoydAP3(obj, colorOrderList, x_axis_limit)
+            vw = obj.inputs.windSpeedReference;
+            
+            % Calculate Loyd power
+            P_Loyd = zeros(1,length(vw));
+            CL_loyd = obj.inputs.Cl_maxAirfoil * obj.inputs.Cl_eff_F;
+            CD_loyd = obj.inputs.Cd0 + (CL_loyd - obj.inputs.Cl0_airfoil)^2 / (pi * obj.inputs.aspectRatio * obj.inputs.e);
+            for i = 1:length(vw)
+                P_Loyd(i) = (4/27) * (CL_loyd^3 / CD_loyd^2) * (1/2) * obj.inputs.densityAir * obj.inputs.areaWing * (vw(i)^3);
+                if P_Loyd(i) > obj.inputs.P_ratedElec
+                    P_Loyd(i) = obj.inputs.P_ratedElec;
+                end 
+            end
+        
+            % AP3 6DoF simulation results
+            AP3_PC_ws = [7.32E+00, 8.02E+00, 9.05E+00, 1.00E+01, 1.10E+01, 1.20E+01, ...
+                1.30E+01, 1.41E+01, 1.50E+01, 1.60E+01, 1.70E+01, 1.80E+01, 1.90E+01]; %[m/s]
+            AP3_PC_power = [0.00E+00, 7.01E+03, 2.37E+04, 4.31E+04, 6.47E+04, 8.46E+04, ...
+                1.02E+05, 1.20E+05, 1.34E+05, 1.49E+05, 1.50E+05, 1.50E+05, 1.50E+05]./10^3; %[kW]
+            
+            yAxesOptions = {struct('xData', {{vw, vw, AP3_PC_ws}}, ...
+                                    'yData', {{P_Loyd./1e3 , 'P_e_avg', AP3_PC_power}}, ...
+                                    'yFcn', @(x) x./1e3, ...
+                                    'yLabel', 'Power (kW)', ...
+                                    'XLabel', 'Wind speed at 100m height (m/s)', ...
+                                    'Legend', {{'Ideal Reel-out','QSM','6-DOF'}}, ...
+                                    'xLim', x_axis_limit)};
+            plotOptions.colors = colorOrderList;
+            plotResults(obj.processedOutputs, yAxesOptions,[],plotOptions)
+        end
+        %
+        function obj = plot_cycle_timeseries(obj, colorOrderList)
+            windSpeeds = [obj.processedOutputs.cutIn, obj.processedOutputs.ratedWind, obj.processedOutputs.cutOut];
+            vw = obj.inputs.windSpeedReference;
+            for i = windSpeeds
+                idx = find(vw == i);
+                yAxesOptions = {struct('xData', obj.processedOutputs.cyclePowerRep(i).t_inst, ...
+                                    'yData', {{obj.processedOutputs.cyclePowerRep(i).P_e_inst, obj.processedOutputs.cyclePowerRep(i).P_m_inst}}, ...
+                                    'yFcn', @(x) x./10^3, ...
+                                    'yLabel', '(kW)', ...
+                                    'XLabel', 'Time (s)', ...
+                                    'xLim', [0, obj.processedOutputs.cyclePowerRep(i).t_inst(end)], ...
+                                    'yLim', [1.5*min(obj.processedOutputs.cyclePowerRep(i).P_e_inst), 1.05*max(obj.processedOutputs.cyclePowerRep(i).P_m_inst)],...
+                                    'title', ['Wind speed at 100m:', num2str(obj.processedOutputs.cyclePowerRep(idx).ws), ' m/s'])};
+               
+                plotOptions.colors = colorOrderList;
+                plotOptions.LineStyle = '-';
+                fig = plotResults(obj.processedOutputs, yAxesOptions,[],plotOptions);
+                
+                figure(fig); hold on;
+                %Add lines to plot
+                yline(obj.processedOutputs.P_e_avg(idx)/10^3, ':', 'linewidth',1.2);
+                % yline(0, '-', 'linewidth', 1, 'HandleVisibility', 'off');      
+            
+                % Create a custom legend with 'Data1' and 'Data2' only
+                legend({'P_{e}','P_{m}', 'P_{e,avg}'},'Location', 'Best');
+                hold off;
+            end
+        end
+        %
+        function obj = plot_wind_profile(obj, colorOrderList)
+            if ~obj.inputs.doUseReferenceWindProfile
+                Vref = 10; % m/s
+                z = 10:10:600; % m
+                V = Vref * (z/obj.inputs.heightWindReference).^obj.inputs.windShearExp/Vref;
+                % MegAWES Onshore location Cabauw. Wind speeds normalized with value at 100m. Profiles from: https://doi.org/10.1016/j.renene.2022.06.094
+                z_MegAWES = [10,20,40,60,80,100,120,140,150,160,180,200,220,250,300,500,600];
+                V_MegAWES_Cabauw = [0.541219682843206,0.607355091566827,0.768630154201962,0.868484406441142,0.941395360902529,1,1.04810058627160,1.08638854381156,1.10277338731106,1.11715868927737,1.14412258234309,1.16573551308321,1.18394938534465,1.20653423381438,1.23266397972046,1.26662287360302,1.26414483994687];
+                V_MegAWES_Ijmuiden = [0.847612611633547,0.870603040595613,0.927240267828556,0.959346286990695,0.982291573490674,1,1.01377720773809,1.02356771954493,1.02766760602000,1.03079423355205,1.03659625208888,1.04025827758100,1.04284618416620,1.04496440015282,1.04461712713371,1.02473617783789,1.01076976884552];
+        
+                % Prepare yAxesOptions for plotResults
+                yAxesOptions = {
+                    struct('xData', {{V,V_MegAWES_Cabauw,V_MegAWES_Ijmuiden}}, ...
+                    'yData', {{z,z_MegAWES, z_MegAWES}}, ...
+                    'yLabel', 'Height (m)', ...
+                    'Legend', {{'α = 0.143','Cabauw,NL','Ijmuiden,NL'}}, ...
+                    'XLabel', 'Wind Speed (-)', ...
+                    'xLim', [0.5, 1.5], ...
+                    'title', 'Wind profile'),...
+                };
+            else
+                % Continuous function from vertical wind profile
+                % Define the heights at which you want to interpolate
+                heights = (0:10:1000); % Adjust the desired height values as needed
+                % Interpolate at the specified heights
+                V_interpolated = interp1(obj.inputs.windProfile_h, obj.inputs.windProfile_vw, heights, 'linear', 'extrap');
+                
+                % Prepare yAxesOptions for plotResults
+                yAxesOptions = {
+                    struct('xData', {{obj.inputs.windProfile_vw, V_interpolated}}, ...
+                    'yData', {{obj.inputs.windProfile_h, heights}}, ...
+                    'yLabel', 'Height (m)', ...
+                    'Legend', {{'Data','Interpolated'}}, ...
+                    'XLabel', 'Wind Speed (-)', ...
+                    'xLim', [0.5, 1.5], ...
+                    'title', 'Wind profile'),...
+                };
+            end
+        
+            plotOptions.colors = colorOrderList;
+            plotOptions.LineStyle = '-';
+            plotOptions.markerList = repmat({'none'},1,3);
+            plotResults([], yAxesOptions, [], plotOptions);
+          end
+    end
+    %
+    methods (Static)
+        function write_inputparserdefaults_to_logger(logObj, p, inputs)
+            if ~isempty(p.UsingDefaults)
+                
+                logObj.warning('Some QSM inputs are set to defaults, see logger for details');
+
+                for i = 1:numel(p.UsingDefaults)
+                    logObj.info('Parameter %s set to default: %s', p.UsingDefaults{i}, mat2str(inputs.(p.UsingDefaults{i})));
+                end
+            end
+        end
+        %
+        function processedOutputs = copy_ouputs_to_processedoutputs(processedOutputs, outputs, variableNamesToCopy, i)
+            for var_i = 1:numel(variableNamesToCopy)
+                variableName = variableNamesToCopy{var_i};
+                if any(size(outputs.(variableName))==1)
+                    processedOutputs.(variableName)(i) = outputs.(variableName)(i);
+                else
+                    processedOutputs.(variableName)(i,:) = outputs.(variableName)(i,:);
+                end
+            end
+        end
+        %
+        function cyclePowerRep = createCyclePowerRep(vw_i, ...
+                    windSpeedReference, t1, to_eff, t2, ti_eff, P_e_o_eff, ...
+                    P_e_i_eff, P_m_o_eff, P_m_i_eff)
+                cyclePowerRep.ws     = vw_i;
+                cyclePowerRep.idx    = find(windSpeedReference==vw_i);
+                cyclePowerRep.t1     = round(t1(cyclePowerRep.idx),2);
+                cyclePowerRep.to_eff = round(sum(to_eff(cyclePowerRep.idx,:),2),2);
+                cyclePowerRep.t2     = round(t2(cyclePowerRep.idx),2);
+                cyclePowerRep.ti_eff = round(sum(ti_eff(cyclePowerRep.idx,:),2),2);
+                cyclePowerRep.to     = cyclePowerRep.t1 + cyclePowerRep.to_eff; %[s]
+                cyclePowerRep.ti     = cyclePowerRep.t2 + cyclePowerRep.ti_eff; %[s]
+                cyclePowerRep.tCycle = cyclePowerRep.to + cyclePowerRep.to; %[s]
+                
+                cyclePowerRep.t_inst   = cumsum([0 cyclePowerRep.t1 (cyclePowerRep.to_eff-cyclePowerRep.t1) cyclePowerRep.t1 ...
+                                      cyclePowerRep.t2 (cyclePowerRep.ti_eff-cyclePowerRep.t2) cyclePowerRep.t2]);
+                
+                cyclePowerRep.P_e_inst = [0, P_e_o_eff(cyclePowerRep.idx,1), P_e_o_eff(cyclePowerRep.idx,end), 0, ...
+                                      -P_e_i_eff(cyclePowerRep.idx,end), -P_e_i_eff(cyclePowerRep.idx,1), 0]./10^3;
+                
+                cyclePowerRep.P_m_inst = [0 P_m_o_eff(cyclePowerRep.idx,1), P_m_o_eff(cyclePowerRep.idx,end), 0, ...
+                                      -P_m_i_eff(cyclePowerRep.idx,end), -P_m_i_eff(cyclePowerRep.idx,1), 0]./10^3;
         end
     end
 end

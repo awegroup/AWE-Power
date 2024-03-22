@@ -5,3 +5,4 @@ slprj/
 *.slx.*
 *.m~
 *_msf.*
+*.log

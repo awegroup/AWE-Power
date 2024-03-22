@@ -2,6 +2,10 @@
 % Make sure to clean the variables from the workspace
 clc
 clearvars
+
+loggerID = 1;
+loggerIdentifyer = sprintf('logger_%.0f',loggerID);
+logger = mlog.Logger(loggerIdentifyer,'tryout.log');
 %% Required
 inputs.windSpeedReference  = 1:1:25; %[m/s]
 inputs.heightWindReference = 100; %[m]
@@ -24,7 +28,7 @@ inputs.numDeltaLelems   = 2; %[num]
 % To see the parameters that are used by KiteQSMsimulation:
 % help KiteQSMsimulation
 
-simulationQSM = KiteQSMsimulation(inputs);
+simulationQSM = KiteQSMsimulation(inputs, loggerIdentifyer);
 
 options                           = optimoptions('fmincon');
 options.Display                   = 'none'; %'iter-detailed', 'notify-detailed'
@@ -48,7 +52,7 @@ simulationQSM = simulationQSM.runsimulation(simulationQSM.inputs, options);
 %% Post processing
 % Accessing class properties here once and let matlab make a deep-copy is
 % faster than accessing each variable separately inside the class method.
-simulationQSM = simulationQSM.processoutputs(simulationQSM.inputs, simulationQSM.outputs);
+simulationQSM = simulationQSM.processoutputs();
 
 %% Plotting
-simulationQSM.plotresults(simulationQSM.inputs, simulationQSM.processedOutputs);
+simulationQSM.plot_all_results();
