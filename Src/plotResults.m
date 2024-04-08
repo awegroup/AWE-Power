@@ -1,4 +1,4 @@
-function [] = plotResults(inputSheetName)
+function [] = plotResults(inputSheetName)    
 
     %% Load saved outputs
     
@@ -11,7 +11,6 @@ function [] = plotResults(inputSheetName)
     load([folderPath_Outputs 'outputs'])
     load([folderPath_Outputs 'processedOutputs'])
     
-
     %% Plot settings
     vw = obj.inputs.vw_ref;
     x_axis_limit = [0 processedOutputs.vw_100m_operRange(end)];
@@ -26,70 +25,69 @@ function [] = plotResults(inputSheetName)
     0.3010 0.7450 0.9330];
 
     %% Plots
-    
-
-    % Plots showing the per element results for rated wind speed
-    ws = processedOutputs.ratedWind;
-    fig = figure();
-    colororder(newcolors)
-    % Lengths
-    subplot(2,2,1)
-    hold on
-    grid on
-    box on
-    plot(processedOutputs.Rp(ws,:),':o','linewidth',1,'markersize',3);
-    plot(processedOutputs.l_t_inCycle(ws,:),':^','linewidth',1,'markersize',3);
-    plot(processedOutputs.h_inCycle(ws,:),':s','linewidth',1,'markersize',3);
-    ylabel('(m)');
-    legend('R_{p}','l_{t}','h_{p}','location','northwest');
-    hold off
-    % Speeds
-    subplot(2,2,2)
-    hold on
-    grid on
-    box on
-    yyaxis left
-    plot(processedOutputs.lambda(ws,:),':o','linewidth',1,'markersize',3);
-    plot(processedOutputs.f(ws,:),':s','linewidth',1,'markersize',3);
-    plot(processedOutputs.f_i(ws,:),':v','linewidth',1,'markersize',3);
-    ylabel('(-)');
-    yyaxis right
-    plot(processedOutputs.vw(ws,:),':s','linewidth',1,'markersize',3);
-    plot(processedOutputs.vw_i(ws,:),':v','linewidth',1,'markersize',3);
-    ylabel('(m/s)');
-    legend('λ','f_o','f_i','v_{w,o}','v_{w,i}','location','northwest');
-    hold off
-    % Glide ratios
-    subplot(2,2,3)
-    hold on
-    grid on
-    box on
-    plot(processedOutputs.E(ws,:),':s','linewidth',1,'markersize',3);
-    plot(processedOutputs.E_i(ws,:),':v','linewidth',1,'markersize',3);
-    % ylim([0 2.5]);
-    ylabel('(-)');
-    legend('E_o','E_i','location','northwest');
-    hold off
-    % Forces
-    subplot(2,2,4)
-    hold on
-    grid on
-    box on
-    plot(processedOutputs.Fa(ws,:)/1e3,':^','linewidth',1,'markersize',3);
-    plot(processedOutputs.Fa_i(ws,:)/1e3,':o','linewidth',1,'markersize',3);
-    plot(processedOutputs.Ft(ws,:)/1e3,':s','linewidth',1,'markersize',3);
-    plot(processedOutputs.Ft_i(ws,:)/1e3,':v','linewidth',1,'markersize',3);
-    plot(processedOutputs.W(ws,:)/1e3,':x','linewidth',1,'markersize',3);
-    legend('F_{a,o}','F_{a,i}','F_{t,o}','F_{t,i}','W','location','northwest');
-    ylabel('(kN)');
-    hold off
-    han=axes(fig,'visible','off'); 
-    han.Title.Visible='on';
-    han.XLabel.Visible='on';
-    han.YLabel.Visible='off';
-    ylabel(han,'yourYLabel');
-    xlabel(han,'Discretized reeling distance over cycle');
-    title(han,['Wind speed at 100m = ' num2str(ws) 'm/s']);
+   
+%     % Plots showing the per element results for rated wind speed
+%     ws = processedOutputs.ratedWind;
+%     fig = figure();
+%     colororder(newcolors)
+%     % Lengths
+%     subplot(2,2,1)
+%     hold on
+%     grid on
+%     box on
+%     plot(processedOutputs.Rp(ws,:),':o','linewidth',1,'markersize',3);
+%     plot(processedOutputs.l_t_inCycle(ws,:),':^','linewidth',1,'markersize',3);
+%     plot(processedOutputs.h_inCycle(ws,:),':s','linewidth',1,'markersize',3);
+%     ylabel('(m)');
+%     legend('R_{p}','l_{t}','h_{p}','location','northwest');
+%     hold off
+%     % Speeds
+%     subplot(2,2,2)
+%     hold on
+%     grid on
+%     box on
+%     yyaxis left
+%     plot(processedOutputs.lambda(ws,:),':o','linewidth',1,'markersize',3);
+%     plot(processedOutputs.f(ws,:),':s','linewidth',1,'markersize',3);
+%     plot(processedOutputs.f_i(ws,:),':v','linewidth',1,'markersize',3);
+%     ylabel('(-)');
+%     yyaxis right
+%     plot(processedOutputs.vw(ws,:),':s','linewidth',1,'markersize',3);
+%     plot(processedOutputs.vw_i(ws,:),':v','linewidth',1,'markersize',3);
+%     ylabel('(m/s)');
+%     legend('λ','f_o','f_i','v_{w,o}','v_{w,i}','location','northwest');
+%     hold off
+%     % Glide ratios
+%     subplot(2,2,3)
+%     hold on
+%     grid on
+%     box on
+%     plot(processedOutputs.E(ws,:),':s','linewidth',1,'markersize',3);
+%     plot(processedOutputs.E_i(ws,:),':v','linewidth',1,'markersize',3);
+%     % ylim([0 2.5]);
+%     ylabel('(-)');
+%     legend('E_o','E_i','location','northwest');
+%     hold off
+%     % Forces
+%     subplot(2,2,4)
+%     hold on
+%     grid on
+%     box on
+%     plot(processedOutputs.Fa(ws,:)/1e3,':^','linewidth',1,'markersize',3);
+%     plot(processedOutputs.Fa_i(ws,:)/1e3,':o','linewidth',1,'markersize',3);
+%     plot(processedOutputs.Ft(ws,:)/1e3,':s','linewidth',1,'markersize',3);
+%     plot(processedOutputs.Ft_i(ws,:)/1e3,':v','linewidth',1,'markersize',3);
+%     plot(processedOutputs.W(ws,:)/1e3,':x','linewidth',1,'markersize',3);
+%     legend('F_{a,o}','F_{a,i}','F_{t,o}','F_{t,i}','W','location','northwest');
+%     ylabel('(kN)');
+%     hold off
+%     han=axes(fig,'visible','off'); 
+%     han.Title.Visible='on';
+%     han.XLabel.Visible='on';
+%     han.YLabel.Visible='off';
+%     ylabel(han,'yourYLabel');
+%     xlabel(han,'Discretized reeling distance over cycle');
+%     title(han,['Wind speed at 100m = ' num2str(ws) 'm/s']);
 
     % Speeds
     figure('units','inch','Position', [0.2 0.5 3.5 2.2])
@@ -153,7 +151,7 @@ function [] = plotResults(inputSheetName)
     plot(vw, processedOutputs.l_t_max,'s:','linewidth',1,'markersize',3);
     plot(vw, processedOutputs.l_t_min,'x:','linewidth',1,'markersize',3);
     ylabel('(m)');
-    legend('h_{p,avg}','R_{p,avg}','Δl','l_{t,max}','l_{t,min}','location','northwest','Orientation','vertical');
+    legend('h_{p,avg}','R_{p,avg}','Δl','l_{t,max}','l_{t,0}','location','northwest','Orientation','vertical');
     xlabel('Wind speed at 100m height (m/s)');
     xlim(x_axis_limit);
     %ylim([0 160]);

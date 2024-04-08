@@ -1,8 +1,4 @@
 function [inputs, outputs, optimDetails, processedOutputs] = main(inputs, inputSheetName)
-  
-  % Load inputs
-%   inputs = strcat(inputSheetName, '.m');
-%   run(inputs);
 
   % Initial guess for optimisation
   x0     = inputs.x0;
@@ -15,26 +11,19 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs, inputS
   for i=1:length(inputs.vw_ref)
    
     options                           = optimoptions('fmincon');
-  %     options.Display                   = 'iter-detailed';
-  options.Display                   = 'final-detailed';
-  % options.Display                   = 'notify-detailed';
-  options.Algorithm                 = 'sqp';
-  options.FiniteDifferenceType      = 'central';
-%   options.FiniteDifferenceType      = 'forward';
-  options.ScaleProblem             = true;
-  % options.FiniteDifferenceStepSize  = [1e-12 1e-12 1e-12 1e-12 1e-6*nx 1e-6*nx 1e-6*nx 1e-6*nx];% 1e-6*nx];
-  % options.FiniteDifferenceStepSize  = 1e-9;
-%   options.ConstraintTolerance      = 1e-4;
-  %  options.OptimalityTolerance       = 1e-9;
-%   options.StepTolerance             = 1e-4;
-%   options.MaxFunctionEvaluations    = 5000*numel(x0);
-%   options.MaxIterations             = 500*numel(x0);
-  %   options.FunctionTolerance        = 1e-9;
-  %   options.DiffMaxChange            = 1e-1;
-  %   options.DiffMinChange            = 0;
+    %     options.Display                   = 'iter-detailed';
+    options.Display                   = 'final-detailed';
+    % options.Display                   = 'notify-detailed';
+    options.Algorithm                 = 'sqp';
+    options.FiniteDifferenceType      = 'central';
+    %   options.FiniteDifferenceType      = 'forward';
+    options.ScaleProblem              = true; 
+    %   options.MaxFunctionEvaluations    = 5000*numel(x0);
+    %   options.MaxIterations             = 500*numel(x0);
+ 
     
-   con = @(x) constraints(i,inputs);
-   obj = @(x) objective(x,i,inputs);
+    con = @(x) constraints(i,inputs);
+    obj = @(x) objective(x,i,inputs);
 
     [x,~,exitflag(i),optHist(i),lambda(i)] = fmincon(obj,x0,[],[],[],[],lb,ub,con,options);
 
@@ -181,12 +170,11 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs, inputS
                               -system.P_m_i_eff(cyclePowerRep.idx,end) -system.P_m_i_eff(cyclePowerRep.idx,1) 0]./10^3;
     
   end
-  
-  %% Save outputs
-  
-  % Change names to associate with specific input file
-  save(['OutputFiles\' inputSheetName '_' 'optimDetails' '.mat'], 'optimDetails');
-  save(['OutputFiles\' inputSheetName '_' 'outputs' '.mat'], 'outputs');
-  save(['OutputFiles\' inputSheetName '_' 'processedOutputs' '.mat'], 'processedOutputs');
+
+    %% Save outputs
+    % Change names to associate with specific input file
+    save(['OutputFiles\' inputSheetName '_' 'optimDetails' '.mat'], 'optimDetails');
+    save(['OutputFiles\' inputSheetName '_' 'outputs' '.mat'], 'outputs');
+    save(['OutputFiles\' inputSheetName '_' 'processedOutputs' '.mat'], 'processedOutputs');
 
 end
