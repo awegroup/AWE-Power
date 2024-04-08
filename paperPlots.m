@@ -1,5 +1,7 @@
 %% Paper plots
 
+
+
 %% Effect of gravity
 clc 
 clearvars
@@ -192,6 +194,87 @@ xlim([0 processedOutputs.vw_100m_operRange(end)]);
 ylabel('Power (MW)');
 title(strcat('F_{t,max}/S = ',num2str(Ft_maxByS),'kN/m^2'));
 legend(legendLabels, 'Location', 'Best');
+hold off
+
+%% Mass scaling curve plots
+
+a1     = 0.002415;
+a2     = 0.0090239;
+b1     = 0.17025;
+b2     = 3.2493;
+k1     = 5;
+c1     = 0.46608;
+d1     = 0.65962;
+k2     = 1.1935;
+AR_ref = 12;
+
+r  = 3.5; % Tmax/inputs.WA %[kN/m^2]
+AR = 12;
+
+a = a1*r + a2;
+b = b1*r + b2;
+
+WA = linspace(0, 310,10);
+m_kite = 10*(a*WA.^2 +b*WA)*(c1*(AR/AR_ref)^2-d1*(AR/AR_ref)+k2); 
+
+
+w.CL = 2;
+par.u0_max = 100;
+q = 1/2 * 1.225 * par.u0_max^2;
+W =  r*WA*1000;% q * (WA.*w.CL);% + h.A* h.CL); 
+ff = 0.8;
+tc = 0.2;
+nz = 6;
+
+w.S = 0;
+w.AR = 12;
+
+m.w = ff * 0.036.* WA.^0.758 * (w.AR/cos(w.S)^2)^0.6 * q^0.006 * (100*tc/cos(w.S))^(-0.3) .* (nz * W).^0.49;
+
+
+% Data from literature
+MegAWES = [150.45, 6885];
+AP2     = [3, 35];
+AP3     = [12, 475];
+AP4     = [35^2/12, 3500];
+AP5_Luuk    = [300, 20000];
+AP5_AP    = [300, 34000];
+M600    = [32.9, 1730.8];
+MX2     = [54, 1850];
+Haas    = [138.5, 8000];
+M5      = [177.3, 9900];
+
+newcolors = [ % 0.25, 0.25, 0.25
+  0 0.4470 0.7410
+0.8500 0.3250 0.0980 
+0.4660, 0.6740, 0.1880
+0.4940, 0.1840, 0.5560
+0.9290, 0.6940, 0.1250
+
+0.6350 0.0780 0.1840
+0.3010 0.7450 0.9330];
+
+
+figure()
+hold on
+grid on
+box on
+colororder(newcolors)
+plot(MegAWES(1), MegAWES(2)/10^3,'p','markersize',7)
+plot(AP2(1), AP2(2)/10^3,'s')
+plot(AP3(1), AP3(2)/10^3,'d')
+plot(AP4(1), AP4(2)/10^3,'*','markersize',7)
+plot(AP5_Luuk(1), AP5_Luuk(2)/10^3,'o')
+plot(AP5_AP(1), AP5_AP(2)/10^3,'x')
+plot(M600(1), M600(2)/10^3,'^','markersize',5)
+plot(MX2(1), MX2(2)/10^3,'v','markersize',5)
+plot(M5(1), M5(2)/10^3,'<','markersize',5)
+plot(Haas(1), Haas(2)/10^3,'>','markersize',5)
+plot(WA, m_kite./10^3,'k','linewidth',1)
+plot(WA, m.w./10^3,'k--','linewidth',1)
+legend('MegAWES','AP2','AP3','AP4','AP5 low','AP5 high','M600','MX2','M5','Haas et al. 2019','AP scaling','Aircraft wing scaling'); 
+xlabel('Wing area (m^2)')
+ylabel('Kite mass (tons)')
 hold off
 
 
