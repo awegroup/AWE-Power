@@ -174,8 +174,8 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs, inputS
 
     %% Save outputs
     % Change names to associate with specific input file
-    save(['OutputFiles\' inputSheetName '_' 'optimDetails' '.mat'], 'optimDetails');
-    save(['OutputFiles\' inputSheetName '_' 'outputs' '.mat'], 'outputs');
-    save(['OutputFiles\' inputSheetName '_' 'processedOutputs' '.mat'], 'processedOutputs');
+    save(['outputFiles\' inputSheetName '_' 'optimDetails' '.mat'], 'optimDetails');
+    save(['outputFiles\' inputSheetName '_' 'outputs' '.mat'], 'outputs');
+    save(['outputFiles\' inputSheetName '_' 'processedOutputs' '.mat'], 'processedOutputs');
 
 end

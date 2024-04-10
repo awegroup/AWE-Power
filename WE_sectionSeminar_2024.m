@@ -5,9 +5,9 @@ clearvars
 clear global
 
 % Add folders and subfolders to path
-addpath(genpath([pwd '\InputSheets']));
-addpath(genpath([pwd '\OutputFiles'])); 
-addpath(genpath([pwd '\Src']));
+addpath(genpath([pwd '\inputSheets']));
+addpath(genpath([pwd '\outputFiles'])); 
+addpath(genpath([pwd '\src']));
 
 %% Siemens WT
 % % Wind turbine characteristcis based on Gamesa SG114-2.0MW: https://en.wind-turbine-models.com/turbines/428-gamesa-g114-2.0mw

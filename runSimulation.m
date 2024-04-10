@@ -6,15 +6,15 @@ clear global
 tic % log runtim
 
 % Add folders and subfolders to path
-addpath(genpath([pwd '\InputSheets']));
-addpath(genpath([pwd '\OutputFiles'])); 
-addpath(genpath([pwd '\Src']));
+addpath(genpath([pwd '\inputSheets']));
+addpath(genpath([pwd '\outputFiles'])); 
+addpath(genpath([pwd '\src']));
 
 % Load defined input sheet
-inputSheet_Dylan;
+inputSheet_Example;
 
 % Enter your defined input sheet name as an argument 
-[inputs, outputs, optimDetails, processedOutputs] = main(inputs, 'inputSheet_Dylan');
+[inputs, outputs, optimDetails, processedOutputs] = main(inputs, 'inputSheet_Example');
 
 toc
 

@@ -3,8 +3,8 @@ function [] = plotResults(inputSheetName)
     %% Load saved outputs
     
     % Specify the folder path
-    folderPath_InputSheets  = 'InputSheets\';
-    folderPath_Outputs      = ['OutputFiles\' inputSheetName '_'];
+    folderPath_InputSheets  = 'inputSheets\';
+    folderPath_Outputs      = ['outputFiles\' inputSheetName '_'];
     
     run([folderPath_InputSheets inputSheetName '.m'])
     load([folderPath_Outputs 'optimDetails'])

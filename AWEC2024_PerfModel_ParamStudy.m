@@ -2,6 +2,11 @@
 clc
 clearvars
 
+% Add folders and subfolders to path
+addpath(genpath([pwd '\inputSheets']));
+addpath(genpath([pwd '\outputFiles'])); 
+addpath(genpath([pwd '\src']));
+
 %% Baseline case
 clear global
 inputSheet_AWEC2024_ParamStudy;
