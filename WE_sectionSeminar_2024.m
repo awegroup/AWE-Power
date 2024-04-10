@@ -126,9 +126,9 @@ weibull.scaleParam = weibull.meanWS/ gamma(1 + 1/weibull.shapeParam);
 weibull.pdf = (weibull.shapeParam / weibull.scaleParam) * ((vw_ref / weibull.scaleParam).^(weibull.shapeParam - 1)) .* exp(-(vw_ref / weibull.scaleParam).^weibull.shapeParam);
 
 % WT AEP
-AEP.WT = trapz(vw_ref, weibull.pdf .* WT.P_e)/1e6; %[MWh]
+AEP.WT = 8760*trapz(vw_ref, weibull.pdf .* WT.P_e)/1e6; %[MWh]
 % AWES AEP
-AEP.AWES = trapz(vw_ref, weibull.pdf .* processedOutputs.P_e_avg)/1e6; %[MWh]
+AEP.AWES = 8760*trapz(vw_ref, weibull.pdf .* processedOutputs.P_e_avg)/1e6; %[MWh]
 AEP.diffPerc = (AEP.AWES-AEP.WT)*100/AEP.WT
 
 % Moments on ground
