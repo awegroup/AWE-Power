@@ -1,5 +1,6 @@
 % Input Sheet: Dylan
 inputs                = struct();
+inputs.name           = 'inputSheet_Dylan';
 
 inputs.numDeltaLelems  = 5; %[num]
 inputs.FgToggle        = 1; % 0 = No, 1 = Yes

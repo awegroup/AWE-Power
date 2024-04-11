@@ -1,5 +1,6 @@
 % Input Sheet: Scaling effects
 inputs                = struct();
+inputs.name           = 'inputSheet_scalingEffects';
 
 inputs.numDeltaLelems  = 1; %[num]
 inputs.FgToggle        = 1; % 0 = No, 1 = Yes

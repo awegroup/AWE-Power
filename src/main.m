@@ -189,11 +189,11 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
   
   % Check if the folder already exists
   if exist(folderName, 'dir')
-      fprintf('Outputs saved in Folder "%s".\n', folderName);
+      fprintf('Outputs saved in the already existing Folder "%s".\n', folderName);
   else
       % Create the folder
       mkdir(folderName);
-      fprintf('Outputs saved in Folder "%s".\n', folderName);
+      fprintf('Outputs saved in a created Folder "%s".\n', folderName);
   end
 
   % Change names to associate with specific input file

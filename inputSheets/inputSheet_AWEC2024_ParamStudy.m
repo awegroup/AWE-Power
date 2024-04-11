@@ -1,5 +1,6 @@
 % Inputs sheet: AWEC2024 Parametric study
 inputs                = struct();
+inputs.name           = 'inputSheet_AWEC2024_ParamStudy';
 
 inputs.numDeltaLelems  = 1; %[num]
 inputs.vertWindProfile = 0; % 0 = Modelled, 1 = From dataset 

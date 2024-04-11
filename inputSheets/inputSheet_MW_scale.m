@@ -1,5 +1,6 @@
 % Inputs sheet: MW scale
 inputs                = struct();
+inputs.name           = 'inputSheet_MW_scale';
 
 inputs.numDeltaLelems  = 5; %[num]
 inputs.vertWindProfile = 0; % 0 = Modelled, 1 = From dataset 

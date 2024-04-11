@@ -1,5 +1,6 @@
 % Input Sheet: Effect of Gravity
 inputs                = struct();
+inputs.name           = 'inputSheet_gravityEffect';
 
 inputs.numDeltaLelems  = 1; %[num]
 inputs.FgToggle        = 1; % 0 = No, 1 = Yes
