@@ -3,8 +3,6 @@ clc
 clearvars
 clear global
 
-tic % log runtim
-
 % Add folders and subfolders to path
 addpath(genpath([pwd '\inputSheets']));
 addpath(genpath([pwd '\outputFiles'])); 
@@ -14,7 +12,5 @@ addpath(genpath([pwd '\src']));
 inputSheet_Example;
 
 % Enter your defined input sheet name as an argument 
-[inputs, outputs, optimDetails, processedOutputs] = main(inputs, 'inputSheet_Example');
-
-toc
+[inputs, outputs, optimDetails, processedOutputs] = main(inputs);
 

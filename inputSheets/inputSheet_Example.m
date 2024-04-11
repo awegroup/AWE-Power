@@ -1,5 +1,7 @@
 % Input Sheet Example (AP3)
 inputs                = struct();
+inputs.name           = 'inputSheet_Example';
+
 
 inputs.numDeltaLelems  = 5; %[num]
 inputs.FgToggle        = 1; % 0 = No, 1 = Yes

@@ -1,4 +1,4 @@
-function [inputs, outputs, optimDetails, processedOutputs] = main(inputs, inputSheetName)
+function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
 
   % Initial guess for optimisation
   x0     = inputs.x0;
@@ -172,10 +172,23 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs, inputS
     
   end
 
-    %% Save outputs
-    % Change names to associate with specific input file
-    save(['outputFiles\' inputSheetName '_' 'optimDetails' '.mat'], 'optimDetails');
-    save(['outputFiles\' inputSheetName '_' 'outputs' '.mat'], 'outputs');
-    save(['outputFiles\' inputSheetName '_' 'processedOutputs' '.mat'], 'processedOutputs');
+  %% Save outputs
+    
+  % Define the folder name
+  folderName = 'outputFiles';
+  
+  % Check if the folder already exists
+  if exist(folderName, 'dir')
+      fprintf('Outputs saved in Folder "%s".\n', folderName);
+  else
+      % Create the folder
+      mkdir(folderName);
+      fprintf('Outputs saved in Folder "%s".\n', folderName);
+  end
+
+  % Change names to associate with specific input file
+  save(['outputFiles\' inputs.name '_' 'optimDetails' '.mat'], 'optimDetails');
+  save(['outputFiles\' inputs.name '_' 'outputs' '.mat'], 'outputs');
+  save(['outputFiles\' inputs.name '_' 'processedOutputs' '.mat'], 'processedOutputs');
 
 end
