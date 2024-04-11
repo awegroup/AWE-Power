@@ -1,4 +1,4 @@
-function [inputs] = compute(i,inputs)
+function [inputs] = computePower(i,inputs)
     
    global outputs
     

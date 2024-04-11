@@ -9,7 +9,7 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
     end
 
   %% Optimisation
-  
+
   % Initial guess for optimisation
   x0     = inputs.x0;
 
@@ -32,14 +32,14 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
     %   options.MaxIterations             = 500*numel(x0);
  
     
-    con = @(x) constraints(i,inputs);
-    obj = @(x) objective(x,i,inputs,kiteMass);
+    con = @(x) optConstraints(i,inputs);
+    obj = @(x) optObjective(x,i,inputs,kiteMass);
 
     
     [x,~,exitflag(i),optHist(i),lambda(i)] = fmincon(obj,x0,[],[],[],[],lb,ub,con,options);
 
     % Storing final results
-    [~,inputs,outputs] = objective(x,i,inputs,kiteMass);
+    [~,inputs,outputs] = optObjective(x,i,inputs,kiteMass);
 
     % Changing initial guess if previous wind speed evaluation is considered infeasible
     if abs(mean((outputs.E_result - outputs.E),2)) > 1 %0.01 

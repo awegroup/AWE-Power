@@ -1,4 +1,4 @@
-function [c, ceq] = constraints(i,inputs)
+function [c, ceq] = optConstraints(i,inputs)
   
   global outputs
    
