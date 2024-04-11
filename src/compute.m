@@ -1,18 +1,6 @@
 function [inputs] = compute(i,inputs)
- global outputs
     
-    %% Kite mass 
-    if inputs.massOverride == 1
-      outputs.m_k(i) = inputs.kiteMass;
-    else
-      % Vincent Bonnin's simple mass model developed at Ampyx Power. Based on AP3 data and projected data for larger systems (AP4-AP5)      
-      a1     = 0.002415;       a2     = 0.0090239;       b1     = 0.17025;       b2     = 3.2493;
-      k1     = 5;              c1     = 0.46608;         d1     = 0.65962;       k2     = 1.1935;
-      AR_ref = 12;
-      a = a1*(inputs.Ft_max/inputs.S) + a2;
-      b = b1*(inputs.Ft_max/inputs.S) + b2;
-      outputs.m_k(i) = 10*(a*inputs.S^2 +b*inputs.S-k1)*(c1*(inputs.AR/AR_ref)^2-d1*(inputs.AR/AR_ref)+k2); 
-    end
+   global outputs
     
     %% Constant for the cycle     
     outputs.l_t_min(i)         = outputs.Rp_start(i)/sin(outputs.gamma(i));
@@ -45,7 +33,7 @@ function [inputs] = compute(i,inputs)
 
         % Effective mass lumped at kite point (Kite + tether)
         outputs.m_t(i,j)   = inputs.Te_matDensity*pi()/4*outputs.d_t^2*outputs.l_t_inCycle(i,j);
-        outputs.m_eff(i,j) = outputs.m_k(i) + 0.5*outputs.m_t(i,j);
+        outputs.m_eff(i,j) = outputs.m_k + 0.5*outputs.m_t(i,j);
 
         % Coordinates of the Kite's position and orientation in the Spherical ref. frame
         % Center point (representative point)

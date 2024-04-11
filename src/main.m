@@ -1,5 +1,15 @@
 function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
 
+
+  %% Kite mass 
+    if inputs.massOverride == 1
+      kiteMass = inputs.kiteMass;
+    else
+      kiteMass = estimateKiteMass(inputs.Ft_max, inputs.S, inputs.AR); 
+    end
+
+  %% Optimisation
+  
   % Initial guess for optimisation
   x0     = inputs.x0;
 
@@ -23,13 +33,13 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
  
     
     con = @(x) constraints(i,inputs);
-    obj = @(x) objective(x,i,inputs);
+    obj = @(x) objective(x,i,inputs,kiteMass);
 
     
     [x,~,exitflag(i),optHist(i),lambda(i)] = fmincon(obj,x0,[],[],[],[],lb,ub,con,options);
 
     % Storing final results
-    [~,inputs,outputs] = objective(x,i,inputs);
+    [~,inputs,outputs] = objective(x,i,inputs,kiteMass);
 
     % Changing initial guess if previous wind speed evaluation is considered infeasible
     if abs(mean((outputs.E_result - outputs.E),2)) > 1 %0.01 
@@ -71,7 +81,7 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
       if vw(i)>=processedOutputs.cutIn
           processedOutputs.vw(i,:)           = outputs.vw(i,:);
           processedOutputs.vw_i(i,:)         = outputs.vw_i(i,:);
-          processedOutputs.m_k(i)            = outputs.m_k(i);  
+          processedOutputs.m_k               = outputs.m_k;  
           processedOutputs.P1_m_o(i)         = outputs.P1_m_o(i);
           processedOutputs.P2_m_i(i)         = outputs.P2_m_i(i); 
           processedOutputs.P_m_o_eff(i,:)    = outputs.P_m_o_eff(i,:);
