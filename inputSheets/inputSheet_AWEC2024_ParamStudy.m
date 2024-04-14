@@ -16,17 +16,17 @@ inputs.b              = sqrt(inputs.AR*inputs.S);
 inputs.P_ratedElec    = 2000*1000; %[W]
 inputs.massOverride   = 0;
 inputs.kiteMass       = 600; %[kg]
-inputs.peakM2E_F      = 2.5; %[-]
+inputs.peakM2E_F      = 2; %[-]
 
 inputs.Ft_max            = 3*inputs.S; %[kN]
 inputs.Ft_max_SF         = 1.0; % 0.8 for gust margin
-inputs.maxTeLen          = 5000; %[m]
+inputs.maxTeLen          = 3000; %[m]
 inputs.maxHeight         = 1000; %[m]
 inputs.minGroundClear    = 100; %[m] 
 inputs.Te_matStrength    = 7e8;
 inputs.Te_matDensity     = 980; %[kg/m^3] 
 
-inputs.Cl_maxAirfoil  = 2.7; %[-] % 2.7
+inputs.Cl_maxAirfoil  = 2.5; %[-] % 2.7
 inputs.Cl_eff_F       = 1; %[-] % 0.8
 inputs.Cl0_airfoil    = 0.65; %[-]
 inputs.e              = 0.6; %[-] % 0.6

@@ -9,33 +9,6 @@ addpath(genpath([pwd '\inputSheets']));
 addpath(genpath([pwd '\outputFiles'])); 
 addpath(genpath([pwd '\src']));
 
-%% Siemens WT
-% % Wind turbine characteristcis based on Gamesa SG114-2.0MW: https://en.wind-turbine-models.com/turbines/428-gamesa-g114-2.0mw
-% % Model available 2010. Popular Onshore model
-% % Low specific power Turbine. SP = 196 W/m^2;
-% WT.S_blade   = 142.5; %[m^2] % Assuming average chord of 2.5m
-% WT.SweptArea = 10207; %[m^2]
-% WT.radius    = sqrt(WT.SweptArea/pi());
-% % WT.Cp        = 0.46; % Optimistic value. Electrical Cp
-% WT.Cp        = [0 0 0.190 0.370 0.440 0.460 0.470 0.46 0.4 0.31 0.24 0.19 0.15 0.12 0.1 0.08 0.07 0.06 0.05 0.04 0.04 0.03 0.02 0.02 0.01];
-% WT.Ct        = [0 0 0.93 0.86 0.83 0.82 0.82 0.78 0.62 0.44 0.32 0.24 0.19 0.15 0.12 0.1 0.09 0.07 0.06 0.06 0.05 0.04 0.03 0.03 0.02];
-% WT.P_e_rated = 2e6; %[W]
-% WT.HubHt     = 100; %[m]
-% WT.CutInWS   = 3; %[m/s] at 100m height
-% WT.RatedWS   = 11; %[m/s] at 100m height
-% WT.CutOutWS  = 25; %[m/s] at 100m height
-% WT.rho_air   = 1.225; %[kg/m^3] at 100m height
-% 
-% vw_ref = 1:1:25; %[m/s] at 100m height
-% 
-% WT.Ft        = 0.5.*WT.rho_air.*WT.SweptArea.*WT.Ct.*vw_ref.^2;
-% WT.P_e(vw_ref)       = 0.5.*WT.rho_air.*WT.SweptArea.*WT.Cp.*vw_ref.^3;
-% WT.P_e(1:WT.CutInWS) = 0;
-% % WT.P_e(WT.P_e>=WT.P_e_rated)  = WT.P_e_rated;
-% % WT.P_e(WT.RatedWS:WT.CutOutWS) = WT.P_e_rated;
-% WT.P_e(WT.RatedWS:21) = WT.P_e_rated;
-% WT.P_e(22:25) = [1906 1681 1455 1230].*1e3;
-
 %% Vestas WT
 % Wind turbine characteristcis based on Veatas V90-2.0MW:
 % https://en.wind-turbine-models.com/turbines/248-vestas-v90-gridstreamer
@@ -62,30 +35,6 @@ WT.P_e(1:WT.CutInWS) = 0;
 WT.P_e(WT.P_e>=WT.P_e_rated)  = WT.P_e_rated;
 WT.P_e(WT.RatedWS:WT.CutOutWS) = WT.P_e_rated;
 
-%% NREL 5MW reference
-% https://www.nrel.gov/docs/fy09osti/38060.pdf
-% 
-% WT.radius    = 63;
-% WT.S_blade   = 0.5*(3.54+1.42)*WT.radius; %[m^2] % Max chord is of 3.9m
-% WT.Cp        = 0.46*ones(1,25); % Optimistic value. Electrical Cp
-% WT.Ct        = 0.8*ones(1,25); % Optimistic value
-% WT.P_e_rated = 5e6; %[W]
-% WT.HubHt     = 100; %[m]
-% WT.CutInWS   = 3; %[m/s] at 100m height
-% WT.RatedWS   = 11; %[m/s] at 100m height
-% WT.CutOutWS  = 25; %[m/s] at 100m height
-% WT.rho_air   = 1.225; %[kg/m^3] at 100m height
-% 
-% vw_ref = 1:1:25; %[m/s] at 100m height
-% 
-% WT.Ft          = 0.5.*WT.rho_air.*pi()*WT.radius^2.*WT.Ct.*vw_ref.^2;
-% WT.Ft(WT.RatedWS:WT.CutOutWS) = WT.Ft(WT.RatedWS);
-% WT.P_e(vw_ref) = 0.5.*WT.rho_air.*pi()*WT.radius^2.*WT.Cp.*vw_ref.^3;
-% WT.P_e(1:WT.CutInWS) = 0;
-% WT.P_e(WT.P_e>=WT.P_e_rated)  = WT.P_e_rated;
-% WT.P_e(WT.RatedWS:WT.CutOutWS) = WT.P_e_rated;
-
-
 %% AWES
 % Defined input sheet
 inputSheet_MW_scale;
@@ -99,12 +48,8 @@ inputs.AR      = 12;
 inputs.S       = inputs.b^2/inputs.AR;
 inputs.Ft_max  = 3.5*inputs.S; %[kN]
 
-% Equating 1 blade area to wing area of kite for a constant AR of 12 for the kite
-% inputs.S  = WT.S_blade;
-% inputs.Ft_max            = 4*inputs.S; %[kN]
-
 % Get results
-[inputs, outputs, optimDetails, processedOutputs] = main(inputs, 'inputSheet_MW_scale');
+[inputs, outputs, optimDetails, processedOutputs] = main(inputs);
 
 %% Comparison
 
@@ -144,35 +89,6 @@ newcolors = [ % 0.25, 0.25, 0.25
   0.4940, 0.1840, 0.5560
   0.6350 0.0780 0.1840
   0.3010 0.7450 0.9330];
-
-% % Wind profile
-%   Vref = 10; % m/s
-%   z = 10:10:600; % m
-%   V = Vref * (z/inputs.h_ref).^inputs.windShearExp/Vref;
-% %   MegAWES Onshore location Cabauw. Wind speeds normalized with value at 100m
-%   z_MegAWES = [10,20,40,60,80,100,120,140,150,160,180,200,220,250,300,500,600];
-%   V_MegAWES_Cabauw = [0.541219682843206,0.607355091566827,0.768630154201962,0.868484406441142,0.941395360902529,1,1.04810058627160,1.08638854381156,1.10277338731106,1.11715868927737,1.14412258234309,1.16573551308321,1.18394938534465,1.20653423381438,1.23266397972046,1.26662287360302,1.26414483994687];
-%   V_MegAWES_Ijmuiden = [0.847612611633547,0.870603040595613,0.927240267828556,0.959346286990695,0.982291573490674,1,1.01377720773809,1.02356771954493,1.02766760602000,1.03079423355205,1.03659625208888,1.04025827758100,1.04284618416620,1.04496440015282,1.04461712713371,1.02473617783789,1.01076976884552];
-%   figure('units','inch','Position', [15 6 2 2.2])
-%   hold on
-%   box on
-%   grid on
-%   plot(V,z,'linewidth',1.5)
-%   plot(V_MegAWES_Cabauw,z_MegAWES,'--','linewidth',1.5)
-%   plot(V_MegAWES_Ijmuiden,z_MegAWES,'-.','linewidth',1.5)
-%   legend('α = 0.143','Cabauw,NL','Ijmuiden,NL');
-%   xlim([0.5 1.5])
-%   xlabel('Wind speed (-)')
-%   ylabel('Height (m)')
-%   hold off
-% 
-% % Plot the Weibull distribution
-% figure('units','inch','Position', [4 4 3.5 2.2]);
-% plot(vw_ref, weibull.pdf, 'LineWidth', 1.5);
-% xlabel('Wind speed at 100m height (m/s)');
-% ylabel('Probability (-)');
-% title('k = 2, v_{w,mean} = 9m/s');
-% grid on;
 
 % Power curve
 figure('units','inch','Position', [4 4 3.5 2.2])
@@ -227,5 +143,82 @@ legend('AWES','WT','location','southeast');
 xlabel('Wind speed at 100m height (m/s)');
 hold off
 
+% % Wind profile
+%   Vref = 10; % m/s
+%   z = 10:10:600; % m
+%   V = Vref * (z/inputs.h_ref).^inputs.windShearExp/Vref;
+% %   MegAWES Onshore location Cabauw. Wind speeds normalized with value at 100m
+%   z_MegAWES = [10,20,40,60,80,100,120,140,150,160,180,200,220,250,300,500,600];
+%   V_MegAWES_Cabauw = [0.541219682843206,0.607355091566827,0.768630154201962,0.868484406441142,0.941395360902529,1,1.04810058627160,1.08638854381156,1.10277338731106,1.11715868927737,1.14412258234309,1.16573551308321,1.18394938534465,1.20653423381438,1.23266397972046,1.26662287360302,1.26414483994687];
+%   V_MegAWES_Ijmuiden = [0.847612611633547,0.870603040595613,0.927240267828556,0.959346286990695,0.982291573490674,1,1.01377720773809,1.02356771954493,1.02766760602000,1.03079423355205,1.03659625208888,1.04025827758100,1.04284618416620,1.04496440015282,1.04461712713371,1.02473617783789,1.01076976884552];
+%   figure('units','inch','Position', [15 6 2 2.2])
+%   hold on
+%   box on
+%   grid on
+%   plot(V,z,'linewidth',1.5)
+%   plot(V_MegAWES_Cabauw,z_MegAWES,'--','linewidth',1.5)
+%   plot(V_MegAWES_Ijmuiden,z_MegAWES,'-.','linewidth',1.5)
+%   legend('α = 0.143','Cabauw,NL','Ijmuiden,NL');
+%   xlim([0.5 1.5])
+%   xlabel('Wind speed (-)')
+%   ylabel('Height (m)')
+%   hold off
+% 
+% % Plot the Weibull distribution
+% figure('units','inch','Position', [4 4 3.5 2.2]);
+% plot(vw_ref, weibull.pdf, 'LineWidth', 1.5);
+% xlabel('Wind speed at 100m height (m/s)');
+% ylabel('Probability (-)');
+% title('k = 2, v_{w,mean} = 9m/s');
+% grid on;
 
 
+%% NREL 5MW reference
+% https://www.nrel.gov/docs/fy09osti/38060.pdf
+% 
+% WT.radius    = 63;
+% WT.S_blade   = 0.5*(3.54+1.42)*WT.radius; %[m^2] % Max chord is of 3.9m
+% WT.Cp        = 0.46*ones(1,25); % Optimistic value. Electrical Cp
+% WT.Ct        = 0.8*ones(1,25); % Optimistic value
+% WT.P_e_rated = 5e6; %[W]
+% WT.HubHt     = 100; %[m]
+% WT.CutInWS   = 3; %[m/s] at 100m height
+% WT.RatedWS   = 11; %[m/s] at 100m height
+% WT.CutOutWS  = 25; %[m/s] at 100m height
+% WT.rho_air   = 1.225; %[kg/m^3] at 100m height
+% 
+% vw_ref = 1:1:25; %[m/s] at 100m height
+% 
+% WT.Ft          = 0.5.*WT.rho_air.*pi()*WT.radius^2.*WT.Ct.*vw_ref.^2;
+% WT.Ft(WT.RatedWS:WT.CutOutWS) = WT.Ft(WT.RatedWS);
+% WT.P_e(vw_ref) = 0.5.*WT.rho_air.*pi()*WT.radius^2.*WT.Cp.*vw_ref.^3;
+% WT.P_e(1:WT.CutInWS) = 0;
+% WT.P_e(WT.P_e>=WT.P_e_rated)  = WT.P_e_rated;
+% WT.P_e(WT.RatedWS:WT.CutOutWS) = WT.P_e_rated;
+
+%% Siemens WT
+% % Wind turbine characteristcis based on Gamesa SG114-2.0MW: https://en.wind-turbine-models.com/turbines/428-gamesa-g114-2.0mw
+% % Model available 2010. Popular Onshore model
+% % Low specific power Turbine. SP = 196 W/m^2;
+% WT.S_blade   = 142.5; %[m^2] % Assuming average chord of 2.5m
+% WT.SweptArea = 10207; %[m^2]
+% WT.radius    = sqrt(WT.SweptArea/pi());
+% % WT.Cp        = 0.46; % Optimistic value. Electrical Cp
+% WT.Cp        = [0 0 0.190 0.370 0.440 0.460 0.470 0.46 0.4 0.31 0.24 0.19 0.15 0.12 0.1 0.08 0.07 0.06 0.05 0.04 0.04 0.03 0.02 0.02 0.01];
+% WT.Ct        = [0 0 0.93 0.86 0.83 0.82 0.82 0.78 0.62 0.44 0.32 0.24 0.19 0.15 0.12 0.1 0.09 0.07 0.06 0.06 0.05 0.04 0.03 0.03 0.02];
+% WT.P_e_rated = 2e6; %[W]
+% WT.HubHt     = 100; %[m]
+% WT.CutInWS   = 3; %[m/s] at 100m height
+% WT.RatedWS   = 11; %[m/s] at 100m height
+% WT.CutOutWS  = 25; %[m/s] at 100m height
+% WT.rho_air   = 1.225; %[kg/m^3] at 100m height
+% 
+% vw_ref = 1:1:25; %[m/s] at 100m height
+% 
+% WT.Ft        = 0.5.*WT.rho_air.*WT.SweptArea.*WT.Ct.*vw_ref.^2;
+% WT.P_e(vw_ref)       = 0.5.*WT.rho_air.*WT.SweptArea.*WT.Cp.*vw_ref.^3;
+% WT.P_e(1:WT.CutInWS) = 0;
+% % WT.P_e(WT.P_e>=WT.P_e_rated)  = WT.P_e_rated;
+% % WT.P_e(WT.RatedWS:WT.CutOutWS) = WT.P_e_rated;
+% WT.P_e(WT.RatedWS:21) = WT.P_e_rated;
+% WT.P_e(22:25) = [1906 1681 1455 1230].*1e3;
