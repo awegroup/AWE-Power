@@ -1,6 +1,6 @@
 % Inputs sheet: MW scale
 inputs                = struct();
-inputs.name           = 'inputSheet_MW_scale_EcoModel';
+inputs.name           = 'inputSheet_MW_scale_WE_seminar';
 
 inputs.numDeltaLelems  = 1; %[num]
 inputs.vertWindProfile = 0; % 0 = Modelled, 1 = From dataset 
@@ -23,7 +23,7 @@ inputs.Ft_max_SF         = 1; % 0.8 for gust margin
 inputs.maxTeLen          = 2000; %[m]
 inputs.maxHeight         = 1000; %[m]
 inputs.minGroundClear    = 100; %[m] 
-inputs.Te_matStrength    = 6e8; % Engineering guess considering tether replacement costs. SHould be between 0.6 to 0.8 GPa
+inputs.Te_matStrength    = 7e8; % Engineering guess considering tether replacement costs. SHould be between 0.6 to 0.8 GPa
 inputs.Te_matDensity     = 980; %[kg/m^3] 
 
 inputs.Cl_maxAirfoil  = 2.5; %[-] % 2.7

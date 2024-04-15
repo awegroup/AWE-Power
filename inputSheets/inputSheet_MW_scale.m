@@ -6,7 +6,7 @@ inputs.numDeltaLelems  = 1; %[num]
 inputs.vertWindProfile = 0; % 0 = Modelled, 1 = From dataset 
 inputs.FgToggle        = 1; % 0 = No, 1 = Yes
 
-inputs.vw_ref         = 1:1:25; %[m/s]
+inputs.vw_ref         = 2:1:25; %[m/s]
 inputs.h_ref          = 100; %[m]
 inputs.windShearExp   = 0.143; %[-] % 0.143 over land, 0.11 over sea
 

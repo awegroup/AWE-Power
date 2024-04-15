@@ -37,7 +37,7 @@ WT.P_e(WT.RatedWS:WT.CutOutWS) = WT.P_e_rated;
 
 %% AWES
 % Defined input sheet
-inputSheet_MW_scale;
+inputSheet_MW_scale_WE_seminar;
 
 % Same rated power
 inputs.P_ratedElec = WT.P_e_rated; %[W] 
