@@ -3,10 +3,10 @@
 clear global
 
 % Load input sheet
-inputSheet_MW_scale;
+inputSheet_Example;
 
 % Load processed outputs
-load("outputFiles\inputSheet_MW_scale_processedOutputs.mat");
+load("outputFiles\inputSheet_Example_processedOutputs.mat");
 
 % Run 
 plotResults(inputs, processedOutputs);

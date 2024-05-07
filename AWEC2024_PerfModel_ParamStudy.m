@@ -10,6 +10,7 @@ addpath(genpath([pwd '\src']));
 %% Baseline case
 clear global
 inputSheet_AWEC2024_ParamStudy;
+% inputSheet_MW_scale_EcoModel;
 [inputs, outputs, optimDetails, processedOutputs] = main(inputs);
 baseline     =  processedOutputs;
 [baseline_AEP, pdf] = calcAEP(9,2,inputs.vw_ref,baseline.P_e_avg);
@@ -246,13 +247,13 @@ end
 
 function plotSubplots(numEvals, vw_ref, param_sens, param, Title, XLIMsubPlot1, param_sens_AEP, legendLabels, XLABELsubplot2)
     % Define the total plot width
-    totalWidth = 13; % inches
+    totalWidth = 11.5; % inches
     % Define the widths for each subplot
     subplot1Width = 0.5 * totalWidth; % 55% of total width
     subplot2Width = 0.22 * totalWidth; % 20% of total width
 
     % Define the figure size
-    figSize = [1 1 totalWidth 8]; % Use totalWidth for the figure width
+    figSize = [1 1 totalWidth totalWidth/1.618]; % Use totalWidth for the figure width
 
     % Create the figure with the specified size
     figure('units','inch','Position', figSize)
@@ -272,11 +273,11 @@ function plotSubplots(numEvals, vw_ref, param_sens, param, Title, XLIMsubPlot1, 
     ylim([0 2.1]);
     legend(legendLabels, 'Location', 'Best');
     % Increase font sizes
-    set(gca,'FontSize',26); % Increase font size of axes labels
-    set(get(gca,'XLabel'),'FontSize',34); % Increase font size of x-axis label
-    set(get(gca,'YLabel'),'FontSize',34); % Increase font size of y-axis label
-    set(get(gca,'Title'),'FontSize',34); % Increase font size of title
-    legendFontSize = 24; % Adjust the legend font size as needed
+    set(gca,'FontSize',24); % Increase font size of axes labels
+    set(get(gca,'XLabel'),'FontSize',32); % Increase font size of x-axis label
+    set(get(gca,'YLabel'),'FontSize',32); % Increase font size of y-axis label
+    set(get(gca,'Title'),'FontSize',32); % Increase font size of title
+    legendFontSize = 22; % Adjust the legend font size as needed
     set(legend,'FontSize',legendFontSize); % Increase font size of legend
     hold off
 
@@ -300,10 +301,10 @@ function plotSubplots(numEvals, vw_ref, param_sens, param, Title, XLIMsubPlot1, 
     xlabel(XLABELsubplot2)
     ylabel('(%)')
     % Increase font sizes
-    set(gca,'FontSize',22); % Increase font size of axes labels
-    set(get(gca,'XLabel'),'FontSize',34); % Increase font size of x-axis label
-    set(get(gca,'YLabel'),'FontSize',34); % Increase font size of y-axis label
-    set(get(gca,'Title'),'FontSize',34); % Increase font size of title
+    set(gca,'FontSize',20); % Increase font size of axes labels
+    set(get(gca,'XLabel'),'FontSize',32); % Increase font size of x-axis label
+    set(get(gca,'YLabel'),'FontSize',32); % Increase font size of y-axis label
+    set(get(gca,'Title'),'FontSize',32); % Increase font size of title
     hold off
 end
 

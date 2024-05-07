@@ -1,7 +1,5 @@
 %% Paper plots
 
-
-
 %% Effect of gravity
 clc 
 clearvars
@@ -9,7 +7,7 @@ clear global
 for i = 1:2
   inputSheet_gravityEffect;
   inputs.FgToggle = i-1;
-  [inputs, outputs, optimDetails, processedOutputs] = main(inputs, 'inputSheet_gravityEffect');
+  [inputs, outputs, optimDetails, processedOutputs] = main(inputs);
   gravityEffect(i)     =  processedOutputs;
   clear global
 end
@@ -72,7 +70,7 @@ inputs.S = 100;
 for i =1:7
   inputs.Ft_max = 200+200*i;
   fixedWA.Ft_max(i) = inputs.Ft_max;
-  [inputs, outputs, optimDetails, processedOutputs] = main(inputs, 'inputSheet_scalingEffects');
+  [inputs, outputs, optimDetails, processedOutputs] = main(inputs);
   fixedWA.m_k(i)         = processedOutputs.m_k;
   fixedWA.zetaMech(i)    = processedOutputs.zetaMech;
   fixedWA.d_te(i)        = processedOutputs.d_te;
@@ -105,7 +103,7 @@ for i =1:6
   FixedFt_max.S(i)       = inputs.S;
   inputs.Ft_max          = FixedFt_max.Ft_max;
   FixedFt_max.Ft_max     = inputs.Ft_max;
-  [inputs, outputs, optimDetails, processedOutputs] = main(inputs, 'inputSheet_scalingEffects');
+  [inputs, outputs, optimDetails, processedOutputs] = main(inputs);
   FixedFt_max.m_k(i)     = processedOutputs.m_k;
   FixedFt_max.zeta(i)    = processedOutputs.zetaMech;
   FixedFt_max.d_te       = processedOutputs.d_te;
@@ -138,7 +136,7 @@ numEvals = 4;
 for i = 1:numEvals
     inputs.Ft_max = inputs.S + i*100;
     Ft_max(i)     = inputs.Ft_max;
-    [inputs, outputs, optimDetails, processedOutputs] = main(inputs, 'inputSheet_scalingEffects');
+    [inputs, outputs, optimDetails, processedOutputs] = main(inputs);
     fullPC_incrFt_max(i)  =  processedOutputs;
     clear global
 end
@@ -175,7 +173,7 @@ for i = 1:numEvals
     inputs.S = i*30;
     S(i)     = inputs.S;
     inputs.Ft_max = Ft_maxByS*inputs.S;
-    [inputs, outputs, optimDetails, processedOutputs] = main(inputs, 'inputSheet_scalingEffects');
+    [inputs, outputs, optimDetails, processedOutputs] = main(inputs);
     fullPC_incrS(i) =  processedOutputs;
     clear global
 end
@@ -270,9 +268,9 @@ plot(M600(1), M600(2)/10^3,'^','markersize',5)
 plot(MX2(1), MX2(2)/10^3,'v','markersize',5)
 plot(M5(1), M5(2)/10^3,'<','markersize',5)
 plot(Haas(1), Haas(2)/10^3,'>','markersize',5)
-plot(WA, m_kite./10^3,'k','linewidth',1)
-plot(WA, m.w./10^3,'k--','linewidth',1)
-legend('MegAWES','AP2','AP3','AP4','AP5 low','AP5 high','M600','MX2','M5','Haas et al. 2019','AP scaling','Aircraft wing scaling'); 
+plot(WA, m_kite./10^3,'b','linewidth',1)
+plot(WA, m.w./10^3,'k:','linewidth',1)
+legend('MegAWES','AP2','AP3','AP4','AP5 low','AP5 high','M600','MX2','M5','Haas et al. 2019','Kite mass model','Aircraft wing scaling'); 
 xlabel('Wing area (m^2)')
 ylabel('Kite mass (tons)')
 hold off

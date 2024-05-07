@@ -9,7 +9,7 @@ addpath(genpath([pwd '\outputFiles']));
 addpath(genpath([pwd '\src']));
 
 % Load defined input sheet
-inputSheet_MW_scale;
+inputSheet_Example;
 
 % Enter your defined input sheet name as an argument 
 [inputs, outputs, optimDetails, processedOutputs] = main(inputs);
