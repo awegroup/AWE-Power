@@ -243,38 +243,6 @@ function [] = plotResults(inputs, processedOutputs)
     xlabel('Wind speed at 100m height (m/s)');
     xlim(x_axis_limit);
     hold off
-
-
-    % Power curve comparison plot
-    % Loyd
-    CL_loyd = inputs.Cl_maxAirfoil*inputs.Cl_eff_F;
-    CD_loyd = inputs.Cd0 + (CL_loyd-inputs.Cl0_airfoil)^2/(pi()*inputs.AR*inputs.e);
-    for i = 1:length(vw)
-        P_Loyd(i) = (4/27)*(CL_loyd^3/CD_loyd^2)*(1/2)*inputs.airDensity*inputs.S*(vw(i)^3);
-        if P_Loyd(i)>inputs.P_ratedElec
-            P_Loyd(i) = inputs.P_ratedElec;
-        end 
-    end
-    % AP3 6DoF simulation results
-    AP3.PC.ws    = [7.32E+00, 8.02E+00, 9.05E+00, 1.00E+01, 1.10E+01, 1.20E+01, ...
-      1.30E+01, 1.41E+01, 1.50E+01, 1.60E+01, 1.70E+01, 1.80E+01, 1.90E+01]; %[m/s]
-    AP3.PC.power = [0.00E+00, 7.01E+03, 2.37E+04, 4.31E+04, 6.47E+04, 8.46E+04, ...
-      1.02E+05, 1.20E+05, 1.34E+05, 1.49E+05, 1.50E+05, 1.50E+05, 1.50E+05]./10^3; %[kW]
-
-    figure('units','inch','Position', [0.2 6.5 3.5 2.2])
-    colororder(newcolors)
-    hold on
-    grid on
-    box on
-    plot(vw, P_Loyd./10^3,'-','linewidth',1);
-    plot(vw, processedOutputs.P_e_avg./10^3,':s','linewidth',1,'MarkerSize',3);
-    plot(AP3.PC.ws, AP3.PC.power,':^k','linewidth',1,'MarkerSize',3);
-    ylabel('Power (kW)');
-    legend('Ideal Reel-out','QSM','6-DOF','location','southeast');
-    xlabel('Wind speed at 100m height (m/s)');
-    xlim(x_axis_limit);
-    hold off
-
    
     % Cycle timeseries plots: Pattern averages
     windSpeeds = [processedOutputs.cutIn, processedOutputs.ratedWind, processedOutputs.cutOut];
