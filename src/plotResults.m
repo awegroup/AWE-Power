@@ -1,5 +1,5 @@
-function [] = plotResults(inputs, processedOutputs)    
-    
+function [] = plotResults(inputs, processedOutputs)        
+
     %% Plot settings
     vw = inputs.vw_ref;
     x_axis_limit = [0 processedOutputs.vw_100m_operRange(end)];
@@ -266,7 +266,7 @@ function [] = plotResults(inputs, processedOutputs)
         legend('TextColor', 'k', 'Color', 'w'); % 'TextColor' sets the text color, 'Color' sets the background color      
         xlim([0 processedOutputs.cyclePowerRep(i).t_inst(end)]);
         ylim([1.5*min(processedOutputs.cyclePowerRep(i).P_e_inst) 1.05*max(processedOutputs.cyclePowerRep(i).P_m_inst)]);
-        title(strcat('Wind speed at 100m:', num2str(processedOutputs.cyclePowerRep(idx).ws), ' m/s'));      
+        title(strcat('Wind speed at 100m:', num2str(processedOutputs.cyclePowerRep(i).ws), ' m/s'));      
         hold off
     end
 

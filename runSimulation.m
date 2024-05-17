@@ -9,7 +9,10 @@ addpath(genpath([pwd '\outputFiles']));
 addpath(genpath([pwd '\src']));
 
 % Load defined input sheet
-inputSheet_Example;
+% inputSheet_Example;
+inputSheet_MW_scale;
+% inputSheet_AWEC2024_ParamStudy;
+
 
 % Enter your defined input sheet name as an argument 
 [inputs, outputs, optimDetails, processedOutputs] = main(inputs);

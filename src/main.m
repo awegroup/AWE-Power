@@ -71,9 +71,9 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
   processedOutputs.ratedPower = outputs.P_e_avg(vw==temp4(1));
 
   %% Cut-out wind speed
-  processedOutputs.cutOut   = 25; % At operational height (Assumption)
   % Operating range traslated to wind speed at ref. height
-  processedOutputs.vw_100m_operRange = vw(mean(outputs.vw,2)<=processedOutputs.cutOut);
+  processedOutputs.vw_100m_operRange = vw(mean(outputs.vw,2)<=25); % Cut-out at 25m/s at operational height (Assumption)
+  processedOutputs.cutOut   = processedOutputs.vw_100m_operRange(end);
 
   %% Extract feasible results in the operational range
   processedOutputs.Dia_te = outputs.d_t;
@@ -184,17 +184,7 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
 
   %% Save outputs
     
-  % Define the folder name
-  folderName = 'outputFiles';
-  
-  % Check if the folder already exists
-  if exist(folderName, 'dir')
-      fprintf('Outputs saved in the already existing Folder "%s".\n', folderName);
-  else
-      % Create the folder
-      mkdir(folderName);
-      fprintf('Outputs saved in a created Folder "%s".\n', folderName);
-  end
+  mkdir 'outputFiles';
 
   % Change names to associate with specific input file
   save(['outputFiles\' inputs.name '_' 'optimDetails' '.mat'], 'optimDetails');

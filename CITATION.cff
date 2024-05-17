@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: If you use this software, please cite the repository.
+authors:
+  - family-names: Joshi
+    given-names: Rishikesh 
+    affiliation: Delft University of Technology
+    orcid: 0000-0003-1401-9127
+title: FixedWingGG-Power
+year: 2024
+version: 0.1.0
+doi:
+repository-code: https://github.com/awegroup/FixedWingGG-Power
+license: MIT
