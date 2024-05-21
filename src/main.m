@@ -78,7 +78,7 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
   %% Extract feasible results in the operational range
   processedOutputs.Dia_te = outputs.d_t;
    for i=1:length(vw)
-      if vw(i)>=processedOutputs.cutIn
+      if vw(i)>=processedOutputs.cutIn && vw(i)<=processedOutputs.cutOut
           processedOutputs.vw(i,:)           = outputs.vw(i,:);
           processedOutputs.vw_i(i,:)         = outputs.vw_i(i,:);
           processedOutputs.m_k               = outputs.m_k;  
@@ -159,7 +159,7 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
   end
 
   %% Cycle power representation for wind speeds in the operational range
-  for i = processedOutputs.cutIn:vw(end)
+  for i = processedOutputs.cutIn:processedOutputs.cutOut
     [processedOutputs.cyclePowerRep(i)] = createCyclePowerRep(i,processedOutputs); 
   end
   function [cyclePowerRep] = createCyclePowerRep(ws, system)

@@ -1,8 +1,9 @@
 function [] = plotResults(inputs, processedOutputs)        
 
     %% Plot settings
-    vw = inputs.vw_ref;
-    x_axis_limit = [0 processedOutputs.vw_100m_operRange(end)];
+%     vw = inputs.vw_ref;
+    vw = processedOutputs.vw_100m_operRange;
+   % x_axis_limit = [0 processedOutputs.vw_100m_operRange(end)];
 
     newcolors = [ % 0.25, 0.25, 0.25
       0 0.4470 0.7410
@@ -90,8 +91,6 @@ function [] = plotResults(inputs, processedOutputs)
     ylabel('(-)');
     legend('λ','f_{o}','f_{i}','location','northwest');
     xlabel('Wind speed at 100m height (m/s)');
-    xlim(x_axis_limit);
-    %ylim([0 160]);
     hold off
 
     % CL
@@ -105,8 +104,6 @@ function [] = plotResults(inputs, processedOutputs)
     ylabel('(-)');
     legend('C_{L,o}','C_{L,i}','location','northwest','Orientation','vertical');
     xlabel('Wind speed at 100m height (m/s)');
-    xlim(x_axis_limit);
-    %ylim([0 160]);
     hold off
 
     % CD
@@ -123,8 +120,6 @@ function [] = plotResults(inputs, processedOutputs)
     ylabel('(-)');
     legend('C_{D,o}','C_{D,i}','C_{D,k,o}','C_{D,k,i}','C_{D,t}','location','northwest','Orientation','vertical');
     xlabel('Wind speed at 100m height (m/s)');
-    xlim(x_axis_limit);
-    %ylim([0 160]);
     hold off
 
 
@@ -142,8 +137,6 @@ function [] = plotResults(inputs, processedOutputs)
     ylabel('(m)');
     legend('h_{p,avg}','R_{p,avg}','Δl','l_{t,max}','l_{t,0}','location','northwest','Orientation','vertical');
     xlabel('Wind speed at 100m height (m/s)');
-    xlim(x_axis_limit);
-    %ylim([0 160]);
     hold off
 
     % Roll angle, avg patt elevation
@@ -158,8 +151,6 @@ function [] = plotResults(inputs, processedOutputs)
     ylabel('(deg)');
     legend('$$\Psi$$','$$\overline{\beta}$$','$$\gamma$$','location','northwest','Orientation','vertical','Interpreter','latex');
     xlabel('Wind speed at 100m height (m/s)');
-    xlim(x_axis_limit);
-    %ylim([0 160]);
     hold off
 
     % Reel-out forces
@@ -174,8 +165,6 @@ function [] = plotResults(inputs, processedOutputs)
     ylabel('(kN)');
     legend('F_{g}','F_{a,o}','F_{t,o}','location','northwest');
     xlabel('Wind speed at 100m height (m/s)');
-    xlim(x_axis_limit);
-    %ylim([0 160]);
     hold off
 
     % Reel-in forces
@@ -190,7 +179,6 @@ function [] = plotResults(inputs, processedOutputs)
     ylabel('(kN)');
     legend('F_{g}','F_{a,i}','F_{t,i}','location','northwest');
     xlabel('Wind speed at 100m height (m/s)');
-    xlim(x_axis_limit);
     hold off
 
 
@@ -210,7 +198,6 @@ function [] = plotResults(inputs, processedOutputs)
     ylabel('(-)');
     xlabel('Wind speed at 100m height (m/s)');
     legend('t_{o}','t_{i}','t_{patt,avg}','N_{p}','location','northwest');
-    xlim(x_axis_limit);
     hold off
 
     % Reel-out power
@@ -223,10 +210,8 @@ function [] = plotResults(inputs, processedOutputs)
     plot(vw, processedOutputs.P_e_o./10^3,':s','linewidth',1,'markersize',3);
     plot(vw, processedOutputs.P_e_avg./10^3,':x','linewidth',1,'markersize',5);
     ylabel('(kW)');
-    %title('Cycle averages');
     legend('P_{m,o}','P_{e,o}','P_{e,avg}','location','northwest');
     xlabel('Wind speed at 100m height (m/s)');
-    xlim(x_axis_limit);
     hold off
 
     % Reel-in power
@@ -241,7 +226,6 @@ function [] = plotResults(inputs, processedOutputs)
     %title('Cycle averages');
     legend('P_{m,i}','P_{e,i}','location','northwest');
     xlabel('Wind speed at 100m height (m/s)');
-    xlim(x_axis_limit);
     hold off
    
     % Cycle timeseries plots: Pattern averages
@@ -291,8 +275,6 @@ function [] = plotResults(inputs, processedOutputs)
       xlim([0.5 1.5])
       xlabel('Wind Speed (-)')
       ylabel('Height (m)')
-      % saveas(gcf, fullfile(directory, ['vert_wind_prof', '.fig']));
-      % print(gcf, fullfile(directory, ['vert_wind_prof', '.eps']), '-depsc2');
       hold off
     else
 
