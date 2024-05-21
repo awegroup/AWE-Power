@@ -161,7 +161,7 @@ function [inputs] = computePower(i,inputs)
         outputs.etaGen_o(i,j)  = (inputs.etaGen.param(1)*(outputs.vk_r(i,j)/inputs.etaGen.v_max)^3 + ...
                                       inputs.etaGen.param(2)*(outputs.vk_r(i,j)/inputs.etaGen.v_max)^2 + ...
                                         inputs.etaGen.param(3)*(outputs.vk_r(i,j)/inputs.etaGen.v_max)+inputs.etaGen.param(4))^sign(1);
-        outputs.P_e_o_eff(i,j) = outputs.P_m_o_eff(i,j)*inputs.etaGearbox*outputs.etaGen_o(i,j)*inputs.etaPE;
+        outputs.P_e_o_eff(i,j) = outputs.P_m_o_eff(i,j)*inputs.etaGearbox*outputs.etaGen_o(i,j)*inputs.etaPE*inputs.etaSto*inputs.etaPE;
 
         %% Retraction Phase
         % Kite position in spherical coordinates
@@ -289,38 +289,5 @@ function [inputs] = computePower(i,inputs)
         % Mechanical cycle power - without drivetrain eff
         outputs.P_m_avg(i) = (sum(outputs.to_eff(i,:).*outputs.P_m_o_eff(i,:)) + outputs.t1(i)*outputs.P1_m_o(i) - ...
                                      sum(outputs.ti_eff(i,:).*outputs.P_m_i_eff(i,:)) - outputs.t2(i)*outputs.P2_m_i(i))/outputs.tCycle(i);
-
-        %% Drivetrain sizing
-
-%         % Cycle representation
-%       
-%       outputs.cyclePowerRep(i).t1     = round(outputs.t1(i),2);
-%       outputs.cyclePowerRep(i).to_eff = round(sum(outputs.to_eff(i,:),2),2);
-%       outputs.cyclePowerRep(i).t2     = round(outputs.t2(i),2);
-%       outputs.cyclePowerRep(i).ti_eff = round(sum(outputs.ti_eff(i,:),2),2);
-%       outputs.cyclePowerRep(i).to     = outputs.cyclePowerRep(i).t1 + outputs.cyclePowerRep(i).to_eff; %[s]
-%       outputs.cyclePowerRep(i).ti     = outputs.cyclePowerRep(i).t2 + outputs.cyclePowerRep(i).ti_eff; %[s]
-%       outputs.cyclePowerRep(i).tCycle = outputs.cyclePowerRep(i).to + outputs.cyclePowerRep(i).to; %[s]
-%       
-%       outputs.cyclePowerRep(i).t_inst   = cumsum([0 outputs.cyclePowerRep(i).t1 (outputs.cyclePowerRep(i).to_eff-outputs.cyclePowerRep(i).t1) outputs.cyclePowerRep(i).t1 ...
-%                                 outputs.cyclePowerRep(i).t2 (outputs.cyclePowerRep(i).ti_eff-outputs.cyclePowerRep(i).t2) outputs.cyclePowerRep(i).t2]);
-%   
-%       outputs.cyclePowerRep(i).P_e_inst = [0 outputs.P_e_o_eff(i,1) outputs.P_e_o_eff(i,end) 0 ...
-%                                 -outputs.P_e_i_eff(i,end) -outputs.P_e_i_eff(i,1) 0];
-%   
-%       outputs.cyclePowerRep(i).P_m_inst = [0 outputs.P_m_o_eff(i,1) outputs.P_m_o_eff(i,end) 0 ...
-%                                 -outputs.P_m_i_eff(i,end) -outputs.P_m_i_eff(i,1) 0];
-%     
-%       
-%       for j=1:length(outputs.cyclePowerRep(i).P_m_inst)-1
-%        % if outputs.cyclePowerRep(i).P_m_inst(j) > outputs.P_m_avg(i)
-%           outputs.toStorage_instP(i,j) = outputs.cyclePowerRep(i).P_m_inst(j) - outputs.P_m_avg(i);
-%           outputs.toStorage_instE(i,j) = outputs.toStorage_instP(i,j)*(outputs.cyclePowerRep(i).t_inst(j+1)-outputs.cyclePowerRep(i).t_inst(j));
-%           outputs.toGrid_instP(i,j)    = outputs.P_m_avg(i)*(outputs.cyclePowerRep(i).t_inst(j+1)-outputs.cyclePowerRep(i).t_inst(j));
-% %         else
-% %           outputs.toStorage_instP(i,j) = outputs.cyclePowerRep(i).P_m_inst(j) - outputs.P_m_avg(i);
-% %           outputs.toGrid_instE(i,j)    = outputs.P_m_avg(i);  
-% %         end
-%       end
 
 end      

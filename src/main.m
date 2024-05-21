@@ -59,18 +59,18 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
   %% Post processing
   vw = inputs.vw_ref; % Wind speed at ref. height
 
-  %% Cut-in wind speed
+  %% Cut-in wind speed defined at ref. height of 100m
   % Glide ratio constraint violation acceptance for feasible solution
   temp1                  = vw(abs(mean((outputs.E_result - outputs.E),2)) < 0.01); %0.01
   processedOutputs.cutIn = max(temp1(1));
 
-  %% Rated wind and power
+  %% Rated wind and power defined at ref. height of 100m
   temp3                       = round(outputs.P_e_avg./max(outputs.P_e_avg),2);
   temp4                       = vw(temp3>=0.99);
   processedOutputs.ratedWind  = temp4(1); % At Reference height 
   processedOutputs.ratedPower = outputs.P_e_avg(vw==temp4(1));
 
-  %% Cut-out wind speed
+  %% Cut-out wind speed defined at ref. height of 100m
   % Operating range traslated to wind speed at ref. height
   processedOutputs.vw_100m_operRange = vw(mean(outputs.vw,2)<=25); % Cut-out at 25m/s at operational height (Assumption)
   processedOutputs.cutOut   = processedOutputs.vw_100m_operRange(end);
@@ -147,6 +147,9 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
           processedOutputs.cycleEff_mech(i)  = (processedOutputs.P_m_avg(i)*processedOutputs.tCycle(i))/...
                                                     (processedOutputs.P_m_o(i)*processedOutputs.to(i));
 
+          % Intermediate storage (Ultracapacitor) sizing for power smoothing
+          processedOutputs.ultraCapSize(i)   = processedOutputs.P_m_avg(i)*processedOutputs.ti(i)/3.6e6;  %[kWh]
+
           
           % Coefficient of power (Cp) as defined for HAWTs
           processedOutputs.sweptArea(i,:)     = pi().*((outputs.Rp(i,:)+inputs.b/2).^2 - (outputs.Rp(i,:)-inputs.b/2).^2);
@@ -181,6 +184,8 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
                               -system.P_m_i_eff(cyclePowerRep.idx,end) -system.P_m_i_eff(cyclePowerRep.idx,1) 0]./10^3;
     
   end
+
+  
 
   %% Save outputs
     

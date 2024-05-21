@@ -46,8 +46,8 @@ inputs.a_d_max       = 5; %[m/s^2]
 
 inputs.etaGen.param   = [0.671, -1.4141, 0.9747, 0.7233]; %[-]
 inputs.etaGen.v_max   = inputs.v_d_max; %[m/s] % Or can enter a value from supplier
-inputs.etaGearbox     = 0.9; %[-]
-inputs.etaSto         = 0.9; %[-]
+inputs.etaGearbox     = 0.95; %[-]
+inputs.etaSto         = 0.95; %[-]
 inputs.etaPE          = 0.95; %[-] % Power electronics
 
 inputs.gravity        = 9.81; %[m/s^2]
