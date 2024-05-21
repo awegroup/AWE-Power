@@ -1,4 +1,6 @@
 # FixedWingGG-Power
+![GitHub License](https://img.shields.io/github/license/awegroup/FixedWingGG-Power)
+![Static Badge](https://img.shields.io/badge/MATLAB-R2021b-blue)
 
 A quasi-steady model simulating the reel-out and reel-in phases of fixed-wing ground-generation airborne wind energy systems. The model is formulated as an optimisation problem where the net electrical cycle power of a system is maximised for given wind conditions.
 
