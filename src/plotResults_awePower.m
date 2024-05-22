@@ -1,4 +1,4 @@
-function [] = plotResults(inputs, processedOutputs)        
+function [] = plotResults_awePower(inputs, processedOutputs)        
 
     %% Plot settings
 %     vw = inputs.vw_ref;

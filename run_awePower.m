@@ -15,5 +15,5 @@ inputSheet_Example;
 
 
 % Enter your defined input sheet name as an argument 
-[inputs, outputs, optimDetails, processedOutputs] = main(inputs);
+[inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputs);
 

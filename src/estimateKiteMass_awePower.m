@@ -1,4 +1,4 @@
-function [m_k] = estimateKiteMass(Ft_max, S, AR)
+function [m_k] = estimateKiteMass_awePower(Ft_max, S, AR)
 
   % Vincent Bonnin's simple mass model developed at Ampyx Power. Based on AP3 data and projected data for larger systems (AP4-AP5)      
   a1     = 0.002415;       a2     = 0.0090239;       b1     = 0.17025;       b2     = 3.2493;

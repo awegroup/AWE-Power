@@ -1,4 +1,4 @@
-function [c, ceq] = optConstraints(i,inputs)
+function [c, ceq] = optConstraints_awePower(i,inputs)
   
   global outputs
    

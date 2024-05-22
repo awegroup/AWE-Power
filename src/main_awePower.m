@@ -1,11 +1,11 @@
-function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
+function [inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputs)
 
 
   %% Kite mass 
     if inputs.massOverride == 1
       kiteMass = inputs.kiteMass;
     else
-      kiteMass = estimateKiteMass(inputs.Ft_max, inputs.S, inputs.AR); 
+      kiteMass = estimateKiteMass_awePower(inputs.Ft_max, inputs.S, inputs.AR); 
     end
 
   %% Optimisation
@@ -32,14 +32,14 @@ function [inputs, outputs, optimDetails, processedOutputs] = main(inputs)
     %   options.MaxIterations             = 500*numel(x0);
  
     
-    con = @(x) optConstraints(i,inputs);
-    obj = @(x) optObjective(x,i,inputs,kiteMass);
+    con = @(x) optConstraints_awePower(i,inputs);
+    obj = @(x) optObjective_awePower(x,i,inputs,kiteMass);
 
     
     [x,~,exitflag(i),optHist(i),lambda(i)] = fmincon(obj,x0,[],[],[],[],lb,ub,con,options);
 
     % Storing final results
-    [~,inputs,outputs] = optObjective(x,i,inputs,kiteMass);
+    [~,inputs,outputs] = optObjective_awePower(x,i,inputs,kiteMass);
 
     % Changing initial guess if previous wind speed evaluation is considered infeasible
     if abs(mean((outputs.E_result - outputs.E),2)) > 1 %0.01 

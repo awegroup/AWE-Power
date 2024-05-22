@@ -18,5 +18,5 @@ load("outputFiles\inputSheet_Example_processedOutputs.mat");
 % load("outputFiles\inputSheet_MW_scale_EcoModel_processedOutputs.mat");
 
 % Run 
-plotResults(inputs, processedOutputs);
+plotResults_awePower(inputs, processedOutputs);
 

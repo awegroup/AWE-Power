@@ -1,4 +1,4 @@
-function [inputs] = computePower(i,inputs)
+function [inputs] = computePower_awePower(i,inputs)
     
    global outputs
     
