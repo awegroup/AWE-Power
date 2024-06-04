@@ -1,5 +1,6 @@
 function [inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputs)
-
+  
+   clear global outputs
 
   %% Kite mass 
     if inputs.massOverride == 1
@@ -61,8 +62,8 @@ function [inputs, outputs, optimDetails, processedOutputs] = main_awePower(input
 
   %% Cut-in wind speed defined at ref. height of 100m
   % Glide ratio constraint violation acceptance for feasible solution
-  temp1                  = vw(abs(mean((outputs.E_result - outputs.E),2)) < 0.01); %0.01
-  processedOutputs.cutIn = max(temp1(1));
+  temp2 = vw(abs(diff(mean((outputs.E_result - outputs.E),2))) < 0.01);
+  processedOutputs.cutIn = temp2(1);
 
   %% Rated wind and power defined at ref. height of 100m
   temp3                       = round(outputs.P_e_avg./max(outputs.P_e_avg),2);
@@ -72,7 +73,7 @@ function [inputs, outputs, optimDetails, processedOutputs] = main_awePower(input
 
   %% Cut-out wind speed defined at ref. height of 100m
   % Operating range traslated to wind speed at ref. height
-  processedOutputs.vw_100m_operRange = vw(mean(outputs.vw,2)<=25); % Cut-out at 25m/s at operational height (Assumption)
+  processedOutputs.vw_100m_operRange = processedOutputs.cutIn:max(vw(mean(outputs.vw,2)<=25)); % Cut-out at 25m/s at operational height (Assumption)
   processedOutputs.cutOut   = processedOutputs.vw_100m_operRange(end);
 
   %% Extract feasible results in the operational range
@@ -195,5 +196,7 @@ function [inputs, outputs, optimDetails, processedOutputs] = main_awePower(input
   save(['outputFiles\' inputs.name '_' 'optimDetails' '.mat'], 'optimDetails');
   save(['outputFiles\' inputs.name '_' 'outputs' '.mat'], 'outputs');
   save(['outputFiles\' inputs.name '_' 'processedOutputs' '.mat'], 'processedOutputs');
+
+  clear global outputs
 
 end
