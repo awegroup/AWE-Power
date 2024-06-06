@@ -148,8 +148,8 @@ function [inputs, outputs, optimDetails, processedOutputs] = main_awePower(input
           processedOutputs.cycleEff_mech(i)  = (processedOutputs.P_m_avg(i)*processedOutputs.tCycle(i))/...
                                                     (processedOutputs.P_m_o(i)*processedOutputs.to(i));
 
-          % Intermediate storage (Ultracapacitor) sizing for power smoothing
-          processedOutputs.ultraCapSize(i)   = processedOutputs.P_m_avg(i)*processedOutputs.ti(i)/3.6e6;  %[kWh]
+          % Intermediate storage sizing for power smoothing
+          processedOutputs.storageExchange(i)   = (processedOutputs.P_m_avg(i)+processedOutputs.P_m_i(i))*processedOutputs.ti(i)/3.6e3;  %[Wh]
 
           
           % Coefficient of power (Cp) as defined for HAWTs
