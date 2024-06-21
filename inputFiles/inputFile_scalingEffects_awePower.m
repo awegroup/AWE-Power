@@ -33,7 +33,7 @@ inputs.kiteMass       = 600;                         % (Overridden) Kite mass [k
 inputs.peakM2E_F      = 2.5;                         % Peak mechanical to electric cycle power factor [-]
 
 % Tether Parameters
-inputs.Ft_max            = 600;                      % Maximum tether force [kN]
+inputs.Ft_max            = 600*1000;                 % Maximum tether force [N]
 inputs.Ft_max_SF         = 0.8;                      % Safety factor for maximum tether force
 inputs.maxTeLen          = 5000;                     % Maximum tether length [m]
 inputs.maxHeight         = 1000;                     % Maximum operational height [m]

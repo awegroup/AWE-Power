@@ -30,8 +30,8 @@ function [m_k] = estimateKiteMass_awePower(Ft_max, S, AR)
     AR_ref = 12;
 
     % Calculate intermediate values
-    a      = a1 * (Ft_max / S) + a2;
-    b      = b1 * (Ft_max / S) + b2;
+    a      = a1 * (Ft_max/1000 / S) + a2;
+    b      = b1 * (Ft_max/1000 / S) + b2;
 
     % Estimate kite mass
     m_k = 10 * (a * S^2 + b * S - k1) * (c1 * (AR / AR_ref)^2 - d1 * (AR / AR_ref) + k2); 

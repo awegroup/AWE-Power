@@ -24,7 +24,7 @@ function computePower_awePower(i,inputs)
   outputs.l_t_avg(i)         = (outputs.l_t_max(i)+outputs.l_t_min(i))/2; %[m]
   outputs.h_cycleAvg(i)      = outputs.l_t_avg(i)*cos(outputs.gamma(i))*sin(outputs.beta(i));
   outputs.h_cycleEnd(i)      = outputs.l_t_max(i)*cos(outputs.gamma(i))*sin(outputs.beta(i));
-  outputs.d_t                = sqrt(inputs.Ft_max*1000/inputs.Te_matStrength*4/pi());  
+  outputs.d_t                = sqrt(inputs.Ft_max/inputs.Te_matStrength*4/pi());  
 
   %% Discretizing the streoke length in chosen number of elements
   outputs.deltaLelems   = inputs.numDeltaLelems;
