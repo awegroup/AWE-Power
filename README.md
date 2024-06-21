@@ -1,4 +1,4 @@
-# FixedWingGG-Power
+# AWE-Power
 ![GitHub License](https://img.shields.io/github/license/awegroup/FixedWingGG-Power)
 ![Static Badge](https://img.shields.io/badge/MATLAB-R2021b-blue)
 
