@@ -1,16 +1,13 @@
-% Run the below function after successful execution of 'runSimulation.m' to plot results
+% Run this script after successful execution of 'run_awePower.m'
 
 % Add folders and subfolders to path
-addpath(genpath([pwd '\inputSheets']));
-addpath(genpath([pwd '\outputFiles'])); 
-addpath(genpath([pwd '\src']));
+addpath(genpath([pwd '/inputFiles']));
+addpath(genpath([pwd '/outputFiles'])); 
+addpath(genpath([pwd '/src']));
 
 % Load input sheet
-inputSheet_Example;
-
-% Load processed outputs
-load("outputFiles\inputSheet_Example_processedOutputs.mat");
+inputFile_example_awePower;
 
 % Run 
-plotResults_awePower(inputs, processedOutputs);
+plotResults_awePower(inputs);
 
