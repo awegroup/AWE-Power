@@ -10,5 +10,5 @@ addpath(genpath([pwd '/src']));
 inputFile_example_awePower;
 
 % Run
-[inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputs);
+[outputs, optimDetails, processedOutputs] = main_awePower(inputs);
 

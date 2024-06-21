@@ -1,4 +1,4 @@
-function [] = plotResults_awePower(inputs)        
+function plotResults_awePower(inputs)        
 
   % Load processed outputs
   load(['outputFiles/' inputs.name '_' 'processedOutputs' '.mat']);
