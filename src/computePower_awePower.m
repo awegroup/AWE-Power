@@ -49,7 +49,7 @@ function computePower_awePower(i,inputs)
     outputs.m_eff(i,j) = outputs.m_k + 0.5*outputs.m_t(i,j);
 
     % Coordinates of the Kite's position and orientation in the Spherical ref. frame
-    % Center point (representative point)
+    % Representative point for single circular maneuver
     outputs.theta(i,j) = pi()/2 - (outputs.beta(i));
     outputs.phi(i,j)   = asin(4*sin(outputs.gamma(i))/3/pi()); % Centroid of semicircle
     outputs.chi(i,j)   = pi()/2;
@@ -101,7 +101,7 @@ function computePower_awePower(i,inputs)
     % Aerodynamic force magnitude
     outputs.Fa(i,j) = outputs.halfRhoS*sqrt(outputs.CL(i,j)^2+outputs.CD(i,j)^2)*outputs.va(i,j)^2;
 
-    % Tangential kite velocity factor
+    % Tangential kite velocity 
     a = cos(outputs.theta(i,j))*cos(outputs.phi(i,j))*cos(outputs.chi(i,j))-sin(outputs.phi(i,j))*sin(outputs.chi(i,j));
     b = sin(outputs.theta(i,j))*cos(outputs.phi(i,j));
     outputs.lambda(i,j) = a + sqrt(a^2 + b^2 - 1 + outputs.kRatio(i,j)^2*(b - outputs.f(i,j))^2);
@@ -167,6 +167,7 @@ function computePower_awePower(i,inputs)
     % Effective mechanical reel-out power
     outputs.P_m_o_eff(i,j) = outputs.Ft(i,j)*outputs.vk_r(i,j); %[W]
 
+    % Mechanical power harvesting factor
     outputs.zetaMech(i,j)    = outputs.P_m_o_eff(i,j)/(outputs.halfRhoS*outputs.vw(i,j)^3);
 
     % Effective electrical reel-out power

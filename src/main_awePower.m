@@ -16,7 +16,7 @@ function [outputs, optimDetails, processedOutputs] = main_awePower(inputs)
 
   clear global outputs
 
-  %% Kite mass
+  %% Kite mass estimate
   if inputs.massOverride == 1
     kiteMass = inputs.kiteMass;
   else
@@ -24,7 +24,6 @@ function [outputs, optimDetails, processedOutputs] = main_awePower(inputs)
   end
 
   %% Optimisation
-
   % Initial guess for optimisation
   x0     = inputs.x0;
 
@@ -199,8 +198,6 @@ function [outputs, optimDetails, processedOutputs] = main_awePower(inputs)
       -system.P_m_i_eff(cyclePowerRep.idx,end) -system.P_m_i_eff(cyclePowerRep.idx,1) 0]./10^3;
 
   end
-
-
 
   %% Save outputs
   if not(isfolder('outputFiles'))
