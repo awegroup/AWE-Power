@@ -14,13 +14,13 @@ function [inputs] = computePower_awePower(i,inputs)
     outputs.d_t                = sqrt(inputs.Ft_max*1000/inputs.Te_matStrength*4/pi()); %[m] safety factor could be added (say *1.1)
     
     %% Discretizing the reel-out length in chosen number of elements
-    % Found to be not highly sensitive to the number of elements
-     outputs.deltaLelems   = inputs.numDeltaLelems; 
-     outputs.elemDeltaL(i) = outputs.deltaL(i)/outputs.deltaLelems;
+   outputs.deltaLelems   = inputs.numDeltaLelems; 
+   outputs.elemDeltaL(i) = outputs.deltaL(i)/outputs.deltaLelems;
   
      %% Assigning and evaluating a single flight state equilibrium for each length element for reel-out and reel-in phase
      for j = 1:outputs.deltaLelems
-        %% Reel-out phase:
+
+        % Reel-out phase:
         % Tether length at jth element
         if j == 1
           outputs.l_t_inCycle(i,j) = outputs.l_t_min(i) + outputs.elemDeltaL(i)/2/cos(outputs.gamma(i));
@@ -163,7 +163,7 @@ function [inputs] = computePower_awePower(i,inputs)
                                         inputs.etaGen.param(3)*(outputs.vk_r(i,j)/inputs.etaGen.v_max)+inputs.etaGen.param(4))^sign(1);
         outputs.P_e_o_eff(i,j) = outputs.P_m_o_eff(i,j)*inputs.etaGearbox*outputs.etaGen_o(i,j)*inputs.etaPE*inputs.etaSto*inputs.etaPE;
 
-        %% Retraction Phase
+        % Retraction Phase
         % Kite position in spherical coordinates
         % Reel-in is assumed to start from the top of the pattern
         outputs.theta_i(i,j) = pi()/2 - (outputs.beta(i)+outputs.gamma(i));

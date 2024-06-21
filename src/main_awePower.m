@@ -1,4 +1,4 @@
-function [inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputs)
+function [inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputs) 
   
    clear global outputs
 
@@ -29,8 +29,8 @@ function [inputs, outputs, optimDetails, processedOutputs] = main_awePower(input
     options.FiniteDifferenceType      = 'central';
     %   options.FiniteDifferenceType      = 'forward';
     options.ScaleProblem              = true; 
-    %   options.MaxFunctionEvaluations    = 5000*numel(x0);
-    %   options.MaxIterations             = 500*numel(x0);
+%       options.MaxFunctionEvaluations    = 5000*numel(x0);
+%       options.MaxIterations             = 500*numel(x0);
  
     
     con = @(x) optConstraints_awePower(i,inputs);
@@ -190,12 +190,14 @@ function [inputs, outputs, optimDetails, processedOutputs] = main_awePower(input
 
   %% Save outputs
     
-  mkdir 'outputFiles';
+  if not(isfolder('outputFiles'))
+     mkdir 'outputFiles';
+  end
 
   % Change names to associate with specific input file
-  save(['outputFiles\' inputs.name '_' 'optimDetails' '.mat'], 'optimDetails');
-  save(['outputFiles\' inputs.name '_' 'outputs' '.mat'], 'outputs');
-  save(['outputFiles\' inputs.name '_' 'processedOutputs' '.mat'], 'processedOutputs');
+  save(['outputFiles/' inputs.name '_' 'optimDetails' '.mat'], 'optimDetails');
+  save(['outputFiles/' inputs.name '_' 'outputs' '.mat'], 'outputs');
+  save(['outputFiles/' inputs.name '_' 'processedOutputs' '.mat'], 'processedOutputs');
 
   clear global outputs
 
