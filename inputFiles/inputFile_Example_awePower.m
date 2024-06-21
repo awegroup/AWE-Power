@@ -1,4 +1,4 @@
-% Input Sheet Example (AP3)
+% Input Sheet Example: AP3
 
 % Define Input Structure
 inputs      = struct();
@@ -68,14 +68,14 @@ inputs.airDensity       = 1.225;                    % Air density [kg/m^3]
 inputs.nx               = ones(1, inputs.numDeltaLelems); % For discretized stroke length
 
 % Initial Guess
-inputs.x0 = [200, deg2rad(30), deg2rad(5), 50, ...                    % stroke length, pattern elevation, cone angle, initial turning radius
+inputs.x0 = [200, deg2rad(30), deg2rad(5), 5*inputs.b, ...                    % stroke length, pattern elevation, cone angle, initial turning radius
              inputs.v_d_max * inputs.nx, ...                          % reel-in speed
              inputs.Cl_maxAirfoil * inputs.Cl_eff_F * inputs.nx, ...  % reel-in C_L
              0.8 * inputs.nx, 90 * inputs.nx, ...                     % reel-out speed, kinematic ratio
              inputs.Cl_maxAirfoil * inputs.Cl_eff_F * inputs.nx];     % reel-out C_L
 
 % Bounds for the initial guess
-inputs.lb = [50, deg2rad(1), deg2rad(1), 50, ...
+inputs.lb = [50, deg2rad(1), deg2rad(1), 5*inputs.b, ...
              1 * inputs.nx, 0.1 * inputs.nx, ...
              0.8 * inputs.nx, 1 * inputs.nx, ...
              0.1 * inputs.nx];
