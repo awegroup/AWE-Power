@@ -26,7 +26,7 @@ inputs.windProfile_vw         = inputs.v_windDataset_Cabauw;
 % System Parameters
 inputs.S                = 12;                         % Wing surface area [m^2]
 inputs.AR               = 12;                         % Aspect ratio [-]
-inputs.b                = sqrt(inputs.AR * inputs.S); % Wing span [m]
+
 inputs.P_ratedElec      = 150 * 1000;                 % Rated electrical power [W]
 inputs.massOverride     = 0;                          % Mass override toggle
 inputs.kiteMass         = 600;                        % (Overridden) Kite mass [kg]
@@ -55,7 +55,7 @@ inputs.a_d_max          = 5;                        % Maximum acceleration [m/s^
 
 % Drivetrain Efficiency Parameters
 inputs.etaGen.param     = [0.671, -1.4141, 0.9747, 0.7233]; % Generator efficiency parameters [-]
-inputs.etaGen.v_max     = inputs.v_d_max;                   % Maximum generator speed [m/s]
+
 inputs.etaGearbox       = 0.95;                             % Gearbox efficiency [-]
 inputs.etaSto           = 0.95;                             % Storage efficiency [-]
 inputs.etaPE            = 0.95;                             % Power electronics efficiency [-]
@@ -64,24 +64,4 @@ inputs.etaPE            = 0.95;                             % Power electronics 
 inputs.gravity          = 9.81;                     % Acceleration due to gravity [m/s^2]
 inputs.airDensity       = 1.225;                    % Air density [kg/m^3]
 
-% Optimisation Initialisation
-inputs.nx               = ones(1, inputs.numDeltaLelems); % For discretized stroke length
 
-% Initial Guess
-inputs.x0 = [200, deg2rad(30), deg2rad(5), 5*inputs.b, ...                    % stroke length, pattern elevation, cone angle, initial turning radius
-             inputs.v_d_max * inputs.nx, ...                          % reel-in speed
-             inputs.Cl_maxAirfoil * inputs.Cl_eff_F * inputs.nx, ...  % reel-in C_L
-             0.8 * inputs.nx, 90 * inputs.nx, ...                     % reel-out speed, kinematic ratio
-             inputs.Cl_maxAirfoil * inputs.Cl_eff_F * inputs.nx];     % reel-out C_L
-
-% Bounds for the initial guess
-inputs.lb = [50, deg2rad(1), deg2rad(1), 5*inputs.b, ...
-             1 * inputs.nx, 0.1 * inputs.nx, ...
-             0.8 * inputs.nx, 1 * inputs.nx, ...
-             0.1 * inputs.nx];
-
-inputs.ub = [500, deg2rad(90), deg2rad(60), 10*inputs.b, ...
-             inputs.v_d_max * inputs.nx, ...
-             inputs.Cl_maxAirfoil * inputs.Cl_eff_F * inputs.nx, ...
-             inputs.v_d_max * inputs.nx, 200 * inputs.nx, ...
-             inputs.Cl_maxAirfoil * inputs.Cl_eff_F * inputs.nx];

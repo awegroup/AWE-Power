@@ -1,0 +1,37 @@
+name: inputFile_example_awePower
+numDeltaLelems: 5
+FgToggle: 1
+vertWindProfile: 0
+vw_ref: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+h_ref: 100
+windShearExp: 0.143
+h_windDataset: [10, 20, 40, 60, 80, 100, 120, 140, 150, 160, 180, 200, 220, 250, 300, 500, 600]
+v_windDataset_Cabauw: [0.5412, 0.6074, 0.7686, 0.8685, 0.9414, 1, 1.0481, 1.0864, 1.1028, 1.1172, 1.1441, 1.1657, 1.1839, 1.2065, 1.2327, 1.2666, 1.2641]
+v_windDataset_Ijmuiden: [0.8476, 0.8706, 0.9272, 0.9593, 0.9823, 1, 1.0138, 1.0236, 1.0277, 1.0308, 1.0366, 1.0403, 1.0428, 1.0450, 1.0446, 1.0247, 1.0108]
+S: 12
+AR: 12
+P_ratedElec: 150000
+massOverride: 0
+kiteMass: 600
+peakM2E_F: 2.5
+Ft_max: 42000
+Ft_max_SF: 0.9
+maxTeLen: 1000
+maxHeight: 1000
+minGroundClear: 100
+Te_matStrength: 700000000
+Te_matDensity: 980
+Cl_maxAirfoil: 2.5
+Cl_eff_F: 0.8
+Cl0_airfoil: 0.65
+e: 0.6
+Cd0: 0.056
+Cd_c: 1.2
+v_d_max: 20
+a_d_max: 5
+etaGen_param: [0.671, -1.4141, 0.9747, 0.7233]
+etaGearbox: 0.95
+etaSto: 0.95
+etaPE: 0.95
+gravity: 9.81
+airDensity: 1.225
