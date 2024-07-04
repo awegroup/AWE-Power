@@ -42,8 +42,8 @@ function [outputs, optimDetails, processedOutputs] = main_awePower(inputs)
     options.FiniteDifferenceType      = 'central';
     %   options.FiniteDifferenceType      = 'forward';
     options.ScaleProblem              = true;
-    %       options.MaxFunctionEvaluations    = 5000*numel(x0);
-    %       options.MaxIterations             = 500*numel(x0);
+%           options.MaxFunctionEvaluations    = 5000*numel(x0);
+%           options.MaxIterations             = 500*numel(x0);
 
 
     con = @(x) optConstraints_awePower(i,inputs);
@@ -77,7 +77,7 @@ function [outputs, optimDetails, processedOutputs] = main_awePower(inputs)
   % Glide ratio constraint violation acceptance for feasible solution
   temp1                  = vw(abs(diff(mean((outputs.E_result - outputs.E),2))) < 0.01);
   processedOutputs.cutIn = temp1(1);
-
+ 
   %% Rated wind and power defined at ref. height of 100m
   temp2                       = round(outputs.P_e_avg./max(outputs.P_e_avg),2);
   temp3                       = vw(temp2>=0.99);

@@ -31,7 +31,7 @@ function plotResults_awePower(inputs)
   plot(processedOutputs.Rp(ws,:),':o','linewidth',1,'markersize',3);
   plot(processedOutputs.l_t_inCycle(ws,:),':^','linewidth',1,'markersize',3);
   plot(processedOutputs.h_inCycle(ws,:),':s','linewidth',1,'markersize',3);
-  ylabel('Length (m)');
+  ylabel('Linear dimensions (m)');
   legend('R_{p}','l_{t}','h_{p}','location','northwest');
   hold off
   % Speeds
@@ -47,7 +47,7 @@ function plotResults_awePower(inputs)
   yyaxis right
   plot(processedOutputs.vw(ws,:),':s','linewidth',1,'markersize',3);
   plot(processedOutputs.vw_i(ws,:),':v','linewidth',1,'markersize',3);
-  ylabel('Wind speed (m/s)');
+  ylabel('Wind speed (ms^{-1})');
   legend('λ','f_o','f_i','v_{w,o}','v_{w,i}','location','northwest');
   hold off
   % Glide ratios
@@ -79,8 +79,8 @@ function plotResults_awePower(inputs)
   han.XLabel.Visible='on';
   han.YLabel.Visible='off';
   ylabel(han,'yourYLabel');
-  xlabel(han,'Discretized reeling distance over cycle');
-  title(han,['Wind speed at 100 m = ' num2str(ws) 'm/s']);
+  xlabel(han,'Reel out phase segment');
+  title(han,['Wind speed at 100 m = ' num2str(ws) 'ms^{-1}']);
 
   % Speeds
   figure('units','inch','Position', [0.2 0.5 3.5 2.2])
@@ -93,7 +93,7 @@ function plotResults_awePower(inputs)
   plot(vw, calcRowMean(processedOutputs.f_i, cutIn),':v','linewidth',1,'markersize',3);
   ylabel('Velocity factors (-)');
   legend('λ','f_{o}','f_{i}','location','northwest');
-  xlabel('Wind speed at 100 m height (m/s)');
+  xlabel('Wind speed at 100 m height (ms^{-1})');
   xlim(x_axis_limit)
   hold off
 
@@ -107,7 +107,7 @@ function plotResults_awePower(inputs)
   plot(vw, calcRowMean(processedOutputs.CL_i, cutIn),'d:','linewidth',1,'markersize',3);
   ylabel('Lift coefficient (-)');
   legend('C_{L,o}','C_{L,i}','location','northwest','Orientation','vertical');
-  xlabel('Wind speed at 100 m height (m/s)');
+  xlabel('Wind speed at 100 m height (ms^{-1})');
   xlim(x_axis_limit)
   hold off
 
@@ -124,7 +124,7 @@ function plotResults_awePower(inputs)
   plot(vw, calcRowMean(processedOutputs.CD_t, cutIn),'s:','linewidth',1,'markersize',3);
   ylabel('Drag coefficient (-)');
   legend('C_{D,o}','C_{D,i}','C_{D,k,o}','C_{D,k,i}','C_{D,t}','location','northwest','Orientation','vertical');
-  xlabel('Wind speed at 100 m height (m/s)');
+  xlabel('Wind speed at 100 m height (ms^{-1})');
   xlim(x_axis_limit)
   hold off
 
@@ -140,9 +140,9 @@ function plotResults_awePower(inputs)
   plot(vw, processedOutputs.deltaL(cutIn:end),'^:','linewidth',1,'markersize',3);
   plot(vw, processedOutputs.l_t_max(cutIn:end),'s:','linewidth',1,'markersize',3);
   plot(vw, processedOutputs.l_t_min(cutIn:end),'x:','linewidth',1,'markersize',3);
-  ylabel('Lengths (m)');
-  legend('h_{p,avg}','R_{p,avg}','Δl','l_{t,max}','l_{t,0}','location','northwest','Orientation','vertical');
-  xlabel('Wind speed at 100 m height (m/s)');
+  ylabel('Linear dimensions (m)');
+  legend('h_{p,avg}','R_{p,avg}','Δl','l_{t,max}','l_{t,min}','location','northwest','Orientation','vertical');
+  xlabel('Wind speed at 100 m height (ms^{-1})');
   xlim(x_axis_limit)
   hold off
 
@@ -155,9 +155,9 @@ function plotResults_awePower(inputs)
   plot(vw, calcRowMean(processedOutputs.rollAngle, cutIn),'s:','linewidth',1,'markersize',3);
   plot(vw, processedOutputs.beta(cutIn:end),'o:','linewidth',1,'markersize',3);
   plot(vw, processedOutputs.gamma(cutIn:end),'d:','linewidth',1,'markersize',3);
-  ylabel('Angles (deg.)');
+  ylabel('Angular variables (deg.)');
   legend('$$\Psi_\mathrm{p}$$','$$\beta_\mathrm{p}$$','$$\gamma_\mathrm{p}$$','location','northwest','Orientation','vertical','Interpreter','latex');
-  xlabel('Wind speed at 100 m height (m/s)');
+  xlabel('Wind speed at 100 m height (ms^{-1})');
   xlim(x_axis_limit)
   hold off
 
@@ -172,7 +172,7 @@ function plotResults_awePower(inputs)
   plot(vw, calcRowMean(processedOutputs.Ft, cutIn)./10^3,':^','linewidth',1,'markersize',3);
   ylabel('Force (kN)');
   legend('F_{g}','F_{a,o}','F_{t,o}','location','northwest');
-  xlabel('Wind speed at 100 m height (m/s)');
+  xlabel('Wind speed at 100 m height (ms^{-1})');
   xlim(x_axis_limit)
   hold off
 
@@ -187,7 +187,7 @@ function plotResults_awePower(inputs)
   plot(vw, calcRowMean(processedOutputs.Ft_i, cutIn)./10^3,':^','linewidth',1,'markersize',3);
   ylabel('Force (kN)');
   legend('F_{g}','F_{a,i}','F_{t,i}','location','northwest');
-  xlabel('Wind speed at 100 m height (m/s)');
+  xlabel('Wind speed at 100 m height (ms^{-1})');
   xlim(x_axis_limit)
   hold off
 
@@ -205,8 +205,8 @@ function plotResults_awePower(inputs)
   ylabel('Time durations (s)');
   yyaxis right
   plot(vw, calcRowMean(processedOutputs.numOfPatt,cutIn),':^','linewidth',1,'markersize',3);
-  ylabel('Number of patterns(-)');
-  xlabel('Wind speed at 100 m height (m/s)');
+  ylabel('Number of patterns (-)');
+  xlabel('Wind speed at 100 m height (ms^{-1})');
   legend('t_{o}','t_{i}','t_{patt,avg}','N_{p}','location','northwest');
   xlim(x_axis_limit)
   hold off
@@ -223,9 +223,13 @@ function plotResults_awePower(inputs)
   [~, maxIndex] = max(round(mean(processedOutputs.Ft,2)));
   xline(maxIndex(1));
   xline(processedOutputs.ratedWind);
+  % Add text boxes without borders
+  text(1, 0.5, 'I', 'FontSize', 12, 'EdgeColor', 'none');
+  text(3, 0.5, 'II', 'FontSize', 12, 'EdgeColor', 'none');
+  text(5, 0.5, 'III', 'FontSize', 12, 'EdgeColor', 'none');
   ylabel('Power (kW)');
   legend('P_{m,o}','P_{e,o}','P_{e,avg}','location','northwest');
-  xlabel('Wind speed at 100 m height (m/s)');
+  xlabel('Wind speed at 100 m height (ms^{-1})');
   xlim(x_axis_limit)
   hold off
 
@@ -240,7 +244,7 @@ function plotResults_awePower(inputs)
   ylabel('Power (kW)');
   %title('Cycle averages');
   legend('P_{m,i}','P_{e,i}','location','northwest');
-  xlabel('Wind speed at 100 m height (m/s)');
+  xlabel('Wind speed at 100 m height (ms^{-1})');
   xlim(x_axis_limit)
   hold off
  
@@ -266,13 +270,13 @@ function plotResults_awePower(inputs)
       legend('TextColor', 'k', 'Color', 'w'); % 'TextColor' sets the text color, 'Color' sets the background color      
       xlim([0 processedOutputs.cyclePowerRep(i).t_inst(end)]);
       ylim([1.5*min(processedOutputs.cyclePowerRep(i).P_e_inst) 1.05*max(processedOutputs.cyclePowerRep(i).P_m_inst)]);
-      title(strcat('Wind speed at 100 m:', num2str(i), ' m/s'));      
+      title(strcat('Wind speed at 100 m:', num2str(i), ' ms^{-1}'));      
       hold off
   end
 
   % Wind profile
   if inputs.vertWindProfile == 0
-    Vref = 10; % m/s
+    Vref = 10; % ms^{-1}
     z = 10:10:600; % m
     V = Vref * (z/inputs.h_ref).^inputs.windShearExp/Vref;
     %   MegAWES Onshore location Cabauw. Wind speeds normalized with value at 100 m. Profiles from: https://doi.org/10.1016/j.renene.2022.06.094
@@ -304,7 +308,7 @@ function plotResults_awePower(inputs)
     box on
     grid on
     plot(inputs.windProfile_vw, inputs.windProfile_h, 'o', V_interpolated, heights, '-');
-    xlabel('Wind speed (m/s)');
+    xlabel('Wind speed (ms^{-1})');
     ylabel('Height (m)');
     xlim([0.5 1.5])
     title('Wind profile');
