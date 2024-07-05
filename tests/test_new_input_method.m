@@ -1,7 +1,10 @@
-function [testResult] = test_new_input_method(newInputs)
+function [testResult] = test_new_input_method()
 
   inputFile_example_awePower;
 
-  testResult = isequal(inputs, newInputs);
+  yamlInputs = loadInputs('inputFile_example_awePower.yml');
+  yamlInputs = appendInputs(yamlInputs);
+
+  testResult = isequal(inputs, yamlInputs);
 
 end

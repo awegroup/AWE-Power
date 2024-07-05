@@ -9,14 +9,13 @@ addpath(genpath([pwd '/lib']));
 addpath(genpath([pwd '/tests']));
 
 % Load defined input file
-% inputFile_example_awePower;
+inputs = loadInputs('inputFile_example_awePower.yml');
 
-newInputs = loadInputs('inputs.yml');
-newInputs = appendInputs(newInputs);
 
-test_new_input_method(newInputs)
+% Test to check inputs
+test_new_input_method()
 
 
 % Run
-[outputs, optimDetails, processedOutputs] = main_awePower(newInputs);
+[outputs, optimDetails, processedOutputs] = main_awePower(inputs);
 

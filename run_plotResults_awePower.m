@@ -5,12 +5,12 @@ addpath(genpath([pwd '/inputFiles']));
 addpath(genpath([pwd '/outputFiles'])); 
 addpath(genpath([pwd '/src']));
 
-% Load input sheet
-% inputFile_example_awePower;
+% Load input file
+inputs = loadInputs('inputFile_example_awePower.yml');
 
-newInputs = loadInputs('inputs.yml');
-newInputs = appendInputs(newInputs);
+% Append dependent inputs
+inputs = appendInputs(inputs);
 
 % Run 
-plotResults_awePower(newInputs);
+plotResults_awePower(inputs);
 

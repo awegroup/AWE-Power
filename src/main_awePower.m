@@ -16,6 +16,9 @@ function [outputs, optimDetails, processedOutputs] = main_awePower(inputs)
 
   clear global outputs
 
+  %% Append dependent inputs
+  inputs = appendInputs(inputs);
+
   %% Kite mass estimate
   if inputs.massOverride == 1
     kiteMass = inputs.kiteMass;
