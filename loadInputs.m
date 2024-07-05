@@ -6,6 +6,17 @@ function inputs = loadInputs(yamlFilePath)
     
     % Read the YAML file
     yamlData = yaml.ReadYaml(yamlFilePath);
+
+    % Get all field names
+    fields = fieldnames(yamlData);
+    
+    % Loop through each field and convert cell arrays to double arrays
+    for i = 1:numel(fields)
+        field = fields{i};
+        if iscell(yamlData.(field))
+            yamlData.(field) = cell2mat(yamlData.(field));
+        end
+    end
     
     % Populate the inputs structure
     inputs = struct();

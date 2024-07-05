@@ -6,8 +6,11 @@ addpath(genpath([pwd '/outputFiles']));
 addpath(genpath([pwd '/src']));
 
 % Load input sheet
-inputFile_example_awePower;
+% inputFile_example_awePower;
+
+newInputs = loadInputs('inputs.yml');
+newInputs = appendInputs(newInputs);
 
 % Run 
-plotResults_awePower(inputs);
+plotResults_awePower(newInputs);
 
