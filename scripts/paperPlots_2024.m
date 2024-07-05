@@ -34,24 +34,6 @@ xlabel('Wind speed at 100 m height (ms^{-1})');
 xlim([1 processedOutputs.vw_100m_operRange(end)]);
 hold off
 
-%% Comparison with Skysails
-
-fig = openfig('skysails07.fig');
-hold on;
-box on;
-plot(vw, processedOutputs.P_e_avg./10^3,':s','linewidth',2,'MarkerSize',5);
-ylim([0 160]);
-xlim([0 20]);
-title('');
-legend('Bin mean', 'bin edges', 'Standard deviation','150 kW system (this study)');
-xlabel('Wind speeds at reference height of 100 m (ms^{-1})');
-ylabel('Electrical cycle power (kW)');
-xticks(1:20);
-xticklabels(1:20)
-yticks(10:10:160);
-yticklabels(10:10:160)
-hold off;
-
 %% Effect of gravity
 clc; clearvars;
 
@@ -420,5 +402,44 @@ colormap(parula);  % Set colormap for better visualization
 c = colorbar;
 c.Label.String = 'm_{k} [tons]';
 
+%% Static take-off limits
 
+  
+AP2     = [3, 35, 1.5]; % Wing area, kite mass, CL_max
+AP3     = [12, 475, 2.1]; % Wing area, kite mass, CL_max
+MegAWES = [150.5, 6885, 1.9];
+V3      = [19.75, 22.8, 1];
+MX2     = [54, 1850, 2];
+PN14    = [180, 180, 1];
+
+AP2(4)     = calcSTOL(AP2);
+AP3(4)     = calcSTOL(AP3);
+MegAWES(4) = calcSTOL(MegAWES);
+V3(4)      = calcSTOL(V3);
+MX2(4)     = calcSTOL(MX2);
+PN14(4)    = calcSTOL(PN14);
+
+%% Comparison with Skysails
+
+fig = openfig('skysails07.fig');
+hold on;
+box on;
+plot(vw, processedOutputs.P_e_avg./10^3,':s','linewidth',2,'MarkerSize',5);
+ylim([0 160]);
+xlim([0 20]);
+title('');
+legend('Bin mean', 'bin edges', 'Standard deviation','150 kW system (this study)');
+xlabel('Wind speeds at reference height of 100 m (ms^{-1})');
+ylabel('Electrical cycle power (kW)');
+xticks(1:20);
+xticklabels(1:20)
+yticks(10:10:160);
+yticklabels(10:10:160)
+hold off;
+
+function [STOL] = calcSTOL(Kite)
+  
+  STOL = sqrt(2*Kite(2)*9.814/1.2/Kite(3)/Kite(1));
+
+end
 
