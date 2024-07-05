@@ -7,6 +7,7 @@ function plotResults_awePower(inputs)
 
   vw           = processedOutputs.vw_100m_operRange;
   cutIn        = processedOutputs.cutIn;
+  cutIn_index  = cutIn-inputs.vw_ref(1)+1;
   x_axis_limit = [1 processedOutputs.vw_100m_operRange(end)];
   
   newcolors = [ % 0.25, 0.25, 0.25
@@ -88,9 +89,9 @@ function plotResults_awePower(inputs)
   hold on
   grid on
   box on
-  plot(vw, calcRowMean(processedOutputs.lambda, cutIn),':o','linewidth',1,'markersize',3);
-  plot(vw, calcRowMean(processedOutputs.f, cutIn),':s','linewidth',1,'markersize',3);
-  plot(vw, calcRowMean(processedOutputs.f_i, cutIn),':v','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.lambda, cutIn_index),':o','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.f, cutIn_index),':s','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.f_i, cutIn_index),':v','linewidth',1,'markersize',3);
   ylabel('Velocity factors (-)');
   legend('λ','f_{o}','f_{i}','location','northwest');
   xlabel('Wind speed at 100 m height (ms^{-1})');
@@ -103,8 +104,8 @@ function plotResults_awePower(inputs)
   hold on
   grid on
   box on
-  plot(vw, calcRowMean(processedOutputs.CL, cutIn),'o:','linewidth',1,'markersize',3);
-  plot(vw, calcRowMean(processedOutputs.CL_i, cutIn),'d:','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.CL, cutIn_index),'o:','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.CL_i, cutIn_index),'d:','linewidth',1,'markersize',3);
   ylabel('Lift coefficient (-)');
   legend('C_{L,o}','C_{L,i}','location','northwest','Orientation','vertical');
   xlabel('Wind speed at 100 m height (ms^{-1})');
@@ -117,11 +118,11 @@ function plotResults_awePower(inputs)
   hold on
   grid on
   box on
-  plot(vw, calcRowMean(processedOutputs.CD, cutIn),'o:','linewidth',1,'markersize',3);
-  plot(vw, calcRowMean(processedOutputs.CD_i, cutIn),'d:','linewidth',1,'markersize',3);
-  plot(vw, calcRowMean(processedOutputs.CD_k, cutIn),'^:','linewidth',1,'markersize',3);
-  plot(vw, calcRowMean(processedOutputs.CD_k_i, cutIn),'v:','linewidth',1,'markersize',3);
-  plot(vw, calcRowMean(processedOutputs.CD_t, cutIn),'s:','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.CD, cutIn_index),'o:','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.CD_i, cutIn_index),'d:','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.CD_k, cutIn_index),'^:','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.CD_k_i, cutIn_index),'v:','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.CD_t, cutIn_index),'s:','linewidth',1,'markersize',3);
   ylabel('Drag coefficient (-)');
   legend('C_{D,o}','C_{D,i}','C_{D,k,o}','C_{D,k,i}','C_{D,t}','location','northwest','Orientation','vertical');
   xlabel('Wind speed at 100 m height (ms^{-1})');
@@ -135,11 +136,11 @@ function plotResults_awePower(inputs)
   hold on
   grid on
   box on
-  plot(vw, processedOutputs.h_cycleAvg(cutIn:end),'d:','linewidth',1,'markersize',3);
-  plot(vw, calcRowMean(processedOutputs.Rp, cutIn),'o:','linewidth',1,'markersize',3);
-  plot(vw, processedOutputs.deltaL(cutIn:end),'^:','linewidth',1,'markersize',3);
-  plot(vw, processedOutputs.l_t_max(cutIn:end),'s:','linewidth',1,'markersize',3);
-  plot(vw, processedOutputs.l_t_min(cutIn:end),'x:','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.h_cycleAvg(cutIn-inputs.vw_ref(1)+1:end),'d:','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.Rp, cutIn_index),'o:','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.deltaL(cutIn-inputs.vw_ref(1)+1:end),'^:','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.l_t_max(cutIn-inputs.vw_ref(1)+1:end),'s:','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.l_t_min(cutIn-inputs.vw_ref(1)+1:end),'x:','linewidth',1,'markersize',3);
   ylabel('Linear dimensions (m)');
   legend('h_{p,avg}','R_{p,avg}','Δl','l_{t,max}','l_{t,min}','location','northwest','Orientation','vertical');
   xlabel('Wind speed at 100 m height (ms^{-1})');
@@ -152,9 +153,9 @@ function plotResults_awePower(inputs)
   hold on
   grid on
   box on
-  plot(vw, calcRowMean(processedOutputs.rollAngle, cutIn),'s:','linewidth',1,'markersize',3);
-  plot(vw, processedOutputs.beta(cutIn:end),'o:','linewidth',1,'markersize',3);
-  plot(vw, processedOutputs.gamma(cutIn:end),'d:','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.rollAngle, cutIn_index),'s:','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.beta(cutIn_index:end),'o:','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.gamma(cutIn_index:end),'d:','linewidth',1,'markersize',3);
   ylabel('Angular variables (deg.)');
   legend('$$\Psi_\mathrm{p}$$','$$\beta_\mathrm{p}$$','$$\gamma_\mathrm{p}$$','location','northwest','Orientation','vertical','Interpreter','latex');
   xlabel('Wind speed at 100 m height (ms^{-1})');
@@ -167,9 +168,9 @@ function plotResults_awePower(inputs)
   hold on
   grid on
   box on
-  plot(vw, calcRowMean(processedOutputs.W, cutIn)./10^3,':o','markersize',3)
-  plot(vw, calcRowMean(processedOutputs.Fa, cutIn)./10^3,':s','linewidth',1,'markersize',3);
-  plot(vw, calcRowMean(processedOutputs.Ft, cutIn)./10^3,':^','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.W, cutIn_index)./10^3,':o','markersize',3)
+  plot(vw, calcRowMean(processedOutputs.Fa, cutIn_index)./10^3,':s','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.Ft, cutIn_index)./10^3,':^','linewidth',1,'markersize',3);
   ylabel('Force (kN)');
   legend('F_{g}','F_{a,o}','F_{t,o}','location','northwest');
   xlabel('Wind speed at 100 m height (ms^{-1})');
@@ -182,9 +183,9 @@ function plotResults_awePower(inputs)
   hold on
   grid on
   box on
-  plot(vw, calcRowMean(processedOutputs.W, cutIn)./10^3,':o','markersize',3)
-  plot(vw, calcRowMean(processedOutputs.Fa_i, cutIn)./10^3,':s','linewidth',1,'markersize',3);
-  plot(vw, calcRowMean(processedOutputs.Ft_i, cutIn)./10^3,':^','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.W, cutIn_index)./10^3,':o','markersize',3)
+  plot(vw, calcRowMean(processedOutputs.Fa_i, cutIn_index)./10^3,':s','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.Ft_i, cutIn_index)./10^3,':^','linewidth',1,'markersize',3);
   ylabel('Force (kN)');
   legend('F_{g}','F_{a,i}','F_{t,i}','location','northwest');
   xlabel('Wind speed at 100 m height (ms^{-1})');
@@ -199,12 +200,12 @@ function plotResults_awePower(inputs)
   grid on
   box on
   yyaxis left
-  plot(vw, processedOutputs.to(cutIn:end),':s','linewidth',1,'markersize',3);
-  plot(vw, processedOutputs.ti(cutIn:end),':d','linewidth',1,'markersize',3);
-  plot(vw, calcRowMean(processedOutputs.tPatt, cutIn),':o','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.to(cutIn_index:end),':s','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.ti(cutIn_index:end),':d','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.tPatt, cutIn_index),':o','linewidth',1,'markersize',3);
   ylabel('Time durations (s)');
   yyaxis right
-  plot(vw, calcRowMean(processedOutputs.numOfPatt,cutIn),':^','linewidth',1,'markersize',3);
+  plot(vw, calcRowMean(processedOutputs.numOfPatt,cutIn_index),':^','linewidth',1,'markersize',3);
   ylabel('Number of patterns (-)');
   xlabel('Wind speed at 100 m height (ms^{-1})');
   legend('t_{o}','t_{i}','t_{patt,avg}','N_{p}','location','northwest');
@@ -217,16 +218,16 @@ function plotResults_awePower(inputs)
   hold on
 %   grid on
   box on
-  plot(vw, processedOutputs.P_m_o(cutIn:end)./10^3,':o','linewidth',1,'markersize',3);
-  plot(vw, processedOutputs.P_e_o(cutIn:end)./10^3,':s','linewidth',1,'markersize',3);
-  plot(vw, processedOutputs.P_e_avg(cutIn:end)./10^3,':x','linewidth',1,'markersize',5);
+  plot(vw, processedOutputs.P_m_o(cutIn_index:end)./10^3,':o','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.P_e_o(cutIn_index:end)./10^3,':s','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.P_e_avg(cutIn_index:end)./10^3,':x','linewidth',1,'markersize',5);
   [~, maxIndex] = max(round(mean(processedOutputs.Ft,2)));
   xline(maxIndex(1));
   xline(processedOutputs.ratedWind);
   % Add text boxes without borders
-  text(1, 0.5, 'I', 'FontSize', 12, 'EdgeColor', 'none');
-  text(3, 0.5, 'II', 'FontSize', 12, 'EdgeColor', 'none');
-  text(5, 0.5, 'III', 'FontSize', 12, 'EdgeColor', 'none');
+%   text(1, 0.5, 'I', 'FontSize', 12, 'EdgeColor', 'none');
+%   text(3, 0.5, 'II', 'FontSize', 12, 'EdgeColor', 'none');
+%   text(5, 0.5, 'III', 'FontSize', 12, 'EdgeColor', 'none');
   ylabel('Power (kW)');
   legend('P_{m,o}','P_{e,o}','P_{e,avg}','location','northwest');
   xlabel('Wind speed at 100 m height (ms^{-1})');
@@ -239,8 +240,8 @@ function plotResults_awePower(inputs)
   hold on
   grid on
   box on
-  plot(vw, processedOutputs.P_m_i(cutIn:end)./10^3,':o','linewidth',1,'markersize',3);
-  plot(vw, processedOutputs.P_e_i(cutIn:end)./10^3,':s','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.P_m_i(cutIn_index:end)./10^3,':o','linewidth',1,'markersize',3);
+  plot(vw, processedOutputs.P_e_i(cutIn_index:end)./10^3,':s','linewidth',1,'markersize',3);
   ylabel('Power (kW)');
   %title('Cycle averages');
   legend('P_{m,i}','P_{e,i}','location','northwest');
@@ -258,8 +259,8 @@ function plotResults_awePower(inputs)
       % Plot your data
       plot(processedOutputs.cyclePowerRep(i).t_inst, processedOutputs.cyclePowerRep(i).P_e_inst,'linewidth',1.5, 'DisplayName', 'P_{e}');
       plot(processedOutputs.cyclePowerRep(i).t_inst,processedOutputs.cyclePowerRep(i).P_m_inst,':','linewidth',1.5, 'DisplayName', 'P_{m}');
-      yline(processedOutputs.P_e_avg(i)/10^3, '-.', 'linewidth',1.2, 'DisplayName', 'P_{e,avg}');
-      yline(processedOutputs.P_m_avg(i)/10^3, ':', 'linewidth',1.2, 'DisplayName', 'P_{m,avg}');
+      yline(processedOutputs.P_e_avg(i-inputs.vw_ref(1)+1)/10^3, '-.', 'linewidth',1.2, 'DisplayName', 'P_{e,avg}');
+      yline(processedOutputs.P_m_avg(i-inputs.vw_ref(1)+1)/10^3, ':', 'linewidth',1.2, 'DisplayName', 'P_{m,avg}');
       % Set yline positions within the range of your data
       yline(0, '-', 'linewidth', 1, 'HandleVisibility', 'off');      
       ylabel('Power (kW)');
@@ -319,7 +320,7 @@ function plotResults_awePower(inputs)
    
 end
 
-function rowMean = calcRowMean(array, cutIn)
+function rowMean = calcRowMean(array, cutIn_index)
   rowMean = mean(array,2);
-  rowMean = rowMean(cutIn:end);
+  rowMean = rowMean(cutIn_index:end);
 end
