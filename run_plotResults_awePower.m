@@ -7,7 +7,6 @@ addpath(genpath([pwd '/src']));
 
 % Load input file
 inputs = loadInputs('inputFile_example_awePower.yml');
-
 % Append dependent inputs
 inputs = appendInputs(inputs);
 

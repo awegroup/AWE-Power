@@ -10,7 +10,8 @@ addpath(genpath([pwd '/tests']));
 
 % Load defined input file
 inputs = loadInputs('inputFile_example_awePower.yml');
-
+% Append dependent inputs
+inputs = appendInputs(inputs);
 
 % Test to check inputs
 test_new_input_method()
