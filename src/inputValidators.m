@@ -31,8 +31,8 @@ schema.v_windDataset_Cabauw = @(x) validateattributes(x, {'numeric'}, {'nonempty
 schema.v_windDataset_Ijmuiden = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
 
 % Wind Profile selection
-schema.windProfile_h = @(x) validateattributes(x, {'char'}, {'nonempty'});
-schema.windProfile_vw = @(x) validateattributes(x, {'char'}, {'nonempty'});
+schema.windProfile_h = @(x) validateattributes(x, {'char', 'numeric'}, {'nonempty'});
+schema.windProfile_vw = @(x) validateattributes(x, {'char', 'numeric'}, {'nonempty'});
 
 % System Parameters
 schema.S = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
