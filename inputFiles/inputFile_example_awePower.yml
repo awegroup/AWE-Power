@@ -1,8 +1,8 @@
-name: inputFile_example_awePower  # Input file name
+name: 'inputFile_example_awePower'  # Input file name
 
 # Model Settings
 numDeltaLelems: 5  # Number of stroke length elements [num]
-FgToggle: 1  # Gravity toggle: 0 = No, 1 = Yes
+FgToggle: true  # Gravity toggle: true or false
 vertWindProfile: 0  # Vertical wind profile: 0 = Modelled, 1 = From dataset
 
 # Wind Parameters
@@ -16,6 +16,10 @@ windShearExp: 0.143  # Wind shear exponent [-] (0.143 over land, 0.11 over sea)
 h_windDataset: [10, 20, 40, 60, 80, 100, 120, 140, 150, 160, 180, 200, 220, 250, 300, 500, 600]  # Sample vertical wind profile dataset heights [m]
 v_windDataset_Cabauw: [0.5412, 0.6074, 0.7686, 0.8685, 0.9414, 1, 1.0481, 1.0864, 1.1028, 1.1172, 1.1441, 1.1657, 1.1839, 1.2065, 1.2327, 1.2666, 1.2641]  # Normalized wind speeds for Cabauw dataset
 v_windDataset_Ijmuiden: [0.8476, 0.8706, 0.9272, 0.9593, 0.9823, 1, 1.0138, 1.0236, 1.0277, 1.0308, 1.0366, 1.0403, 1.0428, 1.0450, 1.0446, 1.0247, 1.0108]  # Normalized wind speeds for Ijmuiden dataset
+
+# Wind Profile selection
+windProfile_h: 'h_windDataset' 
+windProfile_vw: 'v_windDataset_Cabauw'
 
 # System Parameters
 S: 12  # Wing surface area [m^2]
@@ -47,7 +51,8 @@ v_d_max: 20  # Maximum operational speed [m/s]
 a_d_max: 5  # Maximum acceleration [m/s^2]
 
 # Drivetrain Efficiency Parameters
-etaGen_param: [0.671, -1.4141, 0.9747, 0.7233]  # Generator efficiency parameters [-]
+etaGen:
+    param: [0.671, -1.4141, 0.9747, 0.7233]  # Generator efficiency parameters [-]
 etaGearbox: 0.95  # Gearbox efficiency [-]
 etaSto: 0.95  # Storage efficiency [-]
 etaPE: 0.95  # Power electronics efficiency [-]
