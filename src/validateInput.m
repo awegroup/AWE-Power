@@ -46,8 +46,8 @@ end
 
 % Report error messages
 if ~isempty(errorMessages)
-    errorStr = strjoin(errorMessages, newline);
-    error(['Input validation failed with the following errors:', newline, errorStr]);
+    errorStr = strjoin(errorMessages, [newline '-----' newline]);
+    error(['Input validation failed with the following errors:', [newline '-----' newline], errorStr]);
 else
     disp('All validations passed.');
 end
