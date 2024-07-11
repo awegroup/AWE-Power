@@ -1,4 +1,4 @@
-function [c, ceq] = optConstraints_awePower(i,inputs)
+function [c, ceq] = optConstraints(i,inputs)
   % optConstraints_awePower Nonlinear constraints for optimizing power generation in AWE system
   %
   % This function computes the nonlinear inequality and equality constraints

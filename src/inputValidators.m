@@ -17,7 +17,7 @@ schema.name = @(x) validateattributes(x, {'char'}, {'nonempty'});
 
 % Model Settings
 schema.numDeltaLelems = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
-schema.FgToggle = @(x) validateattributes(x, {'logical'}, {'nonempty'});
+schema.FgToggle = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
 schema.vertWindProfile = @mustBeValidNumericBoolean;
 
 % Wind Parameters

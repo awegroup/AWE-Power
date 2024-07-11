@@ -2,7 +2,7 @@ name: 'inputFile_example_awePower'  # Input file name
 
 # Model Settings
 numDeltaLelems: 5  # Number of stroke length elements [num]
-FgToggle: true  # Gravity toggle: true or false
+FgToggle: 1  # Gravity toggle: 1 = True,  0 = False
 vertWindProfile: 0  # Vertical wind profile: 0 = Modelled, 1 = From dataset
 
 # Wind Parameters

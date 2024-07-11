@@ -1,4 +1,4 @@
-function [m_k] = estimateKiteMass_awePower(Ft_max, S, AR)
+function [m_k] = estimateKiteMass(Ft_max, S, AR)
     % estimateKiteMass_awePower Estimates the mass of a kite for a fixed-wing airborne wind energy system
     %
     % This function estimates the mass of a kite based on a simple mass model
