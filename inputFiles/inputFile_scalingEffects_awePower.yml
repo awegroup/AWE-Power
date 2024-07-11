@@ -1,7 +1,7 @@
-name: 'inputFile_example_awePower'  # Input file name
+name: 'inputFile_scalingEffects_awePower'  # Input file name
 
 # Model Settings
-numDeltaLelems: 5  # Number of stroke length elements [num]
+numDeltaLelems: 1  # Number of stroke length elements [num]
 FgToggle: true  # Gravity toggle: true or false
 vertWindProfile: 0  # Vertical wind profile: 0 = Modelled, 1 = From dataset
 
@@ -14,27 +14,27 @@ windShearExp: 0.143  # Wind shear exponent [-] (0.143 over land, 0.11 over sea)
 # Profiles from: https://doi.org/10.1016/j.renene.2022.06.094
 # Wind speeds normalized with value at 100m
 h_windDataset: [10, 20, 40, 60, 80, 100, 120, 140, 150, 160, 180, 200, 220, 250, 300, 500, 600]  # Sample vertical wind profile dataset heights [m]
-v_windDataset_Cabauw: [0.5412, 0.6074, 0.7686, 0.8685, 0.9414, 1, 1.0481, 1.0864, 1.1028, 1.1172, 1.1441, 1.1657, 1.1839, 1.2065, 1.2327, 1.2666, 1.2641]  # Normalized wind speeds for Cabauw dataset
-v_windDataset_Ijmuiden: [0.8476, 0.8706, 0.9272, 0.9593, 0.9823, 1, 1.0138, 1.0236, 1.0277, 1.0308, 1.0366, 1.0403, 1.0428, 1.0450, 1.0446, 1.0247, 1.0108]  # Normalized wind speeds for Ijmuiden dataset
+v_windDataset_Cabauw: [0.541219682843206, 0.607355091566827, 0.768630154201962, 0.868484406441142, 0.941395360902529, 1, 1.04810058627160, 1.08638854381156, 1.10277338731106, 1.11715868927737, 1.14412258234309, 1.16573551308321, 1.18394938534465, 1.20653423381438, 1.23266397972046, 1.26662287360302, 1.26414483994687]  # Normalized wind speeds for Cabauw dataset
+v_windDataset_Ijmuiden: [0.847612611633547, 0.870603040595613, 0.927240267828556, 0.959346286990695, 0.982291573490674, 1, 1.01377720773809, 1.02356771954493, 1.02766760602000, 1.03079423355205, 1.03659625208888, 1.04025827758100, 1.04284618416620, 1.04496440015282, 1.04461712713371, 1.02473617783789, 1.01076976884552]  # Normalized wind speeds for Ijmuiden dataset
 
 # Wind Profile selection
 windProfile_h: 'h_windDataset' 
 windProfile_vw: 'v_windDataset_Cabauw'
 
 # System Parameters
-S: 12  # Wing surface area [m^2]
+S: 100  # Wing surface area [m^2]
 AR: 12  # Aspect ratio [-]
-P_ratedElec: 150000  # Rated electrical power [W]
+P_ratedElec: 1000000  # Rated electrical power [W]
 massOverride: 0  # Mass override toggle
 kiteMass: 600  # (Overridden) Kite mass [kg]
 peakM2E_F: 2.5  # Peak mechanical to electric cycle power factor [-]
 
 # Tether Parameters
-Ft_max: 42000  # Maximum tether force [N]
-Ft_max_SF: 0.9  # Safety factor for maximum tether force
-maxTeLen: 1000  # Maximum tether length [m]
+Ft_max: 600000  # Maximum tether force [N]
+Ft_max_SF: 0.8  # Safety factor for maximum tether force
+maxTeLen: 5000  # Maximum tether length [m]
 maxHeight: 1000  # Maximum operational height [m]
-minGroundClear: 100  # Minimum ground clearance [m]
+minGroundClear: 0  # Minimum ground clearance [m]
 Te_matStrength: 700000000  # Tether material tensile strength [Pa]
 Te_matDensity: 980  # Tether material density [kg/m^3]
 
@@ -53,8 +53,8 @@ a_d_max: 5  # Maximum acceleration [m/s^2]
 # Drivetrain Efficiency Parameters
 etaGen:
     param: [0.671, -1.4141, 0.9747, 0.7233]  # Generator efficiency parameters [-]
-etaGearbox: 0.95  # Gearbox efficiency [-]
-etaSto: 0.95  # Storage efficiency [-]
+etaGearbox: 0.9  # Gearbox efficiency [-]
+etaSto: 0.9  # Storage efficiency [-]
 etaPE: 0.95  # Power electronics efficiency [-]
 
 # Environmental Constants

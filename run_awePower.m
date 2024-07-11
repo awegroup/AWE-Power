@@ -6,17 +6,16 @@ addpath(genpath([pwd '/inputFiles']));
 addpath(genpath([pwd '/outputFiles'])); 
 addpath(genpath([pwd '/src']));
 addpath(genpath([pwd '/lib']));
-addpath(genpath([pwd '/tests']));
 
-% Load defined input file
-inputs = loadInputs('inputFile_example_awePower.yml');
-% Append dependent inputs
+% Filepath to simulation parameters
+inputFile = './inputFiles/inputFile_scalingEffects_awePower.yml';
+
+% Load and validate parameters
+inputs = loadInputs(inputFile);
+validateInput(inputs, inputValidators());
+
+% Calculate additional parameters
 inputs = appendInputs(inputs);
-
-% Test to check inputs
-test_new_input_method()
-
 
 % Run
 [outputs, optimDetails, processedOutputs] = main_awePower(inputs);
-
