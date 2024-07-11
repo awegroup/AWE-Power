@@ -5,10 +5,17 @@ clc; clearvars;
 addpath(genpath([pwd '/inputFiles']));
 addpath(genpath([pwd '/outputFiles'])); 
 addpath(genpath([pwd '/src']));
+addpath(genpath([pwd '/lib']));
 
-% Load defined input file
-inputFile_example_awePower;
+% Filepath to simulation parameters
+inputFile = './inputFiles/inputFile_example_awePower.yml';
+
+% Load and validate parameters
+inputs = loadInputs(inputFile);
+validateInput(inputs, inputValidators());
+
+% Calculate additional parameters
+inputs = appendInputs(inputs);
 
 % Run
 [outputs, optimDetails, processedOutputs] = main_awePower(inputs);
-
