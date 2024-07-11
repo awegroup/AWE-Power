@@ -18,12 +18,12 @@ schema.name = @(x) validateattributes(x, {'char'}, {'nonempty'});
 % Model Settings
 schema.numDeltaLelems = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
 schema.FgToggle = @(x) validateattributes(x, {'logical'}, {'nonempty'});
-schema.vertWindProfile = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
+schema.vertWindProfile = @mustBeValidNumericBoolean;
 
 % Wind Parameters
 schema.vw_ref = @(x) validateattributes(x, {'numeric'}, {'increasing', 'positive'});
 schema.h_ref = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
-schema.windShearExp = @mustBeValidWindShearExp;
+schema.windShearExp = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
 
 % Sample vertical wind profile datasets
 schema.h_windDataset = @(x) validateattributes(x, {'numeric'}, {'increasing', 'positive'});
@@ -78,8 +78,8 @@ end
 
 %% Validation functions
 
-function mustBeValidWindShearExp(x)
-    if ~(x == 0.143 || x == 0.11)
-        error('Field windShearExp must be 0.143 (over land) or 0.11 (over sea).');
+function mustBeValidNumericBoolean(x)
+    if ~(x == 0 || x == 1)
+        error('Field vertWindProfile must be 0 or 1.');
     end
 end
