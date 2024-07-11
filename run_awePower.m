@@ -8,7 +8,7 @@ addpath(genpath([pwd '/src']));
 addpath(genpath([pwd '/lib']));
 
 % Filepath to simulation parameters
-inputFile = './inputFiles/inputFile_scalingEffects_awePower.yml';
+inputFile = './inputFiles/inputFile_example_awePower.yml';
 
 % Load and validate parameters
 inputs = loadInputs(inputFile);
