@@ -8,13 +8,6 @@ addpath(genpath([pwd '/src']));
 % Filepath to simulation parameters
 inputFile = './inputFiles/inputFile_example_awePower.yml';
 
-% Load and validate parameters
-inputs = loadInputs(inputFile);
-validateInput(inputs, inputValidators());
-
-% Calculate additional parameters
-inputs = appendInputs(inputs);
-
 % Run 
-plotResults_awePower(inputs);
+plotResults_awePower(inputFile);
 

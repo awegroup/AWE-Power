@@ -1,4 +1,13 @@
-function plotResults_awePower(inputs)        
+function plotResults_awePower(inputFile)        
+
+  %% Load inputs and outputs
+
+  % Load and validate parameters
+  inputs = loadInputs(inputFile);
+  validateInput(inputs, inputValidators());
+
+  % Calculate additional parameters
+  inputs = appendInputs(inputs);
 
   % Load processed outputs
   load(['outputFiles/' inputs.name '_' 'processedOutputs' '.mat']);

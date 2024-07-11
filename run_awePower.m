@@ -7,15 +7,8 @@ addpath(genpath([pwd '/outputFiles']));
 addpath(genpath([pwd '/src']));
 addpath(genpath([pwd '/lib']));
 
-% Filepath to simulation parameters
+% Input file path
 inputFile = './inputFiles/inputFile_example_awePower.yml';
 
-% Load and validate parameters
-inputs = loadInputs(inputFile);
-validateInput(inputs, inputValidators());
-
-% Calculate additional parameters
-inputs = appendInputs(inputs);
-
 % Run
-[outputs, optimDetails, processedOutputs] = main_awePower(inputs);
+[inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputFile);
