@@ -1,34 +1,30 @@
-function plotResults(inputFile)        
+function plotResults(inputs)        
 
-  %% Load inputs and outputs
-
-  % Load and validate parameters
-  inputs = loadInputs(inputFile);
+  % Validate input data
   validateInput(inputs, inputValidators());
 
-  % Calculate additional parameters
+  % Calculate additional input parameters
   inputs = appendInputs(inputs);
 
   % Load processed outputs
   load(['outputFiles/' inputs.name '_' 'processedOutputs' '.mat']);
 
-  %% Plot settings
-
+  % Plot settings
   vw           = processedOutputs.vw_100m_operRange;
   cutIn        = processedOutputs.cutIn;
   cutIn_index  = cutIn-inputs.vw_ref(1)+1;
   x_axis_limit = [1 processedOutputs.vw_100m_operRange(end)];
-  
-  newcolors = [ % 0.25, 0.25, 0.25
-    0 0.4470 0.7410
-  0.8500 0.3250 0.0980 
-  0.4660, 0.6740, 0.1880
-  0.9290, 0.6940, 0.1250
-  0.4940, 0.1840, 0.5560
-  0.6350 0.0780 0.1840
-  0.3010 0.7450 0.9330];
+  newcolors    = [ % 0.25, 0.25, 0.25
+                    0 0.4470 0.7410
+                  0.8500 0.3250 0.0980 
+                  0.4660, 0.6740, 0.1880
+                  0.9290, 0.6940, 0.1250
+                  0.4940, 0.1840, 0.5560
+                  0.6350 0.0780 0.1840
+                  0.3010 0.7450 0.9330];
 
   %% Plots
+
   % Plots showing the per element results for rated wind speed
   ws = processedOutputs.ratedWind;
   fig = figure();

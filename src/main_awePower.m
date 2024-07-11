@@ -1,4 +1,4 @@
-function [inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputFile)
+function [inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputs)
   % main_awePower Optimizes the power generation for a fixed-wing airborne wind energy system
   %
   % This function performs mass estimation, optimization, and post-processing
@@ -16,11 +16,10 @@ function [inputs, outputs, optimDetails, processedOutputs] = main_awePower(input
 
   clear global outputs
 
-  %  Load and validate input parameters
-  inputs = loadInputs(inputFile);
+  % Validate input data
   validateInput(inputs, inputValidators());
 
-  % Calculate additional parameters
+  % Calculate additional input parameters
   inputs = appendInputs(inputs);
 
   % Kite mass estimate

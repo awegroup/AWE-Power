@@ -7,8 +7,8 @@ addpath(genpath([pwd '/outputFiles']));
 addpath(genpath([pwd '/src']));
 addpath(genpath([pwd '/lib']));
 
-% Input file path
-inputFile = './inputFiles/inputFile_example_awePower.yml';
+% Load input file
+inputs = loadInputs('inputFile_example_awePower.yml');
 
 % Run
-[inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputFile);
+[inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputs);

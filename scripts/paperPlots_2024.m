@@ -9,9 +9,9 @@ CL_loyd = inputs.Cl_maxAirfoil*inputs.Cl_eff_F;
 CD_loyd = inputs.Cd0 + (CL_loyd-inputs.Cl0_airfoil)^2/(pi()*inputs.AR*inputs.e);
 for i = 1:length(vw_loyd)
   P_Loyd(i) = (4/27)*(CL_loyd^3/CD_loyd^2)*(1/2)*inputs.airDensity*inputs.S*(vw_loyd(i)^3);
-%   if P_Loyd(i)>inputs.P_ratedElec
-%     P_Loyd(i) = inputs.P_ratedElec;
-%   end
+  %   if P_Loyd(i)>inputs.P_ratedElec
+  %     P_Loyd(i) = inputs.P_ratedElec;
+  %   end
 end
 % AP3 6DoF simulation results
 AP3.PC.ws    = [7.32E+00, 8.02E+00, 9.05E+00, 1.00E+01, 1.10E+01, 1.20E+01, ...
@@ -43,9 +43,9 @@ addpath(genpath('C:/PhD/GitHubRepo/AWE-power/outputFiles'));
 addpath(genpath('C:/PhD/GitHubRepo/AWE-power/src'));
 
 for i = 1:2
-  inputFile_example_awePower;
+  inputs = loadInputs('inputFile_example_awePower.yml');
   inputs.FgToggle = i-1;
-  [outputs, optimDetails, processedOutputs] = main_awePower(inputs);
+  [inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputs);
   gravityEffect(i)     =  processedOutputs;
 end
 
@@ -98,18 +98,18 @@ end
 % No reel-in glide ratio equality constraint
 % Change objective function to max. P_m_o
 % Increase max. iterations in the optimisation settings
-% Hard code cut-in to 7 
+% Hard code cut-in to 7
 
 % Fixed WA: Finding opt tether size for given WA
 clc
 clearvars
-inputFile_scalingEffects_awePower;
+inputs = loadInputs('inputFile_scalingEffects_awePower.yml');
 inputs.vw_ref         = 12; %[ms^{-1}]
 inputs.S = 100;
 for i = 1:7
   inputs.Ft_max = 4000*inputs.S + i*100000;
   fixedWA.Ft_max(i) = inputs.Ft_max;
-  [outputs, optimDetails, processedOutputs] = main_awePower(inputs);
+  [inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputs);
   fixedWA.m_k(i)         = processedOutputs.m_k;
   fixedWA.zetaMech(i)    = processedOutputs.zetaMech;
   fixedWA.d_te(i)        = processedOutputs.d_te;
@@ -133,36 +133,15 @@ hold off
 % Fixed Ft_max: Finding opt WA for given Tether size
 clc
 clearvars
-inputFile_scalingEffects_awePower;
+inputs = loadInputs('inputFile_scalingEffects_awePower.yml');
 inputs.vw_ref         = 12; %[ms^{-1}]
 FixedFt_max.Ft_max = 400000;
 for i =1:6
   inputs.S = 10 + 10*i;
-
-  inputs.b              = sqrt(inputs.AR * inputs.S);
-  % Initial Guess
-  inputs.x0 = [200, deg2rad(30), deg2rad(5), 5*inputs.b, ...             % stroke length, pattern elevation, cone angle, initial turning radius
-               inputs.v_d_max * inputs.nx, ...                           % reel-in speed
-               inputs.Cl_maxAirfoil * inputs.Cl_eff_F * inputs.nx, ...   % reel-in C_L
-               0.8 * inputs.nx, 90 * inputs.nx, ...                      % reel-out speed, kinematic ratio
-               inputs.Cl_maxAirfoil * inputs.Cl_eff_F * inputs.nx];      % reel-out C_L
-  
-  % Bounds for the initial guess
-  inputs.lb = [50, deg2rad(1), deg2rad(1), 5*inputs.b, ...
-               1 * inputs.nx, 0.1 * inputs.nx, ...
-               0.8 * inputs.nx, 1 * inputs.nx, ...
-               0.1 * inputs.nx];
-  
-  inputs.ub = [500, deg2rad(90), deg2rad(60), 10*inputs.b, ...
-               inputs.v_d_max * inputs.nx, ...
-               inputs.Cl_maxAirfoil * inputs.Cl_eff_F * inputs.nx, ...
-               inputs.v_d_max * inputs.nx, 200 * inputs.nx, ...
-               inputs.Cl_maxAirfoil * inputs.Cl_eff_F * inputs.nx];
-
   FixedFt_max.S(i)       = inputs.S;
   inputs.Ft_max          = FixedFt_max.Ft_max;
   FixedFt_max.Ft_max     = inputs.Ft_max;
-  [outputs, optimDetails, processedOutputs] = main_awePower(inputs);
+  [inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputs);
   FixedFt_max.m_k(i)     = processedOutputs.m_k;
   FixedFt_max.zeta(i)    = processedOutputs.zetaMech;
   FixedFt_max.d_te       = processedOutputs.d_te;
@@ -187,13 +166,13 @@ hold off
 % Full Power curve plots for fixed S, increasing Ft_max
 clc
 clearvars
-inputFile_scalingEffects_awePower;
+inputs = loadInputs('inputFile_scalingEffects_awePower.yml');
 inputs.P_ratedElec    = 1500 * 1000;
 numEvals = 4;
 for i = 1:numEvals
   inputs.Ft_max = 1000*inputs.S + i*100000; %inputs.S + i*100000;
   Ft_max(i)     = inputs.Ft_max;
-  [outputs, optimDetails, processedOutputs] = main_awePower(inputs);
+  [inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputs);
   fullPC_incrFt_max(i)  =  processedOutputs;
 end
 % Plotting
@@ -217,7 +196,7 @@ hold off
 %% Full Power curve plots for increasing S, fixed Ft_max/S, no mechanical power limit
 clc
 clearvars
-inputFile_scalingEffects_awePower;
+inputs = loadInputs('inputFile_scalingEffects_awePower.yml');
 inputs.P_ratedElec    = 1000*1000; %[W]
 Ft_maxByS = 3000;
 numEvals = 4;
@@ -225,30 +204,9 @@ legendLabels = cell(numEvals,1);
 % Computation loop
 for i = 1:numEvals
   inputs.S = i*30;
-
-  inputs.b              = sqrt(inputs.AR * inputs.S);
-  % Initial Guess
-  inputs.x0 = [200, deg2rad(30), deg2rad(5), 5*inputs.b, ...             % stroke length, pattern elevation, cone angle, initial turning radius
-               inputs.v_d_max * inputs.nx, ...                           % reel-in speed
-               inputs.Cl_maxAirfoil * inputs.Cl_eff_F * inputs.nx, ...   % reel-in C_L
-               0.8 * inputs.nx, 90 * inputs.nx, ...                      % reel-out speed, kinematic ratio
-               inputs.Cl_maxAirfoil * inputs.Cl_eff_F * inputs.nx];      % reel-out C_L
-  
-  % Bounds for the initial guess
-  inputs.lb = [50, deg2rad(1), deg2rad(1), 5*inputs.b, ...
-               1 * inputs.nx, 0.1 * inputs.nx, ...
-               0.8 * inputs.nx, 1 * inputs.nx, ...
-               0.1 * inputs.nx];
-  
-  inputs.ub = [500, deg2rad(90), deg2rad(60), 10*inputs.b, ...
-               inputs.v_d_max * inputs.nx, ...
-               inputs.Cl_maxAirfoil * inputs.Cl_eff_F * inputs.nx, ...
-               inputs.v_d_max * inputs.nx, 200 * inputs.nx, ...
-               inputs.Cl_maxAirfoil * inputs.Cl_eff_F * inputs.nx];
-
   S(i)     = inputs.S;
   inputs.Ft_max = Ft_maxByS*inputs.S;
-  [outputs, optimDetails, processedOutputs] = main_awePower(inputs);
+  [inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputs);
   fullPC_incrS(i) =  processedOutputs;
 end
 % Plotting loop
@@ -404,7 +362,7 @@ c.Label.String = 'm_{k} [tons]';
 
 %% Static take-off limits
 
-  
+
 AP2     = [3, 35, 1.5]; % Wing area, kite mass, CL_max
 AP3     = [12, 475, 2.1]; % Wing area, kite mass, CL_max
 MegAWES = [150.5, 6885, 1.9];
@@ -438,7 +396,7 @@ yticklabels(10:10:160)
 hold off;
 
 function [STOL] = calcSTOL(Kite)
-  
+
   STOL = sqrt(2*Kite(2)*9.814/1.2/Kite(3)/Kite(1));
 
 end
