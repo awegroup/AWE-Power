@@ -22,14 +22,14 @@ function [optimDetails, outputs] = optProblemFormulation(inputs, kiteMass)
     %           options.MaxIterations             = 500*numel(x0);
 
 
-    con = @(x) optConstraints_awePower(i,inputs);
-    obj = @(x) optObjective_awePower(x,i,inputs,kiteMass);
+    con = @(x) optConstraints(i,inputs);
+    obj = @(x) optObjective(x,i,inputs,kiteMass);
 
 
     [x,~,exitflag(i),optHist(i),lambda(i)] = fmincon(obj,x0,[],[],[],[],lb,ub,con,options);
 
     % Storing final results
-    [~,outputs] = optObjective_awePower(x,i,inputs,kiteMass);
+    [~,outputs] = optObjective(x,i,inputs,kiteMass);
 
     % Changing initial guess if previous wind speed evaluation is considered infeasible
     if abs(mean((outputs.E_result - outputs.E),2)) > 1 %0.01

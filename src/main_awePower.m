@@ -12,36 +12,36 @@ function [inputs, outputs, optimDetails, processedOutputs] = main_awePower(input
   % Outputs:
   %   outputs          - Structure containing computed values from the optimization
   %   optimDetails     - Structure containing details of the optimization process
-  %   processedOutputs - Structure containing post-processed outputs 
+  %   processedOutputs - Structure containing post-processed outputs
 
   clear global outputs
 
-  %%  Load and validate input parameters
+  %  Load and validate input parameters
   inputs = loadInputs(inputFile);
   validateInput(inputs, inputValidators());
 
   % Calculate additional parameters
   inputs = appendInputs(inputs);
 
-  %% Kite mass estimate
+  % Kite mass estimate
   if inputs.massOverride == 1
     kiteMass = inputs.kiteMass;
   else
-    kiteMass = estimateKiteMass_awePower(inputs.Ft_max, inputs.S, inputs.AR);
+    kiteMass = estimateKiteMass(inputs.Ft_max, inputs.S, inputs.AR);
   end
 
-  %% Optimisation
+  % Optimisation
   [optimDetails, outputs] = optProblemFormulation(inputs, kiteMass);
 
-  %% Post processing
+  % Post processing
   [processedOutputs] = postProcessOutputs(inputs, outputs);
 
-  %% Cycle power representation for wind speeds in the operational range
-  for i = processedOutputs.cutIn:processedOutputs.cutOut  
+  % Cycle power representation for wind speeds in the operational range
+  for i = processedOutputs.cutIn:processedOutputs.cutOut
     [processedOutputs.cyclePowerRep(i)] = createCyclePowerRep(i, processedOutputs, inputs.vw_ref);
   end
-  
-  %% Save outputs
+
+  % Save outputs
   saveResults(inputs, optimDetails, outputs, processedOutputs);
 
   clear global outputs

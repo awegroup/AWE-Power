@@ -1,4 +1,4 @@
-function plotResults_awePower(inputFile)        
+function plotResults(inputFile)        
 
   %% Load inputs and outputs
 

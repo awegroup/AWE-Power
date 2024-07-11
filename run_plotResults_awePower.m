@@ -9,5 +9,5 @@ addpath(genpath([pwd '/src']));
 inputFile = './inputFiles/inputFile_example_awePower.yml';
 
 % Run 
-plotResults_awePower(inputFile);
+plotResults(inputFile);
 
