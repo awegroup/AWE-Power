@@ -5,9 +5,14 @@ addpath(genpath([pwd '/inputFiles']));
 addpath(genpath([pwd '/outputFiles'])); 
 addpath(genpath([pwd '/src']));
 
-% Load input file
-inputs = loadInputs('inputFile_example_awePower.yml');
-% Append dependent inputs
+% Filepath to simulation parameters
+inputFile = './inputFiles/inputFile_example_awePower.yml';
+
+% Load and validate parameters
+inputs = loadInputs(inputFile);
+validateInput(inputs, inputValidators());
+
+% Calculate additional parameters
 inputs = appendInputs(inputs);
 
 % Run 
