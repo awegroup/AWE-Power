@@ -40,7 +40,7 @@ schema.AR = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
 schema.P_ratedElec = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
 schema.massOverride = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
 schema.kiteMass = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
-schema.peakM2E_F =@(x) validateattributes(x, {'numeric'}, {'nonempty'});
+schema.crestFactor_power =@(x) validateattributes(x, {'numeric'}, {'nonempty'});
 
 % Tether Parameters
 schema.Ft_max = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
