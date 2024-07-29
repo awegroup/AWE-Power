@@ -11,9 +11,7 @@ function [optimDetails, outputs] = optProblemFormulation(inputs, kiteMass)
   for i=1:length(inputs.vw_ref)
 
     options                           = optimoptions('fmincon');
-    %     options.Display                   = 'iter-detailed';
-    options.Display                   = 'final-detailed';
-    % options.Display                   = 'notify-detailed';
+    options.Display                   = 'none';
     options.Algorithm                 = 'sqp';
     options.FiniteDifferenceType      = 'central';
     %   options.FiniteDifferenceType      = 'forward';
@@ -40,7 +38,7 @@ function [optimDetails, outputs] = optProblemFormulation(inputs, kiteMass)
     end
 
   end
-  disp(exitflag)
+%  disp(exitflag)
   % Store optimisation results data
   optimDetails.optHist  = optHist;
   optimDetails.exitflag = exitflag;

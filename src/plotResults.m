@@ -86,7 +86,7 @@ function plotResults(inputs)
   han.YLabel.Visible='off';
   ylabel(han,'yourYLabel');
   xlabel(han,'Reel out phase segment');
-  title(han,['Wind speed at 100 m = ' num2str(ws) 'ms^{-1}']);
+  title(han,['Wind speed at ' num2str(inputs.h_ref) ' m = ' num2str(ws) 'ms^{-1}']);
 
   % Speeds
   figure('units','inch','Position', [0.2 0.5 3.5 2.2])
@@ -99,7 +99,7 @@ function plotResults(inputs)
   plot(vw, calcRowMean(processedOutputs.f_i, cutIn_index),':v','linewidth',1,'markersize',3);
   ylabel('Velocity factors (-)');
   legend('λ','f_{o}','f_{i}','location','northwest');
-  xlabel('Wind speed at 100 m height (ms^{-1})');
+  xlabel(['Wind speed at ' num2str(inputs.h_ref) ' m height (ms^{-1})']);
   xlim(x_axis_limit)
   hold off
 
@@ -113,7 +113,7 @@ function plotResults(inputs)
   plot(vw, calcRowMean(processedOutputs.CL_i, cutIn_index),'d:','linewidth',1,'markersize',3);
   ylabel('Lift coefficient (-)');
   legend('C_{L,o}','C_{L,i}','location','northwest','Orientation','vertical');
-  xlabel('Wind speed at 100 m height (ms^{-1})');
+  xlabel(['Wind speed at ' num2str(inputs.h_ref) ' m height (ms^{-1})']);
   xlim(x_axis_limit)
   hold off
 
@@ -130,7 +130,7 @@ function plotResults(inputs)
   plot(vw, calcRowMean(processedOutputs.CD_t, cutIn_index),'s:','linewidth',1,'markersize',3);
   ylabel('Drag coefficient (-)');
   legend('C_{D,o}','C_{D,i}','C_{D,k,o}','C_{D,k,i}','C_{D,t}','location','northwest','Orientation','vertical');
-  xlabel('Wind speed at 100 m height (ms^{-1})');
+  xlabel(['Wind speed at ' num2str(inputs.h_ref) ' m height (ms^{-1})']);
   xlim(x_axis_limit)
   hold off
 
@@ -148,7 +148,7 @@ function plotResults(inputs)
   plot(vw, processedOutputs.l_t_min(cutIn-inputs.vw_ref(1)+1:end),'x:','linewidth',1,'markersize',3);
   ylabel('Linear dimensions (m)');
   legend('h_{p,avg}','R_{p,avg}','Δl','l_{t,max}','l_{t,min}','location','northwest','Orientation','vertical');
-  xlabel('Wind speed at 100 m height (ms^{-1})');
+  xlabel(['Wind speed at ' num2str(inputs.h_ref) ' m height (ms^{-1})']);
   xlim(x_axis_limit)
   hold off
 
@@ -163,7 +163,7 @@ function plotResults(inputs)
   plot(vw, processedOutputs.gamma(cutIn_index:end),'d:','linewidth',1,'markersize',3);
   ylabel('Angular variables (deg.)');
   legend('$$\Psi_\mathrm{p}$$','$$\beta_\mathrm{p}$$','$$\gamma_\mathrm{p}$$','location','northwest','Orientation','vertical','Interpreter','latex');
-  xlabel('Wind speed at 100 m height (ms^{-1})');
+  xlabel(['Wind speed at ' num2str(inputs.h_ref) ' m height (ms^{-1})']);
   xlim(x_axis_limit)
   hold off
 
@@ -178,7 +178,7 @@ function plotResults(inputs)
   plot(vw, calcRowMean(processedOutputs.Ft, cutIn_index)./10^3,':^','linewidth',1,'markersize',3);
   ylabel('Force (kN)');
   legend('F_{g}','F_{a,o}','F_{t,o}','location','northwest');
-  xlabel('Wind speed at 100 m height (ms^{-1})');
+  xlabel(['Wind speed at ' num2str(inputs.h_ref) ' m height (ms^{-1})']);
   xlim(x_axis_limit)
   hold off
 
@@ -193,7 +193,7 @@ function plotResults(inputs)
   plot(vw, calcRowMean(processedOutputs.Ft_i, cutIn_index)./10^3,':^','linewidth',1,'markersize',3);
   ylabel('Force (kN)');
   legend('F_{g}','F_{a,i}','F_{t,i}','location','northwest');
-  xlabel('Wind speed at 100 m height (ms^{-1})');
+  xlabel(['Wind speed at ' num2str(inputs.h_ref) ' m height (ms^{-1})']);
   xlim(x_axis_limit)
   hold off
 
@@ -212,7 +212,7 @@ function plotResults(inputs)
   yyaxis right
   plot(vw, calcRowMean(processedOutputs.numOfPatt,cutIn_index),':^','linewidth',1,'markersize',3);
   ylabel('Number of patterns (-)');
-  xlabel('Wind speed at 100 m height (ms^{-1})');
+  xlabel(['Wind speed at ' num2str(inputs.h_ref) ' m height (ms^{-1})']);
   legend('t_{o}','t_{i}','t_{patt,avg}','N_{p}','location','northwest');
   xlim(x_axis_limit)
   hold off
@@ -235,7 +235,7 @@ function plotResults(inputs)
 %   text(5, 0.5, 'III', 'FontSize', 12, 'EdgeColor', 'none');
   ylabel('Power (kW)');
   legend('P_{m,o}','P_{e,o}','P_{e,avg}','location','northwest');
-  xlabel('Wind speed at 100 m height (ms^{-1})');
+  xlabel(['Wind speed at ' num2str(inputs.h_ref) ' m height (ms^{-1})']);
   xlim(x_axis_limit)
   hold off
 
@@ -250,7 +250,7 @@ function plotResults(inputs)
   ylabel('Power (kW)');
   %title('Cycle averages');
   legend('P_{m,i}','P_{e,i}','location','northwest');
-  xlabel('Wind speed at 100 m height (ms^{-1})');
+  xlabel(['Wind speed at ' num2str(inputs.h_ref) ' m height (ms^{-1})']);
   xlim(x_axis_limit)
   hold off
  
