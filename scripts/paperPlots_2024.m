@@ -1,7 +1,7 @@
 %% Paper plots
 
 %% Power curve comparison plot
-vw = inputs.vw_ref(1):processedOutputs.vw_100m_operRange(end);
+vw = inputs.vw_ref(1):processedOutputs.vw_h_ref_operRange(end);
 vw_loyd = vw;
 % Power curve comparison plot
 % Loyd
@@ -31,7 +31,7 @@ ylabel('Power (kW)');
 ylim([0 155]);
 legend('Loyd Reel-out','QSM (this study)','6-DOF','location','southeast');
 xlabel('Wind speed at 100 m height (ms^{-1})');
-xlim([1 processedOutputs.vw_100m_operRange(end)]);
+xlim([1 processedOutputs.vw_h_ref_operRange(end)]);
 hold off
 
 %% Effect of gravity
@@ -59,7 +59,7 @@ plot(gravityEffect(2).P_e_avg./1e3,'^-','linewidth',1,'MarkerSize',2);
 legend('P_{no-gravity}','P_{gravity}');
 ylabel('Power (kW)');
 xlabel('Wind speed at 100 m height (ms^{-1})');
-xlim([0 processedOutputs.vw_100m_operRange(end)]);
+xlim([0 processedOutputs.vw_h_ref_operRange(end)]);
 hold off
 
 % Cycle power rep. plots
@@ -220,7 +220,7 @@ for i = 1:numEvals
   legendLabels{i} = ['S = ' num2str(S(i)) 'm^2'];
 end
 xlabel('Wind speed at 100 m height (ms^{-1})');
-%xlim([0 processedOutputs.vw_100m_operRange(end)]);
+%xlim([0 processedOutputs.vw_h_ref_operRange(end)]);
 ylabel('Power (MW)');
 title(strcat('F_{t,max}/S = ',num2str(Ft_maxByS/1e3),'kN/m^2'));
 legend(legendLabels, 'Location', 'Best');
@@ -379,20 +379,39 @@ PN14(4)    = calcSTOL(PN14);
 
 %% Comparison with Skysails
 
+% Add folders and subfolders to path
+addpath(genpath([pwd '/inputFiles']));
+addpath(genpath([pwd '/outputFiles']));
+addpath(genpath([pwd '/src']));
+addpath(genpath([pwd '/lib']));
+
+% Load input file
+inputs = loadInputs('inputFile_example_awePower.yml');
+
+inputs.h_ref = 200;
+inputs.vw_ref = 3:25;
+
+% Run
+[inputs, outputs, optimDetails, processedOutputs] = main_awePower(inputs);
+
+vw           = processedOutputs.vw_h_ref_operRange;
+cutIn        = processedOutputs.cutIn;
+cutIn_index  = cutIn-inputs.vw_ref(1)+1;
+
 fig = openfig('skysails07.fig');
 hold on;
 box on;
-plot(vw, processedOutputs.P_e_avg./10^3,':s','linewidth',2,'MarkerSize',5);
+plot(vw, processedOutputs.P_e_avg(cutIn_index:end)./10^3,':s','linewidth',2,'MarkerSize',5);
 ylim([0 160]);
 xlim([0 20]);
 title('');
 legend('Bin mean', 'bin edges', 'Standard deviation','150 kW system (this study)');
-xlabel('Wind speeds at reference height of 100 m (ms^{-1})');
+xlabel('Wind speeds at reference height of 200 m (ms^{-1})');
 ylabel('Electrical cycle power (kW)');
 xticks(1:20);
 xticklabels(1:20)
-yticks(10:10:160);
-yticklabels(10:10:160)
+yticks(10:20:160);
+yticklabels(10:20:160)
 hold off;
 
 function [STOL] = calcSTOL(Kite)

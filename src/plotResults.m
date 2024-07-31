@@ -10,10 +10,10 @@ function plotResults(inputs)
   load(['outputFiles/' inputs.name '_' 'processedOutputs' '.mat']);
 
   % Plot settings
-  vw           = processedOutputs.vw_100m_operRange;
+  vw           = processedOutputs.vw_h_ref_operRange;
   cutIn        = processedOutputs.cutIn;
   cutIn_index  = cutIn-inputs.vw_ref(1)+1;
-  x_axis_limit = [1 processedOutputs.vw_100m_operRange(end)];
+  x_axis_limit = [1 processedOutputs.vw_h_ref_operRange(end)];
   newcolors    = [ % 0.25, 0.25, 0.25
                     0 0.4470 0.7410
                   0.8500 0.3250 0.0980 

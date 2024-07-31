@@ -15,8 +15,8 @@ function [processedOutputs] = postProcessOutputs(inputs, outputs)
 
   % Cut-out wind speed defined at ref. height of 100m
   % Operating range traslated to wind speed at ref. height
-  processedOutputs.vw_100m_operRange = processedOutputs.cutIn:max(vw(mean(outputs.vw,2)<=25)); % Cut-out at 25m/s at operational height (Assumption)
-  processedOutputs.cutOut            = processedOutputs.vw_100m_operRange(end);
+  processedOutputs.vw_h_ref_operRange = processedOutputs.cutIn:max(vw(mean(outputs.vw,2)<=25)); % Cut-out at 25m/s at operational height (Assumption)
+  processedOutputs.cutOut             = processedOutputs.vw_h_ref_operRange(end);
 
   % Extract feasible results in the operational range
   processedOutputs.Dia_te = outputs.d_t;
