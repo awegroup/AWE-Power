@@ -13,11 +13,13 @@ function [optimDetails, outputs] = optProblemFormulation(inputs, kiteMass)
     options                           = optimoptions('fmincon');
     options.Display                   = 'none';
     options.Algorithm                 = 'sqp';
-    options.FiniteDifferenceType      = 'central';
-    %   options.FiniteDifferenceType      = 'forward';
+%     options.FiniteDifferenceType      = 'central';
+      options.FiniteDifferenceType      = 'forward';
     options.ScaleProblem              = true;
     %           options.MaxFunctionEvaluations    = 5000*numel(x0);
     %           options.MaxIterations             = 500*numel(x0);
+
+%     options.ConstraintTolerance       = 1e-3;
 
 
     con = @(x) optConstraints(i,inputs);
