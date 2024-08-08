@@ -11,15 +11,15 @@ function [optimDetails, outputs] = optProblemFormulation(inputs, kiteMass)
   for i=1:length(inputs.vw_ref)
 
     options                           = optimoptions('fmincon');
-    %     options.Display                   = 'iter-detailed';
-    options.Display                   = 'final-detailed';
-    % options.Display                   = 'notify-detailed';
+    options.Display                   = 'none';
     options.Algorithm                 = 'sqp';
     options.FiniteDifferenceType      = 'central';
-    %   options.FiniteDifferenceType      = 'forward';
+%       options.FiniteDifferenceType      = 'forward';
     options.ScaleProblem              = true;
     %           options.MaxFunctionEvaluations    = 5000*numel(x0);
     %           options.MaxIterations             = 500*numel(x0);
+
+%     options.ConstraintTolerance       = 1e-3;
 
 
     con = @(x) optConstraints(i,inputs);
@@ -40,7 +40,7 @@ function [optimDetails, outputs] = optProblemFormulation(inputs, kiteMass)
     end
 
   end
-  disp(exitflag)
+%  disp(exitflag)
   % Store optimisation results data
   optimDetails.optHist  = optHist;
   optimDetails.exitflag = exitflag;

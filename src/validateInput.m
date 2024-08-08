@@ -49,7 +49,7 @@ if ~isempty(errorMessages)
     errorStr = strjoin(errorMessages, [newline '-----' newline]);
     error(['Input validation failed with the following errors:', [newline '-----' newline], errorStr]);
 else
-    disp('All validations passed.');
+   % disp('All validations passed.');
 end
 
 end
