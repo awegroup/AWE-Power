@@ -1,5 +1,35 @@
 %% Paper plots
 
+%% Generator efficiency plot
+
+% Define the given values
+v_rated = 20; % Rated speed in m/s
+v_values = 1:1:20; % Operating speeds from 0 to 20 m/s with 1 m/s resolution
+
+% Initialize an array to store efficiencies
+eta_gen = zeros(size(v_values));
+
+% Calculate the efficiencies using the given equation
+for i = 1:length(v_values)
+    v = v_values(i);
+    eta_gen(i) = 0.671 * (v/v_rated)^3 - 1.4141 * (v/v_rated)^2 + ...
+                 0.9747 * (v/v_rated) + 0.7233;
+end
+
+% Calculate v/v_rated values
+v_ratio = v_values / v_rated;
+
+% Plot the efficiencies as a function of v/v_rated
+figure;
+hold on
+box on
+grid on
+plot(v_ratio.*100, eta_gen.*100, '-o', 'LineWidth', 2, 'MarkerSize',3);
+xlabel('v/v_{rated} (%)');
+ylabel('η_{gen} (%)');
+hold off
+
+
 %% Power curve comparison plot
 vw = inputs.vw_ref(1):processedOutputs.vw_h_ref_operRange(end);
 vw_loyd = vw;

@@ -8,6 +8,11 @@ if ischar(inputs.windProfile_vw)
     inputs.windProfile_vw = inputs.(inputs.windProfile_vw);
 end
 
+% Check if inputs.e is already present
+if inputs.givenOstwaldEff == 0
+    inputs.e = 1.78 * (1 - 0.045 * inputs.AR^0.68) - 0.64; % From Anderson book (6th Edition) section 6.7.2 
+end
+
 inputs.b                = sqrt(inputs.AR * inputs.S); % Wing span [m]
 
 inputs.etaGen.v_max     = inputs.v_d_max; % Maximum generator speed [m/s]

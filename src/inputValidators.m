@@ -17,8 +17,9 @@ schema.name = @(x) validateattributes(x, {'char'}, {'nonempty'});
 
 % Model Settings
 schema.numDeltaLelems = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
-schema.FgToggle = @(x) validateattributes(x, {'numeric'}, {'nonempty'});
+schema.FgToggle = @mustBeValidNumericBoolean;
 schema.vertWindProfile = @mustBeValidNumericBoolean;
+schema.givenOstwaldEff = @mustBeValidNumericBoolean;
 
 % Wind Parameters
 schema.vw_ref = @(x) validateattributes(x, {'numeric'}, {'increasing', 'positive'});
@@ -80,6 +81,6 @@ end
 
 function mustBeValidNumericBoolean(x)
     if ~(x == 0 || x == 1)
-        error('Field vertWindProfile must be 0 or 1.');
+        error('Value must be 0 or 1.');
     end
 end
