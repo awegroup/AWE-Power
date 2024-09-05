@@ -57,6 +57,9 @@ A pre-defined input file named `inputFile_example_awePower.yml` is stored in the
 ## Licence
 This project is licensed under the MIT License. Please see the below WAIVER in association with the license.
 
+## Acknowledgement
+The project was supported by the Digital Competence Centre, Delft University of Technology.
+
 ### WAIVER
 Technische Universiteit Delft hereby disclaims all copyright interest in the program “AWE-Power” (a fast cycle-power computation model) written by the Author(s).
 
