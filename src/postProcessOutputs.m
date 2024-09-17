@@ -1,4 +1,7 @@
 function [processedOutputs] = postProcessOutputs(inputs, outputs)
+  % POSTPROCESSOUTPUTS Processes the outputs of an airborne wind energy system
+  %
+  % This function processes the raw outputs of the model for better visualation and readability.
 
   vw = inputs.vw_ref; % Wind speed at ref. height
 

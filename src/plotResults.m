@@ -1,4 +1,51 @@
-function plotResults(inputs)        
+function plotResults(inputs)
+
+  % plotResults Plots the results of the AWE system optimization and simulation
+  %
+  % This function generates a series of plots to visualize the results of the
+  % optimization and simulation of an airborne wind energy (AWE) system. It includes
+  % plots for various parameters such as linear dimensions, velocity factors,
+  % glide ratios, forces, power outputs, and wind profiles. The function handles
+  % different scenarios based on the provided input data and vertical wind profile.
+  %
+  % Inputs:
+  %   inputs (struct): Structure containing input parameters and configurations for
+  %                    the plots. It includes:
+  %                    - name: Identifier for the output file name
+  %                    - h_ref: Reference height for wind speed measurements
+  %                    - vw_ref: Array of reference wind speeds
+  %                    - vertWindProfile: Flag indicating if a vertical wind profile
+  %                      is used (0 for predefined, 1 for user-defined)
+  %                    - windShearExp: Wind shear exponent
+  %                    - windProfile_h: Heights for vertical wind profile
+  %                    - windProfile_vw: Wind speeds corresponding to the heights
+  %
+  % Outputs:
+  %   None. The function generates and displays various figures for visualization
+  %   purposes. The figures include:
+  %   - Linear dimensions (lengths) of the AWE system
+  %   - Velocity factors and wind speeds
+  %   - Glide ratios
+  %   - Forces (e.g., aerodynamic and gravitational)
+  %   - Power outputs (reel-out and reel-in)
+  %   - Time durations and number of patterns
+  %   - Lift and drag coefficients
+  %   - Wind profile comparison (if applicable)
+  %
+  % The function performs the following tasks:
+  % 1. Validates input data and calculates additional parameters.
+  % 2. Loads processed output data from a MAT-file.
+  % 3. Creates and configures various plots to visualize the results, including:
+  %    - Subplots for different parameters (e.g., linear dimensions, speeds, forces).
+  %    - Individual plots for power outputs and forces during reel-out and reel-in.
+  %    - Time series plots for pattern averages.
+  %    - Wind profile plots (either predefined or user-defined).
+  % 4. Provides options for visualizing vertical wind profiles based on predefined
+  %    values or interpolated data.
+  %
+  % Note:
+  % - The function uses specific color schemes and plot settings for clarity.
+  % - The `calcRowMean` helper function is used to compute the mean of rows in arrays.
 
   % Validate input data
   validateInput(inputs, inputValidators());
@@ -15,13 +62,13 @@ function plotResults(inputs)
   cutIn_index  = cutIn-inputs.vw_ref(1)+1;
   x_axis_limit = [1 processedOutputs.vw_h_ref_operRange(end)];
   newcolors    = [ % 0.25, 0.25, 0.25
-                    0 0.4470 0.7410
-                  0.8500 0.3250 0.0980 
-                  0.4660, 0.6740, 0.1880
-                  0.9290, 0.6940, 0.1250
-                  0.4940, 0.1840, 0.5560
-                  0.6350 0.0780 0.1840
-                  0.3010 0.7450 0.9330];
+    0 0.4470 0.7410
+    0.8500 0.3250 0.0980
+    0.4660, 0.6740, 0.1880
+    0.9290, 0.6940, 0.1250
+    0.4940, 0.1840, 0.5560
+    0.6350 0.0780 0.1840
+    0.3010 0.7450 0.9330];
 
   %% Plots
 
@@ -80,7 +127,7 @@ function plotResults(inputs)
   legend('F_{a,o}','F_{a,i}','F_{t,o}','F_{t,i}','F_{g}','location','northwest');
   ylabel('Force (kN)');
   hold off
-  han=axes(fig,'visible','off'); 
+  han=axes(fig,'visible','off');
   han.Title.Visible='on';
   han.XLabel.Visible='on';
   han.YLabel.Visible='off';
@@ -221,7 +268,7 @@ function plotResults(inputs)
   figure('units','inch','Position', [12.2 3.5 3.5 2.2])
   colororder(newcolors)
   hold on
-%   grid on
+  %   grid on
   box on
   plot(vw, processedOutputs.P_m_o(cutIn_index:end)./10^3,':o','linewidth',1,'markersize',3);
   plot(vw, processedOutputs.P_e_o(cutIn_index:end)./10^3,':s','linewidth',1,'markersize',3);
@@ -230,9 +277,9 @@ function plotResults(inputs)
   xline(maxIndex(1));
   xline(processedOutputs.ratedWind);
   % Add text boxes without borders
-%   text(1, 0.5, 'I', 'FontSize', 12, 'EdgeColor', 'none');
-%   text(3, 0.5, 'II', 'FontSize', 12, 'EdgeColor', 'none');
-%   text(5, 0.5, 'III', 'FontSize', 12, 'EdgeColor', 'none');
+  %   text(1, 0.5, 'I', 'FontSize', 12, 'EdgeColor', 'none');
+  %   text(3, 0.5, 'II', 'FontSize', 12, 'EdgeColor', 'none');
+  %   text(5, 0.5, 'III', 'FontSize', 12, 'EdgeColor', 'none');
   ylabel('Power (kW)');
   legend('P_{m,o}','P_{e,o}','P_{e,avg}','location','northwest');
   xlabel(['Wind speed at ' num2str(inputs.h_ref) ' m height (ms^{-1})']);
@@ -253,31 +300,31 @@ function plotResults(inputs)
   xlabel(['Wind speed at ' num2str(inputs.h_ref) ' m height (ms^{-1})']);
   xlim(x_axis_limit)
   hold off
- 
+
   % Cycle timeseries plots: Pattern averages
   windSpeeds = [processedOutputs.cutIn, processedOutputs.ratedWind, processedOutputs.cutOut];
   for i = windSpeeds
-      figure('units','inch','Position', [4.2 6.5 3.5 2.2])
-      hold on
-      grid on
-      box on
-      % Plot your data
-      plot(processedOutputs.cyclePowerRep(i).t_inst, processedOutputs.cyclePowerRep(i).P_e_inst,'linewidth',1.5, 'DisplayName', 'P_{e}');
-      plot(processedOutputs.cyclePowerRep(i).t_inst,processedOutputs.cyclePowerRep(i).P_m_inst,':','linewidth',1.5, 'DisplayName', 'P_{m}');
-      yline(processedOutputs.P_e_avg(i-inputs.vw_ref(1)+1)/10^3, '-.', 'linewidth',1.2, 'DisplayName', 'P_{e,avg}');
-      yline(processedOutputs.P_m_avg(i-inputs.vw_ref(1)+1)/10^3, ':', 'linewidth',1.2, 'DisplayName', 'P_{m,avg}');
-      % Set yline positions within the range of your data
-      yline(0, '-', 'linewidth', 1, 'HandleVisibility', 'off');      
-      ylabel('Power (kW)');
-      xlabel('Time (s)');      
-      % Create a custom legend with 'Data1' and 'Data2' only
-      legend('Location', 'Best');      
-      % Customize legend colors
-      legend('TextColor', 'k', 'Color', 'w'); % 'TextColor' sets the text color, 'Color' sets the background color      
-      xlim([0 processedOutputs.cyclePowerRep(i).t_inst(end)]);
-      ylim([1.5*min(processedOutputs.cyclePowerRep(i).P_e_inst) 1.05*max(processedOutputs.cyclePowerRep(i).P_m_inst)]);
-      title(strcat('Wind speed at 100 m:', num2str(i), ' ms^{-1}'));      
-      hold off
+    figure('units','inch','Position', [4.2 6.5 3.5 2.2])
+    hold on
+    grid on
+    box on
+    % Plot your data
+    plot(processedOutputs.cyclePowerRep(i).t_inst, processedOutputs.cyclePowerRep(i).P_e_inst,'linewidth',1.5, 'DisplayName', 'P_{e}');
+    plot(processedOutputs.cyclePowerRep(i).t_inst,processedOutputs.cyclePowerRep(i).P_m_inst,':','linewidth',1.5, 'DisplayName', 'P_{m}');
+    yline(processedOutputs.P_e_avg(i-inputs.vw_ref(1)+1)/10^3, '-.', 'linewidth',1.2, 'DisplayName', 'P_{e,avg}');
+    yline(processedOutputs.P_m_avg(i-inputs.vw_ref(1)+1)/10^3, ':', 'linewidth',1.2, 'DisplayName', 'P_{m,avg}');
+    % Set yline positions within the range of your data
+    yline(0, '-', 'linewidth', 1, 'HandleVisibility', 'off');
+    ylabel('Power (kW)');
+    xlabel('Time (s)');
+    % Create a custom legend with 'Data1' and 'Data2' only
+    legend('Location', 'Best');
+    % Customize legend colors
+    legend('TextColor', 'k', 'Color', 'w'); % 'TextColor' sets the text color, 'Color' sets the background color
+    xlim([0 processedOutputs.cyclePowerRep(i).t_inst(end)]);
+    ylim([1.5*min(processedOutputs.cyclePowerRep(i).P_e_inst) 1.05*max(processedOutputs.cyclePowerRep(i).P_m_inst)]);
+    title(strcat('Wind speed at 100 m:', num2str(i), ' ms^{-1}'));
+    hold off
   end
 
   % Wind profile
@@ -310,7 +357,7 @@ function plotResults(inputs)
     V_interpolated = interp1(inputs.windProfile_h, inputs.windProfile_vw, heights, 'linear', 'extrap');
     % Plot the interpolated function
     figure('units','inch','Position', [15 6 2 2.2])
-    hold on 
+    hold on
     box on
     grid on
     plot(inputs.windProfile_vw, inputs.windProfile_h, 'o', V_interpolated, heights, '-');
@@ -322,7 +369,7 @@ function plotResults(inputs)
     hold off
   end
 
-   
+
 end
 
 function rowMean = calcRowMean(array, cutIn_index)

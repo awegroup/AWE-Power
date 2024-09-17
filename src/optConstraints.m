@@ -1,17 +1,26 @@
 function [c, ceq] = optConstraints(i,inputs)
-  % optConstraints_awePower Nonlinear constraints for optimizing power generation in AWE system
+  % optConstraints_awePower: Nonlinear constraints for optimizing power generation in AWE system
   %
-  % This function computes the nonlinear inequality and equality constraints
-  % for optimizing the power generation of an Airborne Wind Energy (AWE) system
-  % at a specific wind speed index.
+  % This function calculates the nonlinear inequality and equality constraints for the optimization
+  % of power generation in a fixed-wing airborne wind energy (AWE) system at a specific wind speed
+  % iteration. These constraints ensure that operational limits such as minimum ground clearance,
+  % tether length, and maximum power are adhered to during the optimization process.
   %
   % Inputs:
-  %   i       - Index indicating the current wind speed iteration
-  %   inputs  - Structure containing input parameters and constants
+  %   i      (int): Index indicating the current wind speed iteration
+  %   inputs (struct): Structure containing input parameters and constants, including system limits
+  %                    like ground clearance, rated electrical power, tether length, and mechanical power.
   %
   % Outputs:
-  %   c       - Vector of nonlinear inequality constraint values
-  %   ceq     - Vector of nonlinear equality constraint values
+  %   c     (vector): Vector of nonlinear inequality constraint values. Inequality constraints
+  %                   include limits on ground clearance, power, tether length, and forces.
+  %   ceq   (vector): Vector of nonlinear equality constraint values. Equality constraints ensure
+  %                   glide ratio consistency during reel-out and reel-in phases.
+  %
+  % The inequality constraints ensure that various physical limits are respected, such as maintaining
+  % ground clearance and keeping mechanical power and tether forces within safe limits. Equality constraints
+  % enforce consistency in the energy values during different operational phases.
+
 
   global outputs
 
