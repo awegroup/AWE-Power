@@ -1,7 +1,7 @@
 # AWE-Power
 ![GitHub License](https://img.shields.io/github/license/awegroup/AWE-Power)
 ![Static Badge](https://img.shields.io/badge/MATLAB-R2021b-blue)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12166696.svg)](https://doi.org/10.5281/zenodo.12166696)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13842297.svg)](https://doi.org/10.5281/zenodo.13842297)
 
 A quasi-steady model simulating the reel-out and reel-in phases of fixed-wing ground-generation airborne wind energy systems. The model is formulated as an optimisation problem where the net electrical cycle power of a system is maximised for given wind conditions.
 
