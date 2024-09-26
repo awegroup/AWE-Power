@@ -1,6 +1,7 @@
 # AWE-Power
-![GitHub License](https://img.shields.io/github/license/awegroup/FixedWingGG-Power)
+![GitHub License](https://img.shields.io/github/license/awegroup/AWE-Power)
 ![Static Badge](https://img.shields.io/badge/MATLAB-R2021b-blue)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12166696.svg)](https://doi.org/10.5281/zenodo.12166696)
 
 A quasi-steady model simulating the reel-out and reel-in phases of fixed-wing ground-generation airborne wind energy systems. The model is formulated as an optimisation problem where the net electrical cycle power of a system is maximised for given wind conditions.
 
@@ -64,7 +65,7 @@ This project is licensed under the MIT License. Please see the below WAIVER in a
 ## Acknowledgement
 The project was supported by the Digital Competence Centre, Delft University of Technology.
 
-### WAIVER
+## WAIVER
 Technische Universiteit Delft hereby disclaims all copyright interest in the program “AWE-Power” (a fast cycle-power computation model) written by the Author(s).
 
 Prof.dr. H.G.C. (Henri) Werij, Dean of Aerospace Engineering
