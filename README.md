@@ -14,7 +14,7 @@ A quasi-steady model simulating the reel-out and reel-in phases of fixed-wing gr
 
 If you use the model then please cite the corresponding paper:
 
-[paper]
+Joshi, R., Schmehl, R., and Kruijff, M.: Power curve modelling and scaling of fixed-wing ground-generation airborne wind energy systems, Wind Energ. Sci., 9, 2195–2215, https://doi.org/10.5194/wes-9-2195-2024, 2024.
 
 ## Dependencies
 
