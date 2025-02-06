@@ -1,0 +1,63 @@
+name: 'inputFile_example_awePower'  # Input file name
+
+# Model Settings
+numDeltaLelems: 5  # Number of stroke length elements [num]
+FgToggle: 1  # Gravity toggle: 1 = True,  0 = False
+vertWindProfile: 0  # Vertical wind profile: 0 = Modelled, 1 = From dataset
+givenOstwaldEff: 1 # Ostwald efficiency factor: 0 = Function of AR (Anderson book), 1 = Given 
+
+# Wind Parameters
+vw_ref: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]  # Reference wind speeds [m/s]
+h_ref: 100  # Reference height [m]
+windShearExp: 0.143  # Wind shear exponent [-] (0.143 over land, 0.11 over sea)
+
+# Sample vertical wind profile datasets (for inputs.vertWindProfile = 1)
+# Profiles from: https://doi.org/10.1016/j.renene.2022.06.094
+# Wind speeds normalized with value at 100m
+h_windDataset: [10, 20, 40, 60, 80, 100, 120, 140, 150, 160, 180, 200, 220, 250, 300, 500, 600]  # Sample vertical wind profile dataset heights [m]
+v_windDataset_Cabauw: [0.5412, 0.6074, 0.7686, 0.8685, 0.9414, 1, 1.0481, 1.0864, 1.1028, 1.1172, 1.1441, 1.1657, 1.1839, 1.2065, 1.2327, 1.2666, 1.2641]  # Normalized wind speeds for Cabauw dataset
+v_windDataset_Ijmuiden: [0.8476, 0.8706, 0.9272, 0.9593, 0.9823, 1, 1.0138, 1.0236, 1.0277, 1.0308, 1.0366, 1.0403, 1.0428, 1.0450, 1.0446, 1.0247, 1.0108]  # Normalized wind speeds for Ijmuiden dataset
+
+# Wind Profile selection
+windProfile_h: 'h_windDataset' 
+windProfile_vw: 'v_windDataset_Cabauw'
+
+# System Parameters
+S: 12  # Wing surface area [m^2]
+AR: 12  # Aspect ratio [-]
+P_ratedElec: 150000  # Rated electrical power [W]
+massOverride: 0  # Mass override toggle
+kiteMass: 600  # (Overridden) Kite mass [kg]
+crestFactor_power: 2.5  # Peak mechanical to electric cycle power factor [-]
+
+# Tether Parameters
+Ft_max: 42000  # Maximum tether force [N]
+Ft_max_SF: 0.9  # Safety factor for maximum tether force
+maxTeLen: 1000  # Maximum tether length [m]
+maxHeight: 1000  # Maximum operational height [m]
+minGroundClear: 100  # Minimum ground clearance [m]
+Te_matStrength: 700000000  # Tether material tensile strength [Pa]
+Te_matDensity: 980  # Tether material density [kg/m^3]
+
+# Aerodynamic Parameters
+Cl_maxAirfoil: 2.5  # Maximum lift coefficient of airfoil [-]
+Cl_eff_F: 0.8  # Effective lift coefficient factor [-]
+Cl0_airfoil: 0.65  # Zero-lift coefficient of airfoil [-]
+e: 0.6  # Oswald efficiency factor [-]
+Cd0: 0.056  # Zero-lift drag coefficient [-]
+Cd_c: 1.2  # Parasitic drag coefficient [-]
+
+# Drum Operational Limits
+v_d_max: 20  # Maximum operational speed [m/s]
+a_d_max: 5  # Maximum acceleration [m/s^2]
+
+# Drivetrain Efficiency Parameters
+etaGen:
+    param: [0.671, -1.4141, 0.9747, 0.7233]  # Generator efficiency parameters [-]
+etaGearbox: 0.95  # Gearbox efficiency [-]
+etaSto: 0.95  # Storage efficiency [-]
+etaPE: 0.95  # Power electronics efficiency [-]
+
+# Environmental Constants
+gravity: 9.81  # Acceleration due to gravity [m/s^2]
+airDensity: 1.225  # Air density [kg/m^3]

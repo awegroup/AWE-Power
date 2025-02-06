@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: If you use this software, please cite the associated paper.
+authors:
+  - family-names: Joshi
+    given-names: Rishikesh 
+    affiliation: Delft University of Technology
+    orcid: 0000-0003-1401-9127
+title: AWE-Power
+year: 2024
+version: 0.1.0
+doi:
+repository-code: https://github.com/awegroup/AWE-Power
+license: MIT
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Joshi
+      given-names: Rishikesh 
+      affiliation: Delft University of Technology
+      orcid: 0000-0003-1401-9127
+  title: Power curve modelling and scaling of fixed-wing ground-generation airborne wind energy systems
+  year: 2024
+  publisher: Wind Energy Science
+  doi: https://doi.org/10.5194/wes-9-2195-2024
