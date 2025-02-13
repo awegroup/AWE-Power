@@ -1,0 +1,70 @@
+name: 'inputFile_example_class_awePower_pumpingFixed'  # Input file name
+
+# Model Settings
+numDeltaLelems: 5  # Number of stroke length elements [num]
+doIncludeGravity: true # Gravity toggle
+doUseReferenceWindProfile: false  # Vertical wind profile: false = Modelled, true = From dataset
+
+# Wind Parameters
+windSpeedReference: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]  # Reference wind speeds [m/s]
+heightWindReference: 100  # Reference height [m]
+vwCutOut_patternHeight: 25.0
+# windShearExp is needed when doUseReferenceWindProfile is set to false
+windShearExp: 0.143  # Wind shear exponent [-] (0.143 over land, 0.11 over sea)
+
+# Wind Profile selection
+# referenceLocation: Cabauw #Ijmuiden or Cabauw
+# ReferenceWindProfile location can be manually overwritten using:
+#   windProfile_h: [...]
+#   windProfile_vw: [...] %normalised to wind speed @ reference height
+
+# System Parameters
+areaWing: 12  # Wing surface area [m^2]
+span: 12  # Wing span [m]
+P_ratedElec: 150000  # Rated electrical power [W]
+doMassOverride: false
+# kiteMass is needed when doMassOverride is set to true
+# kiteMass: 600  # (Overridden) Kite mass [kg]
+peakM2E_F: 2.5  # Peak mechanical to electric cycle power factor [-]
+
+# Tether Parameters
+forceTether_max: 42000  # Maximum tether force [N]
+safetyFactor_forceTetherMax: 0.9  # Safety factor for maximum tether force
+maxTeLen: 1000  # Maximum tether length [m]
+maxHeight: 1000  # Maximum operational height [m]
+minGroundClear: 100  # Minimum ground clearance [m]
+maxStrengthTether: 700000000  # Tether material tensile strength [Pa]
+densityTether: 4920.7  # Tether material density [kg/m^3]
+
+# Aerodynamic Parameters
+Cl_maxAirfoil: 2.5  # Maximum lift coefficient of airfoil [-]
+Cl_eff_F: 0.8  # Effective lift coefficient factor [-]
+Cl0_airfoil: 0.65 # Lift coefficient of airfoil @CDmin [-]
+e: 0.6  # Oswald efficiency factor [-]
+Cd0: 0.056  # Minimum drag coefficient [-]
+Cd_cylinder: 1.2  # Parasitic drag coefficient [-]
+Cd_additional: 0.0 #aditional drag (e.g. bracing wires, fuselage, etc.)
+
+# Drum Operational Limits
+speedReelout_max: 20  # Maximum operational speed [m/s]
+accReel_max: 5  # Maximum acceleration [m/s^2]
+
+# Drivetrain Efficiency Parameters
+etaGen_param: [0.671, -1.4141, 0.9747, 0.7233]  # Generator efficiency parameters [-]
+efficiency_Gearbox: 0.95  # Gearbox efficiency [-]
+efficiency_Storage: 0.95  # Storage efficiency [-]
+efficiency_PowerElectronics: 0.95  # Power electronics efficiency [-]
+
+# Environmental Constants
+accGravity: 9.81  # Acceleration due to gravity [m/s^2]
+densityAir: 1.225  # Air density [kg/m^3]
+
+# Independent optimisation variables:
+# [lower limit, initial value, upper limit]
+stroke_length_m: [50,200,1000]
+elevationAngle_deg: [1, 30, 90]
+coneAngle_deg: [1, 5, 60]
+turningRadius_over_span_ratio: [5, 5, 10]
+reel_in_speed: [1,20,20]
+reel_out_speed: [0.8,0.8,20]
+kinematicRatio_lambda: [1, 90, 200]
