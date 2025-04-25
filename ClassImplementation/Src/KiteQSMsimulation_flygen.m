@@ -95,11 +95,11 @@ classdef KiteQSMsimulation_flygen < KiteQSMsimulationBase
             %           'L_r', 'L_theta', 'L_phi', 'D', 'L', 'Ft', 'E_result', ...
             %           'kByE', 'P_m_o_eff', 'zetaMech', 'P_e_o_eff', 'tPatt', ...
             %           'numOfPatt', 'P_e_avg', 'P_m_avg', 'thrust', 'maxThrust'};
-            varNames = {'beta', 'gamma', 'Rp', 'lambda', 'CL', 'l_t_inCycle', ...
+            varNames = {'vw_reference', 'beta', 'gamma', 'Rp', 'lambda', 'CL', 'l_t_inCycle', ...
                 'pattGrClr', 'h_inCycle', 'd_t', 'm_t', 'm_eff', 'theta', ...
                 'phi', 'chi', 'CD_k', 'CD_t', 'CD', 'CT', 'E', 'vw', 'vw_r', ...
                 'vw_theta', 'vw_phi', 'vk_tau', 'vk_theta', 'vk_phi', 'va', ...
-                'Fthrust', 'maxThrust', 'Fa', 'W', 'Fg_r', 'Fg_theta', 'Fg_phi', ...
+                'Fthrust', 'maxThrust', 'maxPower', 'axialInduction', 'Fa', 'W', 'Fg_r', 'Fg_theta', 'Fg_phi', ...
                 'Fa_theta', 'Fa_phi', 'Fa_r', 'rollAngle', 'Ft', 'va_r', 'va_theta', ...
                 'va_phi', 'F_dot_v', 'D_r', 'D_theta', 'D_phi', 'L_r', 'L_theta', ...
                 'L_phi', 'D', 'L', 'E_result', 'P_m_eff', 'zetaMech', 'P_e_eff', ...
@@ -184,7 +184,9 @@ classdef KiteQSMsimulation_flygen < KiteQSMsimulationBase
             obj.optimDetails.lambda = lambda;
             
             function fval = objective(x, inputs, kiteMass, halfRhoS, windSpeedReference)
-                % outputs.deltaL = x(1);
+
+                outputs.vw_reference = windSpeedReference;
+
                 outputs.beta = x(1);
                 outputs.gamma = x(2);
                 outputs.l_t_inCycle = x(3);
@@ -198,8 +200,18 @@ classdef KiteQSMsimulation_flygen < KiteQSMsimulationBase
                 outputs.h_inCycle = outputs.l_t_inCycle*cos(outputs.gamma)*sin(outputs.beta);
                 outputs.d_t = sqrt(inputs.forceTether_max/inputs.maxStrengthTether*4/pi); %[m] safety factor could be added (say *1.1)
                     
-                % Effective mass lumped at kite point (Kite + tether)
+                % Tether core mass
                 outputs.m_t = inputs.densityTether*pi/4*outputs.d_t^2*outputs.l_t_inCycle;
+
+                % increase diameter by a factor to account for electrical
+                % wires.
+                outputs.d_t = outputs.d_t*inputs.tetherCoreIncreaseFactor;
+
+                % simplified model given Bauer, F. PhD dissertation
+                % core is only 60% of total mass.
+                outputs.m_t = outputs.m_t/0.6; 
+                
+                % Effective mass lumped at kite point (Kite + tether)
                 outputs.m_eff = kiteMass + 0.5*outputs.m_t;
             
                 % Coordinates of the Kite's position and orientation in the Spherical ref. frame
@@ -243,7 +255,6 @@ classdef KiteQSMsimulation_flygen < KiteQSMsimulationBase
                 outputs.va = outputs.vw*sqrt(1+outputs.lambda^2);
             
                 outputs.Fthrust = outputs.CT*halfRhoS*outputs.va^2;
-                outputs.maxThrust = inputs.numTurbines*inputs.areaTurbine*0.5*inputs.densityAir*outputs.va^2;
             
                 % Aerodynamic force magnitude + turbine thrust
                 outputs.Fa = halfRhoS*sqrt(outputs.CL^2+(outputs.CD+outputs.CT)^2)*outputs.va^2;
@@ -298,9 +309,18 @@ classdef KiteQSMsimulation_flygen < KiteQSMsimulationBase
                 % Lift-to-drag ratio that follows from the chosen kinematic ratio
                 outputs.E_result = sqrt(((outputs.Fa*outputs.va)/outputs.F_dot_v)^2-1);
             
+                % LIMITS
+                % Assume CT = 1 (or a = 0.5), different CT than above
+                outputs.maxThrust = inputs.numTurbines*inputs.areaTurbine*0.5*inputs.densityAir*outputs.va^2;
+                % Assume Cp = 0.593 (or a = 0.33)
+                Cp_betz_limit = 0.593;
+                outputs.maxPower = inputs.numTurbines*inputs.areaTurbine*Cp_betz_limit*0.5*inputs.densityAir*outputs.va^3;
+
                 % Effective mechanical turbine power
                 % outputs.P_m_eff = sqrt(outputs.Fthrust^3/2/inputs.densityAir/inputs.turbineArea);
-                outputs.P_m_eff = outputs.Fthrust*outputs.va*0.95;
+                CTturbine = outputs.Fthrust/outputs.maxThrust;
+                outputs.axialInduction = fzero(@(x)4*x*(1-x)-CTturbine,0.5);
+                outputs.P_m_eff = 4*outputs.axialInduction*(1-outputs.axialInduction)^2*outputs.maxThrust*outputs.va;
             
                 outputs.zetaMech = outputs.P_m_eff/(halfRhoS*outputs.vw^3);
             
@@ -308,7 +328,9 @@ classdef KiteQSMsimulation_flygen < KiteQSMsimulationBase
             
                 % Time for one pattern revolution and number of patterns in the cycle
                 outputs.tPatt = 2*pi*outputs.Rp./outputs.vk_phi;
+
                 
+
                 fval = -outputs.P_e_eff;
             
             end
@@ -342,6 +364,8 @@ classdef KiteQSMsimulation_flygen < KiteQSMsimulationBase
                 c(9) = (0 - outputs.Fthrust);
 
                 c(10) = (inputs.minRp - outputs.Rp);
+
+                c(11) = (outputs.P_m_eff - outputs.maxPower);
                 
                 %% Equality constraints
                 % Glide ratio
@@ -357,7 +381,8 @@ classdef KiteQSMsimulation_flygen < KiteQSMsimulationBase
             
             processedOutputs = struct();
             %% Post processing
-            vw = inputs.windSpeedReference; % Wind speed at ref. height
+            % vw = inputs.windSpeedReference; % Wind speed at ref. height
+            vw = outputs.vw_reference; % Wind speed at ref. height
             processedOutputs.vw_reference = vw;
             % processedOutputs.vw_reference = sort(vw,'ascend');
             % On exit flag convergence is too harsch, glide ratio is a good
@@ -377,7 +402,7 @@ classdef KiteQSMsimulation_flygen < KiteQSMsimulationBase
             %% Cut-out wind speed
             processedOutputs.cutOut   = inputs.vwCutOut_patternHeight; % maximum at pattern height
             % Operating range traslated to wind speed at ref. height
-            processedOutputs.vw_100m_operRange = vw((vw>=processedOutputs.cutIn)' & mean(outputs.vw,2)<=processedOutputs.cutOut);
+            processedOutputs.vw_100m_operRange = vw((vw>=processedOutputs.cutIn) & mean(outputs.vw,2)<=processedOutputs.cutOut);
             % processedOutputs.vw_100m_operRange = sort(processedOutputs.vw_100m_operRange,'ascend');
             processedOutputs.cutOut_referenceHeight = max(processedOutputs.vw_100m_operRange);
             %% Extract feasible results in the operational range
@@ -387,7 +412,9 @@ classdef KiteQSMsimulation_flygen < KiteQSMsimulationBase
                 'vk_tau','Rp','l_t_inCycle','h_inCycle','va','beta',...
                 'rollAngle','gamma','CL','CD','CD_k','CD_t','CT','E',...
                 'lambda','tPatt','zetaMech','d_t','turbineGain',...
-                'Fthrust'};
+                'Fthrust','axialInduction'};
+
+            variableNamesToInit_scalar = {'sweptArea', 'Cp_m', 'Cp_e', 'storageExchange'};
 
             for i=1:length(vw)
                 %vw is reference height so cut_out at reference height should be taken
@@ -400,12 +427,16 @@ classdef KiteQSMsimulation_flygen < KiteQSMsimulationBase
                     processedOutputs.beta(i)           = rad2deg(processedOutputs.beta(i));
                     processedOutputs.rollAngle(i)    = rad2deg(-processedOutputs.rollAngle(i));
                     processedOutputs.gamma(i)          = rad2deg(processedOutputs.gamma(i));
+                    
+                    processedOutputs.storageExchange(i) = obj.kiteMass*inputs.accGravity*outputs.Rp(i)/3.6e3;  %[Wh]
 
                     % Coefficient of power (Cp) as defined for HAWTs
                     processedOutputs.sweptArea(i)     = pi.*((outputs.Rp(i)+inputs.span/2).^2 - (outputs.Rp(i)-inputs.span/2).^2);
                     processedOutputs.Cp_m(i)        = outputs.P_m_eff(i)./(0.5.*inputs.densityAir.*processedOutputs.sweptArea(i).*outputs.vw(i).^3);
                     processedOutputs.Cp_e(i)      = outputs.P_e_eff(i)./(0.5.*inputs.densityAir.*processedOutputs.sweptArea(i).*outputs.vw(i).^3);
                 else
+                    processedOutputs = obj.copy_zeros_to_processedoutputs_based_on_Size(...
+                        processedOutputs, [1,1], variableNamesToInit_scalar, i);
                     processedOutputs = KiteQSMsimulationBase.copy_zeros_to_processedoutputs(...
                         processedOutputs, outputs, variableNamesToCopy, i);
                 end
@@ -457,7 +488,7 @@ classdef KiteQSMsimulation_flygen < KiteQSMsimulationBase
                 'maxHeight', 1000, validationFcn.FloatPositive;
                 'minGroundClear', 100, validationFcn.FloatPositive;
                 'safetyFactor_forceTetherMax', 0.8, validationFcn.FloatPositive;
-                'peakM2E_F', 2.5, validationFcn.FloatPositive;
+                'peakM2E_F', 2, validationFcn.FloatPositive;
                 'maxStrengthTether', 7e8, validationFcn.FloatPositive;
                 'densityTether', 980, validationFcn.FloatPositive;
                 'e', 0.6, validationFcn.FloatPositive;
@@ -470,6 +501,7 @@ classdef KiteQSMsimulation_flygen < KiteQSMsimulationBase
                 'Cd_additional',0,validationFcn.FloatPositiveOrZero;
                 'name','simulationQSM_Flygen',validationFcn.String;
                 'kiteMass',0,validationFcn.FloatPositiveOrZero;
+                'tetherCoreIncreaseFactor',1.3,validationFcn.FloatPositive;
             };
         end
     end

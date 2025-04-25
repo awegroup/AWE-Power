@@ -123,7 +123,7 @@ classdef KiteQSMsimulation_pumpingFixed < KiteQSMsimulationBase
             %           'L_r', 'L_theta', 'L_phi', 'D', 'L', 'Ft', 'E_result', ...
             %           'kByE', 'P_m_o_eff', 'zetaMech', 'P_e_o_eff', 'tPatt', ...
             %           'numOfPatt', 'P_e_avg', 'P_m_avg', 'thrust', 'maxThrust'};
-            varNames = {'deltaL', 'beta', 'gamma', 'Rp_start', 'vk_r_i', ...
+            varNames = {'vw_reference', 'deltaL', 'beta', 'gamma', 'Rp_start', 'vk_r_i', ...
                       'CL_i', 'vk_r', 'kRatio', 'CL', 'l_t_min', ...
                       'pattStartGrClr', 'h_cycleStart', 'l_t_max', ...
                       'pattEndGrClr', 'l_t_avg', 'h_cycleAvg', 'h_cycleEnd', ...
@@ -231,6 +231,8 @@ classdef KiteQSMsimulation_pumpingFixed < KiteQSMsimulationBase
             function fval = objective(x, inputs, kiteMass, halfRhoS, windSpeedReference)
                 numDeltaLelems = inputs.numDeltaLelems;
             
+                outputs.vw_reference = windSpeedReference;
+
                 outputs.deltaL = x(1);
                 outputs.beta = x(2);
                 outputs.gamma = x(3);
@@ -502,7 +504,7 @@ classdef KiteQSMsimulation_pumpingFixed < KiteQSMsimulationBase
                 outputs.P_e_o = (sum(outputs.P_e_o_eff.*outputs.to_eff) + outputs.P1_e_o*outputs.t1)/outputs.to;
                 
                 % Reel-in time
-                outputs.t2       = outputs.vk_r_i/inputs.accReel_max;
+                outputs.t2       = outputs.vk_r_i(1)/inputs.accReel_max;
                 outputs.ti_eff = outputs.elemDeltaL./outputs.vk_r_i;
                 outputs.ti       = outputs.t2 + sum(outputs.ti_eff);
                 
@@ -584,7 +586,8 @@ classdef KiteQSMsimulation_pumpingFixed < KiteQSMsimulationBase
             
             processedOutputs = struct();
             %% Post processing
-            vw = inputs.windSpeedReference; % Wind speed at ref. height
+            % vw = inputs.windSpeedReference; % Wind speed at ref. height
+            vw = outputs.vw_reference; % Wind speed at ref. height
             processedOutputs.vw_reference = vw;
             % On exit flag convergence is too harsch, glide ratio is a good
             % indicator for convergence
@@ -603,7 +606,7 @@ classdef KiteQSMsimulation_pumpingFixed < KiteQSMsimulationBase
             %% Cut-out wind speed
             processedOutputs.cutOut   = inputs.vwCutOut_patternHeight; % maximum at pattern height
             % Operating range traslated to wind speed at ref. height
-            processedOutputs.vw_100m_operRange = vw((vw>=processedOutputs.cutIn)' & mean(outputs.vw,2)<=processedOutputs.cutOut);
+            processedOutputs.vw_100m_operRange = vw((vw>=processedOutputs.cutIn) & mean(outputs.vw,2)<=processedOutputs.cutOut);
             processedOutputs.cutOut_referenceHeight = max(processedOutputs.vw_100m_operRange);
             %% Extract feasible results in the operational range
             processedOutputs.Dia_te = outputs.d_t(1); % always constant
@@ -618,9 +621,13 @@ classdef KiteQSMsimulation_pumpingFixed < KiteQSMsimulationBase
                         'CD_k','CD_k_i','CD_t','CL_i','CD_i','E','E_i','numOfPatt',...
                         'lambda','f','f_i','tPatt','zetaMech','d_t'};
 
+            variableNamesToInit_scalar = {'dutyCycle', 'cycleEff_elec', 'cycleEff_mech', ...
+                'storageExchange'};
+            variableNamesToInit_array = {'sweptArea', 'Cp_m_o', 'Cp_e_avg'};
+
             for i=1:length(vw)
                 %vw is reference height so cut_out at reference height should be taken
-                if vw(i)>=processedOutputs.cutIn && vw(i)<=processedOutputs.cutOut_referenceHeight
+                if vw(i)>=processedOutputs.cutIn && vw(i)<=processedOutputs.cutOut
                     % Define the list of variable names
                     processedOutputs = KiteQSMsimulationBase.copy_outputs_to_processedoutputs(...
                         processedOutputs, outputs, variableNamesToCopy, i);
@@ -638,22 +645,26 @@ classdef KiteQSMsimulation_pumpingFixed < KiteQSMsimulationBase
                                                             (processedOutputs.P_e_o(i)*processedOutputs.to(i));
                     processedOutputs.cycleEff_mech(i)  = (processedOutputs.P_m_avg(i)*processedOutputs.tCycle(i))/...
                                                             (processedOutputs.P_m_o(i)*processedOutputs.to(i));
+                    
+                    processedOutputs.storageExchange(i) = (processedOutputs.P_m_avg(i)+processedOutputs.P_m_i(i))*processedOutputs.ti(i)/3.6e3;  %[Wh]
 
                     % Coefficient of power (Cp) as defined for HAWTs
                     processedOutputs.sweptArea(i,:)     = pi.*((outputs.Rp(i,:)+inputs.span/2).^2 - (outputs.Rp(i,:)-inputs.span/2).^2);
                     processedOutputs.Cp_m_o(i,:)        = outputs.P_m_o(i)./(0.5.*inputs.densityAir.*processedOutputs.sweptArea(i,:).*outputs.vw(i,:).^3);
                     processedOutputs.Cp_e_avg(i,:)      = outputs.P_e_avg(i)./(0.5.*inputs.densityAir.*processedOutputs.sweptArea(i,:).*outputs.vw(i,:).^3);
                 else
+                    processedOutputs = obj.copy_zeros_to_processedoutputs_based_on_Size(...
+                        processedOutputs, [1,1], variableNamesToInit_scalar, i);
+                    processedOutputs = obj.copy_zeros_to_processedoutputs_based_on_Size(...
+                        processedOutputs, size(outputs.Rp(i,:)), variableNamesToInit_array, i);
                     processedOutputs = obj.copy_zeros_to_processedoutputs(...
                         processedOutputs, outputs, variableNamesToCopy, i);
                 end
             end
 
-            ind_vw_notzero = find(processedOutputs.vw>0);
-            [~, sort_ind] = sort(processedOutputs.vw(ind_vw_notzero),'ascend');
-            sorted_ind_vw_notzero = ind_vw_notzero(sort_ind);
             
-            if ind_vw_notzero(1)~=sorted_ind_vw_notzero(1)
+            
+            if processedOutputs.vw_reference(1)>processedOutputs.vw_reference(end)
                 variableNamesProcessed = fields(processedOutputs);
                 for var_i = 1:numel(variableNamesProcessed)
                     variableName = variableNamesProcessed{var_i};
@@ -694,7 +705,7 @@ classdef KiteQSMsimulation_pumpingFixed < KiteQSMsimulationBase
                 'maxHeight', 1000, validationFcn.FloatPositive;
                 'minGroundClear', 100, validationFcn.FloatPositive;
                 'safetyFactor_forceTetherMax', 0.8, validationFcn.FloatPositive;
-                'peakM2E_F', 2.5, validationFcn.FloatPositive;
+                'peakM2E_F', 2, validationFcn.FloatPositive;
                 'maxStrengthTether', 7e8, validationFcn.FloatPositive;
                 'densityTether', 980, validationFcn.FloatPositive;
                 'speedReelout_max', 20, validationFcn.FloatPositive;

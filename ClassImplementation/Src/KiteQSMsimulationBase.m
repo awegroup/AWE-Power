@@ -46,7 +46,7 @@ classdef (Abstract) KiteQSMsimulationBase < handle
             obj.add_inputparserresults_to_property(p3);
             
             % Log default values if used
-            obj.write_inputparserdefaults_to_logger(obj.logger, p, obj.inputs, inputs, obj.kiteMass)
+            obj.write_inputparserdefaults_to_logger(obj.logger, p, obj.inputs, inputs)
             obj.write_inputparserdefaults_to_logger(obj.logger, p3, obj.inputs, inputs)
         end
         
@@ -470,18 +470,14 @@ classdef (Abstract) KiteQSMsimulationBase < handle
     end
     
     methods (Static)
-        function write_inputparserdefaults_to_logger(logObj, p, inputsProcessed, inputs, kiteMass)
+        function write_inputparserdefaults_to_logger(logObj, p, inputsProcessed, inputs)
             if ~isempty(p.UsingDefaults)
                 logObj.warning('Some QSM inputs are set to defaults; see details below.');
                 for i = 1:numel(p.UsingDefaults)
-                    if ~ismember(p.UsingDefaults{i},{'aspectRatio','windProfile_h','windProfile_vw','kiteMass'})
+                    if ~ismember(p.UsingDefaults{i},{'aspectRatio','windProfile_h','windProfile_vw'})
                         logObj.info('Parameter %s set to default: %s', p.UsingDefaults{i}, mat2str(inputsProcessed.(p.UsingDefaults{i})));
                     elseif strcmp(p.UsingDefaults{i},'aspectRatio')
                         logObj.info('Parameter %s is calculated to be: %s', p.UsingDefaults{i}, mat2str(inputsProcessed.(p.UsingDefaults{i})));
-                    elseif strcmp(p.UsingDefaults{i},'kiteMass')
-                        if ~inputsProcessed.doMassOverride
-                            logObj.info('Parameter %s is calculated to be: %s', p.UsingDefaults{i}, mat2str(kiteMass));
-                        end
                     elseif ismember(p.UsingDefaults{i},{'windProfile_h','windProfile_vw'})
                         if inputsProcessed.doUseReferenceWindProfile
                             if ~isfield(inputs, 'referenceLocation')
@@ -510,6 +506,17 @@ classdef (Abstract) KiteQSMsimulationBase < handle
                     processedOutputs.(name)(idx) = 0;
                 else
                     processedOutputs.(name)(idx,:) = zeros(size(outputs.(name)(idx,:)));
+                end
+            end
+        end
+
+        function processedOutputs = copy_zeros_to_processedoutputs_based_on_Size(processedOutputs, varSize, variableNames, idx)
+            for i = 1:numel(variableNames)
+                name = variableNames{i};
+                if all(varSize==1)
+                    processedOutputs.(name)(idx) = 0;
+                else
+                    processedOutputs.(name)(idx,:) = zeros(varSize);
                 end
             end
         end
