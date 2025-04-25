@@ -9,6 +9,9 @@ A quasi-steady model simulating the reel-out and reel-in phases of fixed-wing gr
 2. It is suitable for sensitivity and scalability studies, making it a valuable tool for evaluating design and innovation trade-offs.
 3. It is suitable for integration with cost models and systems engineering tools. This enhances the applicability of the proposed model in exploring the potential of airborne wind energy in the energy system.
 
+## Note
+This is a Function-based implementation. A Class structure implementation of the quasi-steady model described in the folder named `ClassImplementation` in the root of this repository.  In addition to the original functions, a fly-gen system is also implemented and demonstrated using the example files.
+
 
 ## How to cite
 
@@ -36,6 +39,7 @@ The Repository consists following folders:
 4. `lib`: Contains external functions required to run the model.
 5. `scripts`: Contains some scripts used to generate plots used in the associated journal publication.
 6. `tests`: Contains some tests used during code developement.
+7. `ClassImplementation`: Contains a Class structure implementation of the entire code. In addition to the original functions, a fly-gen system is also implemented and demonstrated using the example files. 
 
 
 ## Pre-defined Example Simulation
