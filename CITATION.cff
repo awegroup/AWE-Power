@@ -18,6 +18,14 @@ preferred-citation:
       given-names: Rishikesh 
       affiliation: Delft University of Technology
       orcid: 0000-0003-1401-9127
+    - family-names: Schmehl
+      given-names: Roland
+      affiliation: Delft University of Technology
+      orcid: 0000-0002-4112-841X
+    - family-names: Kruijff
+      given-names: Michiel
+      affiliation: Ampyx Power B.V.
+      orcid: 0000-0003-0482-3568
   title: Power curve modelling and scaling of fixed-wing ground-generation airborne wind energy systems
   year: 2024
   publisher: Wind Energy Science
