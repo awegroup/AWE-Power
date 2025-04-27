@@ -1,0 +1,65 @@
+name: 'inputFile_example_class_awePower_flygen'  # Input file name
+
+# Model Settings
+doIncludeGravity: true # Gravity toggle
+doUseReferenceWindProfile: true  # Vertical wind profile: false = Modelled, true = From dataset
+
+# Wind Parameters
+windSpeedReference: [25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]  # Reference wind speeds [m/s]
+heightWindReference: 100  # Reference height [m]
+vwCutOut_patternHeight: 25.0
+# windShearExp is needed when doUseReferenceWindProfile is set to false
+# windShearExp: 0.143  # Wind shear exponent [-] (0.143 over land, 0.11 over sea)
+
+# Wind Profile selection
+referenceLocation: Cabauw #Ijmuiden or Cabauw
+# ReferenceWindProfile location can be manually overwritten using:
+#   windProfile_h: [...]
+#   windProfile_vw: [...] %normalised to wind speed @ reference height
+
+# System Parameters
+areaWing: 12  # Wing surface area [m^2]
+span: 12  # Wing span [m]
+P_ratedElec: 100000  # Rated electrical power [W]
+doMassOverride: true
+# kiteMass is needed when doMassOverride is set to true
+kiteMass: 200  # (Overridden) Kite mass [kg]
+peakM2E_F: 2.5  # Peak mechanical to electric cycle power factor [-]
+
+# On-board turbine parameters
+numTurbines: 8.0
+areaTurbine: 2.65 #swept area of a single turbine [m^2]
+
+# Tether Parameters
+forceTether_max: 200000  # Maximum tether force [N]
+safetyFactor_forceTetherMax: 0.8  # Safety factor for maximum tether force
+maxTeLen: 1000  # Maximum tether length [m]
+maxHeight: 1000  # Maximum operational height [m]
+minGroundClear: 50.0  # Minimum ground clearance [m]
+maxStrengthTether: 3.62e9  # Tether material tensile strength [Pa]
+densityTether: 1440 # Tether material density [kg/m^3], DuPontTM Kevlar(R) 49 Aramid Fiber
+tetherCoreIncreaseFactor: 1.3 # Factor of total tether diamete over load carrying core diameter
+
+# Aerodynamic Parameters
+Cl_maxAirfoil: 3  # Maximum lift coefficient of airfoil [-]
+Cl_eff_F: 0.8  # Effective lift coefficient factor [-]
+Cl0_airfoil: 0.158 # Lift coefficient of airfoil @CDmin [-]
+e: 0.7  # Oswald efficiency factor [-]
+Cd0: 0.08  # Minimum drag coefficient [-]
+Cd_cylinder: 1.1  # Parasitic drag coefficient [-]
+Cd_additional: 0.003 #aditional drag (e.g. bracing wires, fuselage, etc.)
+
+# Drivetrain Efficiency Parameters
+efficiency_PowerElectronics: 0.95  # Power electronics efficiency [-]
+
+# Environmental Constants
+accGravity: 9.81  # Acceleration due to gravity [m/s^2]
+densityAir: 1.225  # Air density [kg/m^3]
+
+# Independent optimisation variables:
+# [lower limit, initial value, upper limit]
+elevationAngle_deg: [10, 30, 90]
+coneAngle_deg: [1, 10, 60]
+tetherLength_m: [100, 140, 1000]
+kinematicRatio_lambda: [0.1, 4, 50]
+thrustToKiteDragRatio: [0.05, 1.5, 5]
